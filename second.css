@@ -1,0 +1,61 @@
+
+.header{
+	background-color: black;
+	margin: 0 auto;
+}
+
+.logo{
+	display: inline-block;
+	text-align: left;
+	
+}
+
+.container {
+	width: 960px;
+	margin: 0 auto;
+}
+
+.menu {
+	display: inline-block;
+	text-align: left;
+
+}
+
+.list {
+	color: white;
+	display: inline-block;
+	padding: 10px;
+
+}
+
+.name {
+	color: white;
+	display: inline-block;
+	padding: 10px;
+	text-align: right;
+	color: white:;
+	 
+}
+
+.subheader{
+	font-family: arial;
+	font-size: 2em;
+	text-align: center;
+
+}	
+
+.content{
+	background-color: rgb(242, 240, 236);
+	height:700px;
+	margin: 0 auto;
+
+}
+
+/*.box {
+	border: 3px solid gray;
+	padding: 20px;
+	margin: 30px;
+	width: 100px;
+	height: 100px;
+	float: left;
+}*/

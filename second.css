@@ -80,24 +80,35 @@ body {
 }
 
 
-
 .subheader{
 	font-family: Didact Gothic;
-	font-size: 2em;
+	font-size: 30px;
 	text-align: center;
-
+	margin-top: 10px;
+	margin-bottom: 10px;
 }	
 
 .content {
 	background-color: rgb(242, 240, 236);
 	margin: 0 auto;
-
 }
 
 .leftbar {
 	display: inline-block;
 	margin-top: 20px;
+}
 
+.band-photo {
+	height: 400px;
+	width: 620px;
+}
+
+.message-box {
+	width:620px;
+	height:85px;
+	background-color: rgb(200, 200, 200);
+	font-size: 20px;
+	line-height: 35px;
 }
 
 .sidebar {
@@ -106,7 +117,6 @@ body {
 }
 
 .box {
-	border: 3px solid gray;
 	padding: 6px;
 	width: 140px;
 	height: 150px;
@@ -131,10 +141,10 @@ body {
 	font-size: 20px;
 	text-align: center;
 	border-radius: 5px;
-	background-color: yellow;
+	background-color: rgb(250, 200, 0);
 	margin-top: 30px;
 	box-shadow: inset 0 1px 1px #fff,
-					  0 3px -1px #B8B6B6;
+					  0 3px 1px #B8B6B6;
 	text-shadow: 0 1px 1px #9B6C00;
 	position: relative;
 }
@@ -142,6 +152,13 @@ body {
 .join-mob .join-card {
 	height:80px;
 	width: 290px;
+	background-color: white;
+
+}
+
+.shout-out {
+	text-align: center;
+	font-size: 10px;
 	
 }
 

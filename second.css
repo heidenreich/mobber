@@ -2,6 +2,7 @@
 body * {
 	vertical-align: top;
 }
+
 body {
 	font-family: Didact Gothic;
 	margin: 0 auto;
@@ -87,23 +88,100 @@ body {
 	text-align: center;
 	margin-top: 10px;
 	margin-bottom: 10px;
+	color: rgb(65, 65, 65);
 }	
 
 /* MAIN */
 
 .content {
-	background-color: rgb(242, 240, 236);
+	background-color: rgb(242, 240, 218);
 	margin: 0 auto;
+	box-shadow: inset 0px 0px 2px 2px rgb(219, 240, 236);
 }
 
 .leftbar {
 	display: inline-block;
 	margin-top: 20px;
+	width: 640px;
+	position: relative;
+	
+}
+
+.mob-id {
+	background-color: rgba(0, 0, 0, .5);
+	position: absolute;
+	width: 620px;
+	height: 55px;
+	color: white;
+	font-size: 20px;
+	display: inline-block;
+	padding: 10 0 0 15;
+
+}
+
+.mob-id .mob-location {
+	display: inline-block;
+	position: relative;
+	top: 10px;
+	right: -10px;
+
+}
+
+.mob-id .mob-countdown {
+	display: inline-block;
+	right: 20px;
+	top: 10px;
+	position: absolute;
+	font-size: 14px;
+
 }
 
 .band-photo {
 	height: 400px;
 	width: 620px;
+}
+
+.ribbon {
+		display: block;
+		position: relative;
+		top: -120px;
+		height: 30px;
+		left: -12px;
+		width: 146px;
+		background: #dcbd3a;
+
+	}
+	
+	.ribbon:before, el:after {
+		content: '';
+		display: block;
+		position: absolute;
+		border-style: solid;
+	}
+	
+	.ribbon:before {
+		display: block;
+		left: 0;
+		top: 30px;
+		border-width: 6px;
+		border-color: #d3bd55 #d3bd55 transparent transparent;
+	}
+	
+	.ribbon:after {
+		display: block;
+		right: 0;
+		top: 30px;
+		border-width: 6px;
+		border-color: #d3bd55 transparent transparent #d3bd55;
+	}
+
+
+	
+.message {
+	color: white;
+	padding: 20px;
+	text-transform: uppercase;
+
 }
 
 .message-box {
@@ -112,22 +190,30 @@ body {
 	background-color: rgb(200, 200, 200);
 	font-size: 20px;
 	line-height: 35px;
+	color: rgb(60,60,60);
+}
+
+.legal-disclaimer {
+	color: rgb(60, 60, 60);
 }
 
 .sidebar {
 	width: 320px;
 	display: inline-block;
+	margin-left: -4px;
+
 }
 
 .box {
-	padding: 6px;
 	width: 140px;
 	height: 150px;
 	background-color: rgb(200, 200, 200);
 	color: white;
 	display: inline-block;
 	margin-top: 20px;
-
+	font-size: 70px;
+	text-align: center;
+	margin-left: 10px;
 }
 
 .join-mob {

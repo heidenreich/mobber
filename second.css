@@ -79,6 +79,7 @@ body {
 	background: url("images/wedge.png") no-repeat center center; 
 }
 
+/*SUBHEADER*/
 
 .subheader{
 	font-family: Didact Gothic;
@@ -87,6 +88,8 @@ body {
 	margin-top: 10px;
 	margin-bottom: 10px;
 }	
+
+/* MAIN */
 
 .content {
 	background-color: rgb(242, 240, 236);
@@ -159,7 +162,8 @@ body {
 .shout-out {
 	text-align: center;
 	font-size: 10px;
-	
+	color: gray;
+
 }
 
 

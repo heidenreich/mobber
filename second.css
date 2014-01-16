@@ -144,7 +144,7 @@ body {
 .ribbon {
 		display: block;
 		position: relative;
-		top: -120px;
+		top: -16px;
 		height: 30px;
 		left: -12px;
 		width: 146px;
@@ -188,13 +188,22 @@ body {
 	width:620px;
 	height:85px;
 	background-color: rgb(200, 200, 200);
+	margin-top: -30px;
+
+}
+
+.message-box span {
 	font-size: 20px;
 	line-height: 35px;
 	color: rgb(60,60,60);
+	margin-top: 5px;
+
 }
 
 .legal-disclaimer {
 	color: rgb(60, 60, 60);
+	font-size: 12px;
+
 }
 
 .sidebar {

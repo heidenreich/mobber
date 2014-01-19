@@ -403,6 +403,14 @@ body {
 	text-align: center; 
 }
 
+.left-fix {
+	text-align: right;
+}
+
+.center-fix {
+	text-align: center;
+}
+
 
 .tg-table-plain { 
 	border-collapse: separate;
@@ -426,9 +434,6 @@ tr:last-child td {
 	border: 0;
 }
 
-td:last-child tr {
-	text-align: right;
-}
 
 /* START MOB BOX */
 

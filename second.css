@@ -177,6 +177,7 @@ body {
 	
 .message {
 	color: white;
+	text-shadow: 0 1px 1px rgb(113, 86, 30);
 	padding: 20px;
 	text-transform: uppercase;
 }
@@ -214,6 +215,7 @@ body {
 	height: 150px;
 	background-color: rgb(200, 200, 200);
 	color: white;
+	text-shadow: rgb(167, 159, 147) 0 2px;
 	display: inline-block;
 	margin-top: 20px;
 	font-size: 70px;
@@ -290,12 +292,16 @@ body {
 
 .join-card-text {
 	display: inline-block;
-	padding-top: 15px;
-	
+	padding-top: 15px;	
 }
 
 .join-card span {
 	display: block;
+}
+
+.reward {
+	font-size: 20px;
+	color: rgb(65, 65, 65);
 }
 
 .shout-out {
@@ -303,7 +309,6 @@ body {
 	font-size: 12px;
 	color: rgb(65, 65, 65);
 	margin-left: -20px;
-
 }
 
 .social-links {
@@ -327,12 +332,12 @@ body {
 
 .event-1 {
 	display: inline-block;
-	margin-right: 10px;
+	margin-right: 25px;
 }
 
 .event-2 {
 	display: inline-block;
-	margin-right: 10px;
+	margin-right: 25px;
 }
 
 .event-3 {
@@ -360,7 +365,7 @@ body {
 .time {
 	font-size: 13px;
 	display: inline-block;
-	margin-left: 40px;
+	margin-left: 50px;
 	margin-top: 5px;
 	color: rgb(65, 65, 65);
 }
@@ -373,6 +378,13 @@ body {
 
 
 /*TABLE*/
+
+.table-header {
+	font-size: 25px;
+	color: rgb(65, 65, 65);
+	text-shadow:;
+
+}
 
 .table-data {
 	display: inline-block;
@@ -489,6 +501,17 @@ body {
     background: -ms-linear-gradient(top, #e7e6ec 0%,#d0cdc7 100%); /* IE10+ */
     background: linear-gradient(to bottom, #e7e6ec 0%,#d0cdc7 100%); /* W3C */
 }
+
+.gray-line {
+	position: relative;
+	width: 200px;
+	height: 10px;
+	background-color: rgb(165, 165, 165);
+	top: -155px;
+	right: -40px;
+	margin-bottom: 65px;
+}
+
 
 /*FOOTER*/
 

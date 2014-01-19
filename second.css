@@ -227,17 +227,18 @@ body {
 .mobbers {
 	position: absolute;
 	height: 35px;
-	width: 136px;
+	width: 135px;
 	background-color: rgb(181, 174, 163);
 	color: rgb(65, 65, 65);
 	margin: -37px 10px 10px 10px;
 	text-align: center;
+	margin-left: 13px;
 }
 
 .mobbers-needed {
 	position: absolute;
 	height: 35px;
-	width: 136px;
+	width: 135px;
 	background-color: rgb(181, 174, 163);
 	color: rgb(65,65,65);
 	margin: -37px 10px 10px 166px;
@@ -415,9 +416,18 @@ body {
 
 .tg-table-plain td, .tg-table-plain th { 
 	border-bottom: 1px #555 solid; 
-	padding: 10px; 
+	padding-top: 14px; 
+	padding-bottom: 14px;
 	vertical-align: top; 
 	font-weight: normal; 
+}
+
+tr:last-child td {
+	border: 0;
+}
+
+td:last-child tr {
+	text-align: right;
 }
 
 /* START MOB BOX */

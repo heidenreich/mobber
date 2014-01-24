@@ -94,9 +94,9 @@ body {
 /* MAIN */
 
 .content {
-	background-color: rgb(242, 240, 218);
+	background-color: rgb(242, 240, 236);
 	margin: 0 auto;
-	box-shadow: inset 0px 0px 2px 2px rgb(219, 240, 236);
+	box-shadow: inset 0px 0px 2px 2px rgb(217, 217, 217);
 	padding-bottom: 15px;
 }
 
@@ -149,7 +149,7 @@ body {
 	height: 30px;
 	left: -12px;
 	width: 146px;
-	background: #dcbd3a;
+	background: rgb(249, 206, 0);
 	}
 	
 .ribbon:before, el:after {
@@ -333,12 +333,12 @@ body {
 
 .event-1 {
 	display: inline-block;
-	margin-right: 25px;
+	margin-right: 18px;
 }
 
 .event-2 {
 	display: inline-block;
-	margin-right: 25px;
+	margin-right: 18px;
 }
 
 .event-3 {

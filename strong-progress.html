@@ -1,0 +1,580 @@
+<title>Lift Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+:root {
+  --bg: #f2f4f6;
+  --surface: #fcfcfb;
+  --ink: #14171c;
+  --ink-2: #4f5663;
+  --muted: #7a8190;
+  --line: #dde1e7;
+  --grid: #e9ecf0;
+  --s1: #2a78d6;
+  --s1-soft: rgba(42,120,214,.12);
+  --pr: #eb6834;
+  --good: #1a7f37;
+  --bad: #c0362c;
+  --display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #111317; --surface: #1a1c21; --ink: #f3f4f6; --ink-2: #c1c6cf; --muted: #8b92a0;
+    --line: #2d3139; --grid: #24272e; --s1: #3987e5; --s1-soft: rgba(57,135,229,.18);
+    --pr: #e0703f; --good: #4cc26b; --bad: #ef6b60;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #111317; --surface: #1a1c21; --ink: #f3f4f6; --ink-2: #c1c6cf; --muted: #8b92a0;
+  --line: #2d3139; --grid: #24272e; --s1: #3987e5; --s1-soft: rgba(57,135,229,.18);
+  --pr: #e0703f; --good: #4cc26b; --bad: #ef6b60;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 48px; display: flex; flex-direction: column; gap: 20px; }
+h1, h2 { font-family: var(--display); font-weight: 700; letter-spacing: .01em; text-wrap: balance; margin: 0; line-height: 1.05; }
+h1 { font-size: clamp(34px, 7vw, 52px); text-transform: uppercase; }
+h2 { font-size: 22px; text-transform: uppercase; letter-spacing: .03em; }
+.eyebrow { font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 600; }
+.num { font-variant-numeric: tabular-nums; }
+header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; }
+header p { margin: 4px 0 0; color: var(--ink-2); max-width: 60ch; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.btn, select { font: inherit; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 8px 14px; cursor: pointer; }
+select { max-width: 100%; min-width: 0; text-overflow: ellipsis; }
+.panel-head .controls { max-width: 100%; }
+.btn.primary { background: var(--s1); border-color: var(--s1); color: #fff; }
+.btn:focus-visible, select:focus-visible, .seg button:focus-visible, tr:focus-visible { outline: 2px solid var(--s1); outline-offset: 2px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--surface); }
+.seg button { font: inherit; font-weight: 600; font-size: 13px; border: 0; background: transparent; color: var(--ink-2); padding: 7px 12px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.banner { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; padding: 12px 14px; border: 1px dashed var(--line); border-radius: 8px; background: var(--surface); color: var(--ink-2); font-size: 14px; }
+.banner strong { color: var(--ink); }
+.banner.drag { border-color: var(--s1); background: var(--s1-soft); }
+.chip { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 2px 8px; border-radius: 99px; background: var(--pr); color: #fff; vertical-align: 2px; }
+.chip.real { background: var(--good); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.tile { background: var(--surface); padding: 14px 16px; display: flex; flex-direction: column; gap: 2px; }
+.tile .v { font-family: var(--display); font-size: 36px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
+.tile .v small { font-size: 18px; color: var(--ink-2); font-weight: 500; margin-left: 2px; }
+.tile .d { font-size: 13px; color: var(--muted); }
+section.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.panel-head { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; }
+.panel-head .sub { color: var(--ink-2); font-size: 14px; margin-top: 2px; }
+.chart { position: relative; width: 100%; }
+.chart svg { display: block; width: 100%; overflow: visible; }
+.chart text { fill: var(--muted); font-family: var(--body); font-size: 11px; font-variant-numeric: tabular-nums; }
+.tip { position: absolute; pointer-events: none; background: var(--ink); color: var(--bg); padding: 6px 10px; border-radius: 6px; font-size: 13px; line-height: 1.35; white-space: nowrap; transform: translate(-50%, calc(-100% - 10px)); z-index: 2; }
+.tip b { font-weight: 600; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--ink-2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 12px; height: 3px; border-radius: 2px; background: var(--s1); }
+.sw.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--surface); border: 2.5px solid var(--pr); }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; }
+.stats div { display: flex; flex-direction: column; }
+.stats .k { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; font-weight: 600; }
+.stats .v { font-family: var(--display); font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.two { display: grid; grid-template-columns: 1fr; gap: 20px; }
+@media (min-width: 820px) { .two { grid-template-columns: 1fr 1fr; } }
+.tbl { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 9px 10px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+td.r, th.r { text-align: right; }
+tbody tr { cursor: pointer; }
+tbody tr:hover, tbody tr.sel { background: var(--s1-soft); }
+.up { color: var(--good); font-weight: 600; }
+.down { color: var(--bad); font-weight: 600; }
+.help { color: var(--ink-2); font-size: 14px; }
+.help ol { margin: 6px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
+.err { color: var(--bad); font-weight: 600; }
+.empty { color: var(--muted); font-size: 14px; padding: 24px 0; text-align: center; }
+@media (prefers-reduced-motion: no-preference) { .chart path.line { transition: d .3s; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">Strong app export</div>
+      <h1>Lift Log</h1>
+      <p>Load the CSV you export from Strong to see your training frequency, volume and strength trends. Your file is read on this device and never uploaded.</p>
+    </div>
+    <div class="controls">
+      <label class="btn primary" for="file">Load Strong CSV</label>
+      <input id="file" type="file" accept=".csv,text/csv,text/plain" hidden>
+      <div class="seg" role="group" aria-label="Weight unit">
+        <button type="button" id="u-lb" aria-pressed="true">lb</button>
+        <button type="button" id="u-kg" aria-pressed="false">kg</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="banner" id="banner">
+    <div id="status"><span class="chip">Sample</span> Showing made-up example data. <strong>Load your Strong CSV</strong> to see your own numbers, or drop the file here.</div>
+    <button type="button" class="btn" id="reset" hidden>Show sample data</button>
+  </div>
+
+  <div class="tiles" id="tiles"></div>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <h2 id="ex-title">Exercise progress</h2>
+        <div class="sub" id="ex-sub"></div>
+      </div>
+      <div class="controls">
+        <select id="ex" aria-label="Exercise"></select>
+        <select id="metric" aria-label="Metric">
+          <option value="e1rm">Estimated 1-rep max</option>
+          <option value="top">Heaviest set</option>
+          <option value="vol">Session volume</option>
+          <option value="reps">Most reps in a set</option>
+        </select>
+      </div>
+    </div>
+    <div class="seg" role="group" aria-label="Time range" id="range">
+      <button type="button" data-r="90" aria-pressed="false">3M</button>
+      <button type="button" data-r="182" aria-pressed="false">6M</button>
+      <button type="button" data-r="365" aria-pressed="false">1Y</button>
+      <button type="button" data-r="0" aria-pressed="true">All</button>
+    </div>
+    <div class="legend"><span><i class="sw"></i><span id="lg-metric">Estimated 1RM, best set per session</span></span><span><i class="sw dot"></i>New personal record</span></div>
+    <div class="chart" id="c-ex"></div>
+    <div class="stats" id="ex-stats"></div>
+  </section>
+
+  <div class="two">
+    <section class="panel">
+      <div>
+        <h2>Workouts per week</h2>
+        <div class="sub help" id="wk-sub">Last 26 weeks</div>
+      </div>
+      <div class="chart" id="c-week"></div>
+    </section>
+    <section class="panel">
+      <div>
+        <h2>Monthly volume</h2>
+        <div class="sub help" id="vol-sub">Weight × reps across working sets</div>
+      </div>
+      <div class="chart" id="c-vol"></div>
+    </section>
+  </div>
+
+  <section class="panel">
+    <div>
+      <h2>Personal records</h2>
+      <div class="sub help">Tap a row to chart that exercise. Change compares your best estimated 1RM in the first and latest 30 days you trained it.</div>
+    </div>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Exercise</th><th class="r">Sessions</th><th class="r">Best e1RM</th><th class="r">Heaviest set</th><th class="r">Most reps</th><th class="r">Change</th><th>Last done</th></tr></thead>
+        <tbody id="pr-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel help">
+    <h2>Getting your data out of Strong</h2>
+    <ol>
+      <li>In the Strong app, open <strong>Settings</strong> (the Profile tab, then the gear icon).</li>
+      <li>Tap <strong>Export Strong Data</strong>. Strong builds a CSV of every workout.</li>
+      <li>Choose <strong>Save to Files</strong> (iPhone) or save it to your Downloads (Android).</li>
+      <li>Come back here, tap <strong>Load Strong CSV</strong> and pick the file.</li>
+    </ol>
+    <p>The export doesn't record which unit you use, so set lb or kg above to match your Strong settings. Warm-up sets are left out of records and volume. Estimated 1RM uses the Epley formula (weight × (1 + reps ÷ 30)) on sets of 12 reps or fewer.</p>
+  </section>
+</div>
+
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const DAY = 864e5;
+const state = { rows: [], sample: true, unit: 'lb', ex: null, metric: 'e1rm', range: 0 };
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} }
+};
+
+/* ---------- CSV parsing ---------- */
+function parseCSV(text) {
+  text = text.replace(/^﻿/, '');
+  const first = text.slice(0, text.indexOf('\n') > 0 ? text.indexOf('\n') : text.length);
+  const delim = (first.split(';').length > first.split(',').length) ? ';' : ',';
+  const out = []; let row = [], f = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; }
+      else f += c;
+    } else if (c === '"') q = true;
+    else if (c === delim) { row.push(f); f = ''; }
+    else if (c === '\n' || c === '\r') {
+      if (c === '\r' && text[i + 1] === '\n') i++;
+      row.push(f); f = ''; if (row.length > 1 || row[0] !== '') out.push(row); row = [];
+    } else f += c;
+  }
+  if (f !== '' || row.length) { row.push(f); out.push(row); }
+  return { table: out, delim };
+}
+function num(s, delim) {
+  if (s == null) return 0;
+  s = String(s).trim(); if (!s) return 0;
+  if (delim === ';') s = s.replace(',', '.');
+  const n = parseFloat(s); return isFinite(n) ? n : 0;
+}
+function parseDate(s) {
+  s = String(s).trim();
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  if (m) return new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0));
+  const d = new Date(s); return isNaN(d) ? null : d;
+}
+function fromStrong(text) {
+  const { table, delim } = parseCSV(text);
+  if (table.length < 2) throw new Error('That file has no workout rows.');
+  const head = table[0].map(h => h.trim().toLowerCase());
+  const col = (...names) => head.findIndex(h => names.some(n => h === n || h.startsWith(n + ' (')));
+  const iDate = col('date'), iName = col('workout name'), iEx = col('exercise name'),
+        iSet = col('set order'), iW = col('weight'), iR = col('reps');
+  if (iDate < 0 || iEx < 0 || iW < 0 || iR < 0) throw new Error('This doesn’t look like a Strong export. Expected columns like Date, Exercise Name, Weight and Reps.');
+  const wHead = head[iW];
+  const unit = /kg/.test(wHead) ? 'kg' : /lb/.test(wHead) ? 'lb' : null;
+  const rows = [];
+  for (let i = 1; i < table.length; i++) {
+    const r = table[i]; if (!r[iEx]) continue;
+    const set = iSet >= 0 ? String(r[iSet]).trim() : '1';
+    if (/rest/i.test(set)) continue;
+    const d = parseDate(r[iDate]); if (!d) continue;
+    const reps = num(r[iR], delim), w = num(r[iW], delim);
+    if (reps <= 0) continue;
+    rows.push({ d, t: d.getTime(), wk: (iName >= 0 ? r[iName] : '') + '|' + r[iDate], ex: r[iEx].trim(), w, reps, warm: /^w$/i.test(set) });
+  }
+  if (!rows.length) throw new Error('No sets with reps were found in that file.');
+  rows.sort((a, b) => a.t - b.t);
+  return { rows, unit };
+}
+
+/* ---------- sample data ---------- */
+function sample() {
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const lifts = [
+    { ex: 'Bench Press (Barbell)', start: 135, gain: 45, reps: [5, 5, 5], day: 0 },
+    { ex: 'Squat (Barbell)', start: 185, gain: 70, reps: [5, 5, 5], day: 1 },
+    { ex: 'Deadlift (Barbell)', start: 225, gain: 80, reps: [5, 3, 3], day: 2 },
+    { ex: 'Overhead Press (Barbell)', start: 85, gain: 25, reps: [6, 6, 6], day: 0 },
+    { ex: 'Bent Over Row (Barbell)', start: 115, gain: 35, reps: [8, 8, 8], day: 1 },
+    { ex: 'Pull Up', start: 0, gain: 0, reps: [6, 5, 5], day: 2, bw: true },
+    { ex: 'Incline Bench Press (Dumbbell)', start: 45, gain: 15, reps: [10, 10, 8], day: 2 }
+  ];
+  const names = ['Push Day', 'Leg Day', 'Pull Day'];
+  const rows = []; const end = new Date(); end.setHours(18, 0, 0, 0);
+  const start = new Date(end.getTime() - 300 * DAY);
+  let k = 0;
+  for (let t = start.getTime(); t <= end.getTime(); t += DAY) {
+    const d = new Date(t); const dow = d.getDay();
+    if (![1, 3, 5].includes(dow) || rnd() < 0.14) continue;
+    const slot = k++ % 3; const p = (t - start.getTime()) / (end - start);
+    const wk = names[slot] + '|' + t;
+    lifts.filter(l => l.day === slot).forEach(l => {
+      l.reps.forEach((rp, si) => {
+        const noise = (rnd() - 0.5) * 0.06;
+        let w = l.bw ? 0 : Math.round((l.start + l.gain * Math.pow(p, 0.8)) * (1 + noise) / 5) * 5;
+        const reps = l.bw ? Math.max(3, Math.round(rp + p * 5 + (rnd() - 0.5) * 2) - si) : rp;
+        rows.push({ d, t, wk, ex: l.ex, w, reps, warm: false });
+      });
+    });
+  }
+  return rows;
+}
+
+/* ---------- helpers ---------- */
+const e1 = (w, r) => r === 1 ? w : r <= 12 ? w * (1 + r / 30) : 0;
+const fmt = (n, dp = 0) => n.toLocaleString(undefined, { maximumFractionDigits: dp, minimumFractionDigits: dp });
+const fmtD = (d, o) => d.toLocaleDateString(undefined, o || { month: 'short', day: 'numeric', year: 'numeric' });
+const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const weekStart = t => { const d = new Date(t); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.getTime(); };
+function compact(n) {
+  if (n >= 1e6) return fmt(n / 1e6, 1) + 'M';
+  if (n >= 1e4) return fmt(n / 1e3, 0) + 'k';
+  if (n >= 1e3) return fmt(n / 1e3, 1) + 'k';
+  return fmt(n);
+}
+function niceTicks(lo, hi, n = 4) {
+  if (hi === lo) { hi = lo + 1; }
+  const span = hi - lo, step0 = span / n, mag = Math.pow(10, Math.floor(Math.log10(step0)));
+  const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => span / s <= n) || 10 * mag;
+  const a = Math.floor(lo / step) * step, b = Math.ceil(hi / step) * step, t = [];
+  for (let v = a; v <= b + step / 2; v += step) t.push(+v.toFixed(6));
+  return t;
+}
+
+/* ---------- aggregation ---------- */
+function sessionsFor(ex) {
+  const m = new Map();
+  state.rows.forEach(r => {
+    if (r.ex !== ex || r.warm) return;
+    let s = m.get(r.wk); if (!s) m.set(r.wk, s = { t: r.t, d: r.d, e1rm: 0, top: 0, topReps: 0, vol: 0, reps: 0, best: null });
+    const e = e1(r.w, r.reps);
+    if (e > s.e1rm) { s.e1rm = e; s.best = r; }
+    if (r.w > s.top || (r.w === s.top && r.reps > s.topReps)) { s.top = r.w; s.topReps = r.reps; }
+    s.vol += r.w * r.reps; s.reps = Math.max(s.reps, r.reps);
+  });
+  return [...m.values()].sort((a, b) => a.t - b.t);
+}
+function exerciseList() {
+  const m = new Map();
+  state.rows.forEach(r => { const o = m.get(r.ex) || { ex: r.ex, wks: new Set(), last: 0, w: 0 }; o.wks.add(r.wk); o.last = Math.max(o.last, r.t); o.w = Math.max(o.w, r.w); m.set(r.ex, o); });
+  return [...m.values()].map(o => ({ ex: o.ex, n: o.wks.size, last: o.last, bw: o.w === 0 })).sort((a, b) => b.n - a.n);
+}
+
+/* ---------- charts ---------- */
+function tipFor(el) { let t = el.querySelector('.tip'); if (!t) { t = document.createElement('div'); t.className = 'tip'; t.hidden = true; el.appendChild(t); } return t; }
+
+function lineChart(el, pts, { yFmt, label }) {
+  el.innerHTML = '';
+  if (pts.length < 1) { el.innerHTML = '<div class="empty">No sessions in this range.</div>'; return; }
+  const W = el.clientWidth || 600, H = Math.max(220, Math.min(320, W * 0.45));
+  const m = { l: 44, r: 14, t: 16, b: 26 };
+  const t0 = pts[0].t, t1 = pts[pts.length - 1].t === t0 ? t0 + DAY : pts[pts.length - 1].t;
+  const ys = pts.map(p => p.y); let lo = Math.min(...ys), hi = Math.max(...ys);
+  const pad = (hi - lo) * 0.12 || hi * 0.1 || 1; lo = Math.max(0, lo - pad); hi = hi + pad;
+  const ticks = niceTicks(lo, hi, 4); lo = ticks[0]; hi = ticks[ticks.length - 1];
+  const x = t => m.l + (t - t0) / (t1 - t0) * (W - m.l - m.r);
+  const y = v => m.t + (1 - (v - lo) / (hi - lo)) * (H - m.t - m.b);
+  let s = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="${esc(label)}">`;
+  ticks.forEach(v => { s += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)" stroke-width="1"/><text x="${m.l - 8}" y="${y(v) + 4}" text-anchor="end">${yFmt(v)}</text>`; });
+  // month ticks
+  const span = t1 - t0, months = [], d = new Date(t0); d.setDate(1); d.setHours(0, 0, 0, 0); d.setMonth(d.getMonth() + 1);
+  const stepM = span > 400 * DAY ? 3 : span > 200 * DAY ? 2 : 1;
+  for (; d.getTime() <= t1; d.setMonth(d.getMonth() + stepM)) months.push(d.getTime());
+  months.forEach(t => { const dd = new Date(t); const lab = dd.getMonth() === 0 || months.length < 3 ? fmtD(dd, { month: 'short', year: '2-digit' }) : fmtD(dd, { month: 'short' }); s += `<text x="${x(t)}" y="${H - 6}" text-anchor="middle">${lab}</text>`; });
+  s += `<line x1="${m.l}" x2="${W - m.r}" y1="${H - m.b}" y2="${H - m.b}" stroke="var(--line)"/>`;
+  const path = pts.map((p, i) => (i ? 'L' : 'M') + x(p.t).toFixed(1) + ' ' + y(p.y).toFixed(1)).join('');
+  const area = path + `L${x(pts[pts.length - 1].t).toFixed(1)} ${H - m.b}L${x(pts[0].t).toFixed(1)} ${H - m.b}Z`;
+  s += `<path d="${area}" fill="var(--s1-soft)" stroke="none"/>`;
+  s += `<path class="line" d="${path}" fill="none" stroke="var(--s1)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  pts.forEach(p => { if (p.pr) s += `<circle cx="${x(p.t)}" cy="${y(p.y)}" r="4.5" fill="var(--surface)" stroke="var(--pr)" stroke-width="2.5"/>`; });
+  const lp = pts[pts.length - 1];
+  s += `<circle cx="${x(lp.t)}" cy="${y(lp.y)}" r="4" fill="var(--s1)" stroke="var(--surface)" stroke-width="2"/>`;
+  s += `<line id="xh" x1="0" x2="0" y1="${m.t}" y2="${H - m.b}" stroke="var(--muted)" stroke-dasharray="3 3" visibility="hidden"/><circle id="xd" r="5" fill="var(--s1)" stroke="var(--surface)" stroke-width="2" visibility="hidden"/>`;
+  s += `<rect x="${m.l}" y="0" width="${W - m.l - m.r}" height="${H}" fill="transparent" id="hit"/></svg>`;
+  el.innerHTML = s;
+  const svg = el.querySelector('svg'), tip = tipFor(el), xh = svg.querySelector('#xh'), xd = svg.querySelector('#xd');
+  const move = ev => {
+    const r = svg.getBoundingClientRect(); const px = (ev.clientX - r.left) * W / r.width;
+    let best = pts[0], bd = Infinity; pts.forEach(p => { const dd = Math.abs(x(p.t) - px); if (dd < bd) { bd = dd; best = p; } });
+    const cx = x(best.t), cy = y(best.y);
+    xh.setAttribute('x1', cx); xh.setAttribute('x2', cx); xh.setAttribute('visibility', 'visible');
+    xd.setAttribute('cx', cx); xd.setAttribute('cy', cy); xd.setAttribute('visibility', 'visible');
+    tip.innerHTML = `<b>${yFmt(best.y, true)}</b>${best.pr ? ' · PR' : ''}<br>${fmtD(best.d)}${best.note ? '<br>' + best.note : ''}`;
+    tip.style.left = Math.min(Math.max(cx * r.width / W, 70), r.width - 70) + 'px'; tip.style.top = (cy * r.height / H) + 'px'; tip.hidden = false;
+  };
+  const leave = () => { tip.hidden = true; xh.setAttribute('visibility', 'hidden'); xd.setAttribute('visibility', 'hidden'); };
+  svg.addEventListener('pointermove', move); svg.addEventListener('pointerdown', move); svg.addEventListener('pointerleave', leave);
+}
+
+function barChart(el, bars, { yFmt, tipFmt, label, labelEvery }) {
+  el.innerHTML = '';
+  if (!bars.length) { el.innerHTML = '<div class="empty">Nothing to show yet.</div>'; return; }
+  const W = el.clientWidth || 500, H = 200, m = { l: 40, r: 6, t: 12, b: 24 };
+  const ticks = niceTicks(0, Math.max(1, ...bars.map(b => b.v)), 3), hi = ticks[ticks.length - 1];
+  const bw = (W - m.l - m.r) / bars.length, gap = Math.min(2, bw * 0.25);
+  const y = v => m.t + (1 - v / hi) * (H - m.t - m.b);
+  let s = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="${esc(label)}">`;
+  ticks.forEach(v => { s += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)"/><text x="${m.l - 8}" y="${y(v) + 4}" text-anchor="end">${yFmt(v)}</text>`; });
+  bars.forEach((b, i) => {
+    const bx = m.l + i * bw + gap / 2, w = Math.max(1, bw - gap), top = y(b.v), h = H - m.b - top;
+    if (b.v > 0) { const rr = Math.min(4, w / 2, h); s += `<path d="M${bx} ${H - m.b}V${top + rr}Q${bx} ${top} ${bx + rr} ${top}H${bx + w - rr}Q${bx + w} ${top} ${bx + w} ${top + rr}V${H - m.b}Z" fill="var(--s1)" data-i="${i}"/>`; }
+    if (b.lab && i % labelEvery === 0) s += `<text x="${bx + w / 2}" y="${H - 6}" text-anchor="middle">${b.lab}</text>`;
+    s += `<rect x="${m.l + i * bw}" y="${m.t}" width="${bw}" height="${H - m.t - m.b}" fill="transparent" data-i="${i}"/>`;
+  });
+  s += `<line x1="${m.l}" x2="${W - m.r}" y1="${H - m.b}" y2="${H - m.b}" stroke="var(--line)"/></svg>`;
+  el.innerHTML = s;
+  const svg = el.querySelector('svg'), tip = tipFor(el);
+  const show = ev => {
+    const i = ev.target.getAttribute && ev.target.getAttribute('data-i'); if (i == null) return;
+    const b = bars[+i], r = svg.getBoundingClientRect();
+    svg.querySelectorAll('path[data-i]').forEach(p => p.setAttribute('opacity', p.getAttribute('data-i') === i ? 1 : .45));
+    tip.innerHTML = tipFmt(b); tip.hidden = false;
+    const cx = (m.l + (+i + .5) * bw) * r.width / W;
+    tip.style.left = Math.min(Math.max(cx, 70), r.width - 70) + 'px'; tip.style.top = (y(b.v) * r.height / H) + 'px';
+  };
+  svg.addEventListener('pointermove', show); svg.addEventListener('pointerdown', show);
+  svg.addEventListener('pointerleave', () => { tip.hidden = true; svg.querySelectorAll('path[data-i]').forEach(p => p.setAttribute('opacity', 1)); });
+}
+
+/* ---------- render ---------- */
+const U = () => state.unit;
+function renderTiles() {
+  const rows = state.rows, wks = new Map();
+  rows.forEach(r => { if (!wks.has(r.wk)) wks.set(r.wk, r.t); });
+  const times = [...wks.values()];
+  const now = Date.now(), yr = new Date().getFullYear();
+  const thisYear = times.filter(t => new Date(t).getFullYear() === yr).length;
+  const weeks = new Set(times.map(weekStart));
+  let streak = 0, w = weekStart(now); if (!weeks.has(w)) w -= 7 * DAY;
+  while (weeks.has(w)) { streak++; w = weekStart(w - 3 * DAY); }
+  const last30 = times.filter(t => t > now - 30 * DAY).length;
+  const vol = rows.reduce((a, r) => a + (r.warm ? 0 : r.w * r.reps), 0);
+  const sets = rows.filter(r => !r.warm).length;
+  const first = times.length ? new Date(Math.min(...times)) : null;
+  const tiles = [
+    ['Workouts', fmt(times.length), first ? 'since ' + fmtD(first, { month: 'short', year: 'numeric' }) : ''],
+    ['This year', fmt(thisYear), 'workouts in ' + yr],
+    ['Last 30 days', fmt(last30), last30 >= 12 ? 'about 3 a week' : fmt(last30 / 4.3, 1) + ' a week'],
+    ['Week streak', fmt(streak), streak === 1 ? 'week in a row' : 'weeks in a row'],
+    ['Total volume', compact(vol) + `<small>${U()}</small>`, fmt(sets) + ' working sets'],
+    ['Exercises', fmt(new Set(rows.map(r => r.ex)).size), times.length ? fmt(sets / times.length, 0) + ' sets per workout' : '']
+  ];
+  $('tiles').innerHTML = tiles.map(([k, v, d]) => `<div class="tile"><span class="eyebrow">${k}</span><span class="v">${v}</span><span class="d">${d}</span></div>`).join('');
+}
+
+function renderExercise() {
+  const list = exerciseList();
+  const exSel = $('ex');
+  exSel.innerHTML = list.map(o => `<option value="${esc(o.ex)}">${esc(o.ex)} (${o.n})</option>`).join('');
+  if (!list.find(o => o.ex === state.ex)) state.ex = list.length ? list[0].ex : null;
+  exSel.value = state.ex || '';
+  if (!state.ex) { $('c-ex').innerHTML = '<div class="empty">No exercises found.</div>'; return; }
+  const info = list.find(o => o.ex === state.ex);
+  const metricSel = $('metric');
+  [...metricSel.options].forEach(o => o.disabled = info.bw && o.value !== 'reps');
+  if (info.bw && state.metric !== 'reps') state.metric = 'reps';
+  metricSel.value = state.metric;
+
+  const all = sessionsFor(state.ex);
+  const key = state.metric;
+  let best = -Infinity;
+  const pts = all.map(s => {
+    const v = s[key]; const pr = v > best && v > 0; if (pr) best = v;
+    let note = '';
+    if (key === 'e1rm' && s.best) note = `${fmt(s.best.w)} ${U()} × ${s.best.reps}`;
+    if (key === 'top') note = `${s.topReps} rep${s.topReps === 1 ? '' : 's'}`;
+    return { t: s.t, d: s.d, y: v, pr, note };
+  }).filter(p => p.y > 0);
+  pts.forEach((p, i) => { if (i === 0) p.pr = false; });
+  const cut = state.range ? Date.now() - state.range * DAY : -Infinity;
+  const shown = pts.filter(p => p.t >= cut);
+  const units = { e1rm: U(), top: U(), vol: U(), reps: 'reps' }[key];
+  const names = { e1rm: 'Estimated 1RM, best set per session', top: 'Heaviest weight lifted per session', vol: 'Total weight × reps per session', reps: 'Most reps in a single set per session' };
+  $('lg-metric').textContent = names[key];
+  $('ex-title').textContent = state.ex;
+  const firstT = all.length ? all[0].d : null;
+  $('ex-sub').textContent = `${all.length} session${all.length === 1 ? '' : 's'}` + (firstT ? ` since ${fmtD(firstT)}` : '');
+  const yFmt = (v, full) => full ? `${fmt(v, key === 'e1rm' && v < 100 ? 1 : 0)} ${units}` : (key === 'vol' ? compact(v) : fmt(v));
+  lineChart($('c-ex'), shown, { yFmt, label: `${state.ex}: ${names[key]}` });
+
+  const bestP = pts.reduce((a, p) => p.y > (a ? a.y : -1) ? p : a, null);
+  const f = shown[0], l = shown[shown.length - 1];
+  const change = f && l && f.y ? (l.y - f.y) / f.y * 100 : 0;
+  const prs = shown.filter(p => p.pr).length;
+  $('ex-stats').innerHTML = [
+    ['All-time best', bestP ? yFmt(bestP.y, true) : '–'],
+    ['Latest', l ? yFmt(l.y, true) : '–'],
+    ['Change in range', f && shown.length > 1 ? `<span class="${change >= 0 ? 'up' : 'down'}">${change >= 0 ? '+' : ''}${fmt(change, 1)}%</span>` : '–'],
+    ['PRs in range', fmt(prs)]
+  ].map(([k, v]) => `<div><span class="k">${k}</span><span class="v">${v}</span></div>`).join('');
+}
+
+function renderWeeks() {
+  const wks = new Map(); state.rows.forEach(r => { if (!wks.has(r.wk)) wks.set(r.wk, r.t); });
+  const counts = new Map(); [...wks.values()].forEach(t => { const w = weekStart(t); counts.set(w, (counts.get(w) || 0) + 1); });
+  const lastT = state.rows.length ? state.rows[state.rows.length - 1].t : Date.now();
+  const end = weekStart(state.sample ? Date.now() : Math.max(lastT, Date.now() - 400 * DAY));
+  const bars = [];
+  for (let i = 25; i >= 0; i--) {
+    const w = weekStart(end - i * 7 * DAY), d = new Date(w);
+    bars.push({ v: counts.get(w) || 0, d, lab: fmtD(d, { month: 'short', day: 'numeric' }) });
+  }
+  const avg = bars.reduce((a, b) => a + b.v, 0) / bars.length;
+  $('wk-sub').textContent = `26 weeks ending ${fmtD(new Date(end + 6 * DAY), { month: 'short', day: 'numeric' })} · average ${fmt(avg, 1)} a week`;
+  barChart($('c-week'), bars, { yFmt: v => fmt(v), label: 'Workouts per week', labelEvery: $('c-week').clientWidth < 420 ? 8 : 4,
+    tipFmt: b => `<b>${b.v} workout${b.v === 1 ? '' : 's'}</b><br>Week of ${fmtD(b.d)}` });
+}
+
+function renderVolume() {
+  const m = new Map();
+  state.rows.forEach(r => { if (r.warm) return; const k = r.d.getFullYear() * 12 + r.d.getMonth(); m.set(k, (m.get(k) || 0) + r.w * r.reps); });
+  const keys = [...m.keys()].sort((a, b) => a - b); const bars = [];
+  if (keys.length) {
+    const last = keys[keys.length - 1], first = Math.max(keys[0], last - 11);
+    for (let k = first; k <= last; k++) { const d = new Date(Math.floor(k / 12), k % 12, 1); bars.push({ v: m.get(k) || 0, d, lab: fmtD(d, { month: 'short' }) }); }
+  }
+  $('vol-sub').textContent = `Weight × reps across working sets, in ${U()}, last ${bars.length} month${bars.length === 1 ? '' : 's'}`;
+  barChart($('c-vol'), bars, { yFmt: compact, label: 'Monthly volume', labelEvery: $('c-vol').clientWidth < 420 ? 2 : 1,
+    tipFmt: b => `<b>${fmt(b.v)} ${U()}</b><br>${fmtD(b.d, { month: 'long', year: 'numeric' })}` });
+}
+
+function renderPRs() {
+  const list = exerciseList().slice(0, 25);
+  $('pr-body').innerHTML = list.map(o => {
+    const ss = sessionsFor(o.ex); if (!ss.length) return '';
+    const be = ss.reduce((a, s) => s.e1rm > a.e1rm ? s : a, ss[0]);
+    const top = ss.reduce((a, s) => s.top > a.top || (s.top === a.top && s.topReps > a.topReps) ? s : a, ss[0]);
+    const reps = Math.max(...ss.map(s => s.reps));
+    const k = o.bw ? 'reps' : 'e1rm';
+    const f = Math.max(...ss.filter(s => s.t <= ss[0].t + 30 * DAY).map(s => s[k]));
+    const l = Math.max(...ss.filter(s => s.t >= ss[ss.length - 1].t - 30 * DAY).map(s => s[k]));
+    const ch = f > 0 && ss[ss.length - 1].t - ss[0].t > 45 * DAY ? (l - f) / f * 100 : null;
+    return `<tr tabindex="0" data-ex="${esc(o.ex)}" class="${o.ex === state.ex ? 'sel' : ''}"><td>${esc(o.ex)}</td><td class="r">${o.n}</td>` +
+      `<td class="r">${o.bw ? '–' : fmt(be.e1rm) + ' ' + U()}</td>` +
+      `<td class="r">${o.bw ? '–' : fmt(top.top) + ' × ' + top.topReps}</td><td class="r">${reps}</td>` +
+      `<td class="r">${ch == null ? '–' : `<span class="${ch >= 0 ? 'up' : 'down'}">${ch >= 0 ? '+' : ''}${fmt(ch, 0)}%</span>`}</td>` +
+      `<td>${fmtD(new Date(o.last))}</td></tr>`;
+  }).join('');
+}
+
+function renderAll() {
+  renderTiles(); renderExercise(); renderWeeks(); renderVolume(); renderPRs();
+  $('status').innerHTML = state.sample
+    ? '<span class="chip">Sample</span> Showing made-up example data. <strong>Load your Strong CSV</strong> to see your own numbers, or drop the file here.'
+    : `<span class="chip real">Your data</span> ${fmt(state.rows.length)} sets from <strong>${esc(state.file || 'your Strong export')}</strong>. Saved in this browser only.`;
+  $('reset').hidden = state.sample;
+}
+
+/* ---------- wiring ---------- */
+function setUnit(u, save = true) {
+  state.unit = u; $('u-lb').setAttribute('aria-pressed', u === 'lb'); $('u-kg').setAttribute('aria-pressed', u === 'kg');
+  if (save) store.set('liftlog.unit', u);
+}
+function loadText(text, name, save) {
+  try {
+    const { rows, unit } = fromStrong(text);
+    state.rows = rows; state.sample = false; state.file = name; state.ex = null; state.metric = 'e1rm';
+    if (unit) setUnit(unit);
+    if (save) { store.set('liftlog.csv', text); store.set('liftlog.name', name); }
+    renderAll();
+  } catch (e) {
+    $('status').innerHTML = `<span class="err">Couldn’t read ${esc(name)}.</span> ${esc(e.message)}`;
+  }
+}
+function readFile(f) { if (!f) return; const r = new FileReader(); r.onload = () => loadText(String(r.result), f.name, true); r.readAsText(f); }
+$('file').addEventListener('change', e => { readFile(e.target.files[0]); e.target.value = ''; });
+const ban = $('banner');
+['dragenter', 'dragover'].forEach(t => document.addEventListener(t, e => { e.preventDefault(); ban.classList.add('drag'); }));
+['dragleave', 'drop'].forEach(t => document.addEventListener(t, e => { e.preventDefault(); if (t === 'drop' || !e.relatedTarget) ban.classList.remove('drag'); }));
+document.addEventListener('drop', e => readFile(e.dataTransfer && e.dataTransfer.files[0]));
+$('reset').addEventListener('click', () => { store.del('liftlog.csv'); store.del('liftlog.name'); state.rows = sample(); state.sample = true; state.ex = null; state.metric = 'e1rm'; setUnit('lb', false); renderAll(); });
+$('u-lb').addEventListener('click', () => { setUnit('lb'); renderAll(); });
+$('u-kg').addEventListener('click', () => { setUnit('kg'); renderAll(); });
+$('ex').addEventListener('change', e => { state.ex = e.target.value; state.metric = 'e1rm'; renderExercise(); renderPRs(); });
+$('metric').addEventListener('change', e => { state.metric = e.target.value; renderExercise(); });
+$('range').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return; state.range = +b.dataset.r;
+  $('range').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); renderExercise();
+});
+const pick = tr => { state.ex = tr.dataset.ex; state.metric = 'e1rm'; renderExercise(); renderPRs(); $('ex').scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+$('pr-body').addEventListener('click', e => { const tr = e.target.closest('tr'); if (tr) pick(tr); });
+$('pr-body').addEventListener('keydown', e => { const tr = e.target.closest('tr'); if (tr && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); pick(tr); } });
+let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { renderExercise(); renderWeeks(); renderVolume(); }, 150); });
+
+const savedUnit = store.get('liftlog.unit'); if (savedUnit === 'kg' || savedUnit === 'lb') setUnit(savedUnit, false);
+const saved = store.get('liftlog.csv');
+if (saved) loadText(saved, store.get('liftlog.name') || 'your Strong export', false);
+if (!saved || state.sample) { state.rows = sample(); state.sample = true; renderAll(); }
+})();
+</script>

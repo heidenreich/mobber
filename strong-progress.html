@@ -87,7 +87,14 @@ th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacin
 td { padding: 9px 10px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
 td.r, th.r { text-align: right; }
 tbody tr { cursor: pointer; }
-#cardio-body tr { cursor: default; }
+#cardio-body tr, #walks-body-rows tr { cursor: default; }
+.block { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.block + .block { border-top: 1px solid var(--line); padding-top: 16px; }
+h3 { font-family: var(--display); font-weight: 600; font-size: 18px; text-transform: uppercase; letter-spacing: .04em; margin: 0; }
+.miss { color: var(--muted); font-size: 14px; margin: 0; }
+#walks-body th, #walks-body td { padding-inline: 6px; }
+#walks-body th:first-child, #walks-body td:first-child { padding-left: 0; }
+.stats .v small { font-size: 15px; color: var(--muted); font-weight: 500; }
 tbody tr:hover, tbody tr.sel { background: var(--s1-soft); }
 .up { color: var(--good); font-weight: 600; }
 .down { color: var(--bad); font-weight: 600; }
@@ -109,8 +116,8 @@ tbody tr:hover, tbody tr.sel { background: var(--s1-soft); }
     <div class="controls">
       <label class="btn primary" for="file">Load Strong CSV</label>
       <input id="file" type="file" accept=".csv,text/csv,text/plain" hidden>
-      <label class="btn" for="steps-file">Load steps</label>
-      <input id="steps-file" type="file" accept=".csv,text/csv,text/plain" hidden>
+      <label class="btn" for="health-file">Load Health files</label>
+      <input id="health-file" type="file" accept=".csv,text/csv,text/plain" multiple hidden>
       <div class="seg" role="group" aria-label="Weight unit">
         <button type="button" id="u-lb" aria-pressed="true">lb</button>
         <button type="button" id="u-kg" aria-pressed="false">kg</button>
@@ -184,17 +191,45 @@ tbody tr:hover, tbody tr.sel { background: var(--s1-soft); }
     </div>
   </section>
 
-  <section class="panel" id="steps">
-    <div class="panel-head">
-      <div>
-        <h2>Daily steps</h2>
-        <div class="sub help" id="steps-sub"></div>
+  <section class="panel" id="walking">
+    <div>
+      <h2>Walking</h2>
+      <div class="sub help" id="walk-sub">From Apple Health, using shortcuts</div>
+    </div>
+    <div class="empty" id="walk-empty" hidden>No walking data yet. Make the Lift Log shortcuts (instructions below), run them, then tap <strong>Load Health files</strong> and pick the files they saved.</div>
+
+    <div class="block" id="blk-steps">
+      <div><h3>Daily steps</h3><div class="sub help" id="steps-sub"></div></div>
+      <p class="miss" id="steps-miss" hidden>Not loaded yet. Make the <strong>Lift Log Steps</strong> shortcut below.</p>
+      <div class="block" id="steps-body">
+        <div class="stats" id="steps-stats"></div>
+        <div class="legend"><span><i class="sw"></i>Steps per day</span><span><i class="sw goal"></i>10,000 step goal</span></div>
+        <div class="chart" id="c-steps"></div>
       </div>
     </div>
-    <div class="stats" id="steps-stats"></div>
-    <div class="legend" id="steps-legend"><span><i class="sw"></i>Steps per day</span><span><i class="sw goal"></i>10,000 step goal</span></div>
-    <div class="chart" id="c-steps"></div>
-    <div class="empty" id="steps-empty" hidden>No steps loaded yet. Make the <strong>Lift Log Steps</strong> shortcut (instructions below), run it, then tap <strong>Load steps</strong> and pick <strong>lift-log-steps.csv</strong>.</div>
+
+    <div class="block" id="blk-dist">
+      <div><h3>Walking distance</h3><div class="sub help" id="dist-sub"></div></div>
+      <p class="miss" id="dist-miss" hidden>Not loaded yet. Make the <strong>Lift Log Distance</strong> shortcut below.</p>
+      <div class="block" id="dist-body">
+        <div class="stats" id="dist-stats"></div>
+        <div class="chart" id="c-dist"></div>
+      </div>
+    </div>
+
+    <div class="block" id="blk-walks">
+      <div><h3>Walks</h3><div class="sub help" id="walks-sub"></div></div>
+      <p class="miss" id="walks-miss" hidden>Not loaded yet. Make the <strong>Lift Log Walks</strong> shortcut below.</p>
+      <div class="block" id="walks-body">
+        <div class="stats" id="walks-stats"></div>
+        <div class="tbl">
+          <table>
+            <thead><tr><th>Date</th><th class="r">Time</th><th class="r" id="walks-dist-h">Distance</th><th class="r" id="walks-pace-h">Pace</th></tr></thead>
+            <tbody id="walks-body-rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </section>
 
   <section class="panel">
@@ -218,8 +253,9 @@ tbody tr:hover, tbody tr.sel { background: var(--s1-soft); }
       <li>Choose <strong>Save to Files</strong> (iPhone) or save it to your Downloads (Android).</li>
       <li>Come back here, tap <strong>Load Strong CSV</strong> and pick the file.</li>
     </ol>
-    <h2 id="steps-help">Getting your daily steps from iPhone</h2>
-    <p>Web pages can't read Apple Health, so a shortcut saves your steps to a file you load here. You build it once in the Shortcuts app.</p>
+    <h2 id="walk-help">Getting walking data from iPhone</h2>
+    <p>Web pages can't read Apple Health, so three small shortcuts save your walking data to files you load here. You build the first one, then copy it for the other two.</p>
+    <h3>1. Daily steps</h3>
     <ol>
       <li>Open <strong>Shortcuts</strong>, tap <strong>+</strong>, and name it <strong>Lift Log Steps</strong>.</li>
       <li>Add <strong>Find Health Samples</strong>. Set the type to <strong>Steps</strong>, add the filter <strong>Start Date is in the last 90 days</strong>, set <strong>Group By</strong> to <strong>Day</strong>, and sort by <strong>Start Date</strong>, <strong>Oldest First</strong>.</li>
@@ -230,10 +266,27 @@ tbody tr:hover, tbody tr.sel { background: var(--s1-soft); }
       <li>Add another <strong>Text</strong>. Type <code>Date,Steps</code>, start a new line, then insert <strong>Combined Text</strong>.</li>
       <li>Add <strong>Save File</strong>. Turn off <strong>Ask Where to Save</strong>, set the subpath to <code>lift-log-steps.csv</code>, and turn on <strong>Overwrite If File Exists</strong>.</li>
       <li>Tap ▶ to run it and allow access to <strong>Steps</strong> when asked.</li>
-      <li>Here, tap <strong>Load steps</strong>, then go to <strong>iCloud Drive › Shortcuts</strong> and pick <strong>lift-log-steps.csv</strong>.</li>
     </ol>
-    <p>Each file you load adds to the steps already saved here, so running the shortcut every week or two builds a longer history. To run it on its own, open the <strong>Automation</strong> tab in Shortcuts and create a time-of-day automation that runs Lift Log Steps.</p>
-    <p>The export doesn't record which unit you use, so set lb or kg above to match your Strong settings. Warm-up sets are left out of records and volume. Daily steps are loaded separately and never mixed into workout counts. Timed and distance exercises, like the elliptical or a run, appear under Cardio, and distance follows the same setting (mi with lb, km with kg). Estimated 1RM uses the Epley formula (weight × (1 + reps ÷ 30)) on sets of 12 reps or fewer.</p>
+    <h3>2. Walking distance</h3>
+    <ol>
+      <li>In your shortcuts list, press and hold <strong>Lift Log Steps</strong>, tap <strong>Duplicate</strong>, and rename the copy <strong>Lift Log Distance</strong>.</li>
+      <li>In <strong>Find Health Samples</strong>, change the type to <strong>Walking + Running Distance</strong>.</li>
+      <li>Change the header text from <code>Date,Steps</code> to <code>Date,Distance</code>.</li>
+      <li>In <strong>Save File</strong>, change the subpath to <code>lift-log-distance.csv</code>.</li>
+      <li>Run it and allow access to <strong>Walking + Running Distance</strong>.</li>
+    </ol>
+    <h3>3. Walks</h3>
+    <ol>
+      <li>Duplicate <strong>Lift Log Steps</strong> again and rename the copy <strong>Lift Log Walks</strong>.</li>
+      <li>In <strong>Find Health Samples</strong>, change the type to <strong>Workouts</strong> and set <strong>Group By</strong> to <strong>None</strong>.</li>
+      <li>In <strong>Format Date</strong>, change the custom format to <code>yyyy-MM-dd HH:mm</code>.</li>
+      <li>Change the <strong>Text</strong> inside the repeat to <strong>Formatted Date</strong>, then <strong>Repeat Item › Type</strong>, <strong>Repeat Item › Duration</strong> and <strong>Repeat Item › Distance</strong>, with a comma between each.</li>
+      <li>Change the header text to <code>Date,Type,Duration,Distance</code>.</li>
+      <li>In <strong>Save File</strong>, change the subpath to <code>lift-log-walks.csv</code>, then run it and allow access to <strong>Workouts</strong>.</li>
+    </ol>
+    <p>Lift Log keeps only walking and hiking workouts from that file. Then tap <strong>Load Health files</strong>, go to <strong>iCloud Drive › Shortcuts</strong>, and select all three files at once.</p>
+    <p>Each file you load adds to what's already saved here, so running the shortcuts every week or two builds a longer history. To run them on their own, open the <strong>Automation</strong> tab in Shortcuts and create a time-of-day automation that runs each one. To run it on its own, open the <strong>Automation</strong> tab in Shortcuts and create a time-of-day automation that runs Lift Log Steps.</p>
+    <p>The export doesn't record which unit you use, so set lb or kg above to match your Strong settings. Warm-up sets are left out of records and volume. Walking data from Apple Health is kept separate from your workouts and doesn't change workout counts or the streak. Timed and distance exercises, like the elliptical or a run, appear under Cardio, and distance follows the same setting (mi with lb, km with kg). Estimated 1RM uses the Epley formula (weight × (1 + reps ÷ 30)) on sets of 12 reps or fewer.</p>
   </section>
 </div>
 
@@ -241,7 +294,7 @@ tbody tr:hover, tbody tr.sel { background: var(--s1-soft); }
 (() => {
 const $ = id => document.getElementById(id);
 const DAY = 864e5;
-const state = { rows: [], cardio: [], steps: new Map(), stepsSample: true, sample: true, unit: 'lb', ex: null, metric: 'e1rm', range: 0 };
+const state = { rows: [], cardio: [], steps: new Map(), dist: new Map(), walks: [], healthSample: true, sample: true, unit: 'lb', ex: null, metric: 'e1rm', range: 0 };
 const store = {
   get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
   set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
@@ -312,41 +365,87 @@ function fromStrong(text) {
   return { rows, cardio, unit };
 }
 
-function stepCount(s) {
-  s = String(s).replace(/["'\s\u00a0\u202f]/g, '');
-  if (/[.,]\d{3}([.,]\d{3})*([.,]\d+)?$/.test(s) && /^\d{1,3}([.,]\d{3})+/.test(s)) {
-    const m = s.match(/^(\d{1,3}(?:([.,])\d{3})*)(?:[.,](\d+))?$/);
-    if (m) return Math.round(parseFloat(m[1].split(m[2] || '#').join('') + (m[3] ? '.' + m[3] : '')));
-  }
-  const n = parseFloat(s.replace(',', '.')); return isFinite(n) ? Math.round(n) : NaN;
+function parseNum(s, preferDecimal) {
+  s = String(s).replace(/[^\d.,\-]/g, '');
+  if (!s) return NaN;
+  const c = s.lastIndexOf(','), d = s.lastIndexOf('.');
+  if (c >= 0 && d >= 0) s = c > d ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, '');
+  else if (c >= 0) s = !preferDecimal && /^\d{1,3}(,\d{3})+$/.test(s) ? s.replace(/,/g, '') : s.replace(',', '.');
+  else if (d >= 0 && !preferDecimal && /^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');
+  const n = parseFloat(s); return isFinite(n) ? n : NaN;
 }
-function isStepsFile(text) {
-  const h = text.replace(/^\uFEFF/, '').split(/\r?\n/)[0].toLowerCase();
-  return /steps/.test(h) && /date/.test(h) && !/exercise/.test(h);
+function fileKind(text) {
+  const h = text.replace(/^﻿/, '').split(/\r?\n/)[0].toLowerCase();
+  if (/exercise/.test(h) || !/date/.test(h)) return 'strong';
+  if (/steps/.test(h)) return 'steps';
+  if (/duration|minutes|type/.test(h)) return 'walks';
+  if (/distance/.test(h)) return 'dist';
+  return 'strong';
 }
-function fromSteps(text) {
-  const lines = text.replace(/^\uFEFF/, '').split(/\r?\n/).filter(l => l.trim());
+const dayKey = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const keyDate = k => { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d); };
+function parseDay(s) {
+  const m = String(s).trim().match(/^"?(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{1,2}):(\d{2}))?/);
+  return m ? new Date(+m[1], +m[2] - 1, +m[3], m[4] ? +m[4] : 12, m[5] ? +m[5] : 0) : null;
+}
+function fromDaily(text, kind) {
+  const lines = text.replace(/^﻿/, '').split(/\r?\n/).filter(l => l.trim());
   const map = new Map();
   for (let i = 1; i < lines.length; i++) {
     const m = lines[i].match(/^\s*"?(\d{4}-\d{2}-\d{2})[^,;]*"?\s*[,;](.*)$/);
     if (!m) continue;
-    const n = stepCount(m[2]);
+    let n = parseNum(m[2], kind === 'dist');
+    if (kind === 'steps') n = Math.round(n);
     if (isFinite(n) && n >= 0) map.set(m[1], Math.max(n, map.get(m[1]) || 0));
   }
-  if (!map.size) throw new Error('No dates with step counts were found. The file should start with a Date,Steps line, then one line per day like 2026-09-21,8412.');
+  if (!map.size) throw new Error(kind === 'steps'
+    ? 'No dates with step counts were found. The file should start with a Date,Steps line, then one line per day like 2026-09-21,8412.'
+    : 'No dates with distances were found. The file should start with a Date,Distance line, then one line per day like 2026-09-21,2.4.');
   return map;
 }
-const dayKey = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-const keyDate = k => { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d); };
-function sampleSteps() {
+function parseDur(s, secHint) {
+  s = String(s).trim().toLowerCase(); if (!s) return NaN;
+  let m = s.match(/^(\d+):(\d{2}):(\d{2})/); if (m) return +m[1] * 60 + +m[2] + +m[3] / 60;
+  m = s.match(/^(\d+):(\d{2})$/); if (m) return +m[1] + +m[2] / 60;
+  let tot = 0, hit = false;
+  s.replace(/(\d+(?:[.,]\d+)?)\s*(hours?|hrs?|h|minutes?|mins?|m|seconds?|secs?|s)\b/g, (_, n, u) => {
+    hit = true; n = parseFloat(n.replace(',', '.')); tot += u[0] === 'h' ? n * 60 : u[0] === 'm' ? n : n / 60;
+  });
+  if (hit) return tot;
+  const n = parseNum(s, true); if (!isFinite(n)) return NaN;
+  return secHint || n > 600 ? n / 60 : n;
+}
+function fromWalks(text) {
+  const { table } = parseCSV(text);
+  const head = (table[0] || []).map(h => h.trim().toLowerCase());
+  const iD = head.findIndex(h => /date/.test(h)), iT = head.findIndex(h => /type|activity/.test(h)),
+        iM = head.findIndex(h => /duration|minutes|time/.test(h)), iX = head.findIndex(h => /distance/.test(h));
+  if (iD < 0 || iM < 0) throw new Error('Expected a header like Date,Type,Duration,Distance.');
+  const secHint = /sec/.test(head[iM]), out = [];
+  let skipped = 0;
+  for (let i = 1; i < table.length; i++) {
+    const r = table[i];
+    if (iT >= 0 && r[iT] && !/walk|hik/i.test(r[iT])) { skipped++; continue; }
+    const d = parseDay(r[iD]), min = parseDur(r[iM], secHint);
+    if (!d || !(min > 0)) continue;
+    const dist = iX >= 0 ? parseNum(r[iX], true) : 0;
+    out.push({ t: d.getTime(), min, dist: isFinite(dist) ? dist : 0 });
+  }
+  if (!out.length) throw new Error(skipped ? `Found ${skipped} workout${skipped === 1 ? '' : 's'}, but none were walks or hikes.` : 'No walks with a date and duration were found.');
+  return out;
+}
+const walkKey = w => w.t + '|' + Math.round(w.min);
+function sampleHealth() {
   let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-  const map = new Map(), today = new Date(); today.setHours(12, 0, 0, 0);
+  const steps = new Map(), dist = new Map(), walks = [], today = new Date(); today.setHours(12, 0, 0, 0);
   for (let i = 119; i >= 0; i--) {
     const d = new Date(today.getTime() - i * DAY), wkend = d.getDay() === 0 || d.getDay() === 6;
     const base = 6500 + (119 - i) * 18 + (wkend ? (rnd() < 0.5 ? 3500 : -1500) : 0);
-    map.set(dayKey(d), Math.max(1200, Math.round(base + (rnd() - 0.5) * 4200)));
+    const n = Math.max(1200, Math.round(base + (rnd() - 0.5) * 4200));
+    steps.set(dayKey(d), n); dist.set(dayKey(d), +(n / 2200 * (0.92 + rnd() * 0.16)).toFixed(2));
+    if (rnd() < 0.4) { const min = 20 + Math.round(rnd() * 35); const w = new Date(d); w.setHours(rnd() < 0.5 ? 7 : 18, Math.round(rnd() * 59)); walks.push({ t: w.getTime(), min, dist: +(min / (17 + rnd() * 3)).toFixed(2) }); }
   }
-  return map;
+  return { steps, dist, walks };
 }
 
 /* ---------- sample data ---------- */
@@ -666,37 +765,93 @@ function renderCardio() {
 }
 
 const GOAL = 10000;
+const dateShort = d => fmtD(d, { weekday: 'short', month: 'short', day: 'numeric' });
+const avgOf = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0;
+function lastDays(map, last, n) { const out = []; for (let i = n - 1; i >= 0; i--) { const k = dayKey(new Date(last.getFullYear(), last.getMonth(), last.getDate() - i)); if (map.has(k)) out.push(map.get(k)); } return out; }
+const statHTML = rows => rows.map(([k, v]) => `<div><span class="k">${k}</span><span class="v">${v}</span></div>`).join('');
+function section(id, has) { $(id + '-miss').hidden = has; $(id + '-body').hidden = !has; if (!has) $(id + '-sub').textContent = ''; return has; }
+
+function renderWalking() {
+  const any = state.steps.size || state.dist.size || state.walks.length;
+  $('walk-empty').hidden = !!any;
+  ['blk-steps', 'blk-dist', 'blk-walks'].forEach(id => $(id).hidden = !any);
+  $('walk-sub').innerHTML = (state.healthSample && any ? '<span class="chip">Sample</span> ' : '') + 'From Apple Health, using shortcuts';
+  if (!any) return;
+  renderSteps(); renderDist(); renderWalks();
+}
+
 function renderSteps() {
-  const st = state.steps, has = st.size > 0;
-  $('steps-stats').hidden = $('c-steps').hidden = $('steps-legend').hidden = !has;
-  $('steps-empty').hidden = has;
-  if (!has) { $('steps-sub').textContent = 'From Apple Health, using a shortcut'; $('c-steps').innerHTML = ''; return; }
+  const st = state.steps; if (!section('steps', st.size > 0)) return;
   const keys = [...st.keys()].sort(), lastK = keys[keys.length - 1], last = keyDate(lastK);
-  const win = n => { const out = []; for (let i = n - 1; i >= 0; i--) { const k = dayKey(new Date(last.getFullYear(), last.getMonth(), last.getDate() - i)); if (st.has(k)) out.push(st.get(k)); } return out; };
-  const avg = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0;
-  const w7 = win(7), w30 = win(30);
+  const w7 = lastDays(st, last, 7), w30 = lastDays(st, last, 30);
   let bestK = keys[0]; keys.forEach(k => { if (st.get(k) > st.get(bestK)) bestK = k; });
-  $('steps-stats').innerHTML = [
-    [fmtD(last, { weekday: 'short', month: 'short', day: 'numeric' }), fmt(st.get(lastK))],
-    ['7-day average', fmt(avg(w7))],
-    ['30-day average', fmt(avg(w30))],
-    ['Days at 10k+', `${w30.filter(v => v >= GOAL).length}<small style="font-size:15px;color:var(--muted)"> of last ${w30.length}</small>`],
-    ['Best day', `${fmt(st.get(bestK))}<small style="font-size:15px;color:var(--muted)"> ${fmtD(keyDate(bestK), { month: 'short', day: 'numeric' })}</small>`]
-  ].map(([k, v]) => `<div><span class="k">${k}</span><span class="v">${v}</span></div>`).join('');
+  $('steps-stats').innerHTML = statHTML([
+    [dateShort(last), fmt(st.get(lastK))],
+    ['7-day average', fmt(avgOf(w7))],
+    ['30-day average', fmt(avgOf(w30))],
+    ['Days at 10k+', `${w30.filter(v => v >= GOAL).length}<small> of last ${w30.length}</small>`],
+    ['Best day', `${fmt(st.get(bestK))}<small> ${fmtD(keyDate(bestK), { month: 'short', day: 'numeric' })}</small>`]
+  ]);
   const bars = [];
   for (let i = 89; i >= 0; i--) {
     const d = new Date(last.getFullYear(), last.getMonth(), last.getDate() - i), k = dayKey(d);
-    if (!bars.length && !st.has(k) && keys[0] > k) continue;
+    if (!bars.length && keys[0] > k) continue;
     bars.push({ v: st.get(k) || 0, d, has: st.has(k), lab: d.getDate() === 1 || d.getDate() === 15 ? fmtD(d, { month: 'short', day: 'numeric' }) : '' });
   }
-  $('steps-sub').innerHTML = (state.stepsSample ? '<span class="chip">Sample</span> ' : '') +
-    `${fmt(st.size)} days loaded, ${fmtD(keyDate(keys[0]), { month: 'short', day: 'numeric', year: 'numeric' })} to ${fmtD(last, { month: 'short', day: 'numeric', year: 'numeric' })}`;
+  $('steps-sub').textContent = `${fmt(st.size)} days loaded, ${fmtD(keyDate(keys[0]))} to ${fmtD(last)}`;
   barChart($('c-steps'), bars, { yFmt: compact, label: 'Steps per day', labelEvery: 1, ref: GOAL,
-    tipFmt: b => b.has ? `<b>${fmt(b.v)} steps</b><br>${fmtD(b.d, { weekday: 'short', month: 'short', day: 'numeric' })}` : `No data<br>${fmtD(b.d, { weekday: 'short', month: 'short', day: 'numeric' })}` });
+    tipFmt: b => b.has ? `<b>${fmt(b.v)} steps</b><br>${dateShort(b.d)}` : `No data<br>${dateShort(b.d)}` });
+}
+
+function renderDist() {
+  const ds = state.dist; if (!section('dist', ds.size > 0)) return;
+  const u = distUnit(), keys = [...ds.keys()].sort(), lastK = keys[keys.length - 1], last = keyDate(lastK);
+  const w7 = lastDays(ds, last, 7), w30 = lastDays(ds, last, 30);
+  const wk = new Map(); keys.forEach(k => { const w = weekStart(keyDate(k).getTime()); const o = wk.get(w) || { v: 0, n: 0 }; o.v += ds.get(k); o.n++; wk.set(w, o); });
+  const thisWk = wk.get(weekStart(last.getTime()));
+  let bestK = keys[0]; keys.forEach(k => { if (ds.get(k) > ds.get(bestK)) bestK = k; });
+  $('dist-stats').innerHTML = statHTML([
+    [dateShort(last), `${fmt(ds.get(lastK), 1)}<small> ${u}</small>`],
+    ['7-day average', `${fmt(avgOf(w7), 1)}<small> ${u} a day</small>`],
+    ['This week', `${fmt(thisWk ? thisWk.v : 0, 1)}<small> ${u}</small>`],
+    ['Last 30 days', `${fmt(w30.reduce((a, b) => a + b, 0), 1)}<small> ${u}</small>`],
+    ['Best day', `${fmt(ds.get(bestK), 1)}<small> ${u} ${fmtD(keyDate(bestK), { month: 'short', day: 'numeric' })}</small>`]
+  ]);
+  const end = weekStart(last.getTime()), first = weekStart(keyDate(keys[0]).getTime()), bars = [];
+  for (let i = 25; i >= 0; i--) {
+    const w = weekStart(end - i * 7 * DAY); if (w < first) continue;
+    const o = wk.get(w), d = new Date(w);
+    bars.push({ v: o ? +o.v.toFixed(2) : 0, n: o ? o.n : 0, d, lab: fmtD(d, { month: 'short', day: 'numeric' }) });
+  }
+  $('dist-sub').textContent = `Weekly totals in ${u === 'mi' ? 'miles' : 'kilometers'}, including runs. ${fmt(ds.size)} days loaded.`;
+  barChart($('c-dist'), bars, { yFmt: v => fmt(v), label: 'Walking distance per week', labelEvery: $('c-dist').clientWidth < 420 ? (bars.length > 12 ? 6 : 3) : (bars.length > 12 ? 3 : 1),
+    tipFmt: b => `<b>${fmt(b.v, 1)} ${u}</b><br>Week of ${fmtD(b.d, { month: 'short', day: 'numeric' })}${b.n ? `<br>${fmt(b.v / b.n, 1)} ${u} a day` : ''}` });
+}
+
+function renderWalks() {
+  const ws = state.walks; if (!section('walks', ws.length > 0)) return;
+  const u = distUnit(), sorted = [...ws].sort((a, b) => b.t - a.t), latest = sorted[0].t;
+  const recent = ws.filter(w => w.t > latest - 30 * DAY);
+  const long = ws.reduce((a, w) => w.min > a.min ? w : a, ws[0]);
+  const dist30 = recent.reduce((a, w) => a + w.dist, 0);
+  $('walks-stats').innerHTML = statHTML([
+    ['Walks, last 30 days', fmt(recent.length)],
+    ['Time, last 30 days', fmtDur(recent.reduce((a, w) => a + w.min, 0) * 60)],
+    dist30 > 0 ? ['Distance, last 30 days', `${fmt(dist30, 1)}<small> ${u}</small>`] : ['Average walk', fmtDur(avgOf(ws.map(w => w.min)) * 60)],
+    ['Longest walk', `${fmtDur(long.min * 60)}<small> ${fmtD(new Date(long.t), { month: 'short', day: 'numeric' })}</small>`]
+  ]);
+  const pace = w => { if (!(w.dist > 0)) return '–'; const sec = Math.round(w.min / w.dist * 60); return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`; };
+  $('walks-dist-h').textContent = u; $('walks-pace-h').textContent = `Min/${u}`;
+  $('walks-body-rows').innerHTML = sorted.slice(0, 10).map(w => {
+    const d = new Date(w.t);
+    return `<tr><td>${fmtD(d, { month: 'short', day: 'numeric' })}<br><span class="miss">${d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}</span></td><td class="r">${fmtDur(w.min * 60)}</td>` +
+      `<td class="r">${w.dist > 0 ? fmt(w.dist, 2) : '–'}</td><td class="r">${pace(w)}</td></tr>`;
+  }).join('');
+  $('walks-sub').textContent = `${fmt(ws.length)} walks loaded · showing the latest ${Math.min(10, ws.length)}`;
 }
 
 function renderAll() {
-  renderTiles(); renderExercise(); renderWeeks(); renderVolume(); renderCardio(); renderSteps(); renderPRs();
+  renderTiles(); renderExercise(); renderWeeks(); renderVolume(); renderCardio(); renderWalking(); renderPRs();
   $('status').innerHTML = state.sample
     ? '<span class="chip">Sample</span> Showing made-up example data. <strong>Load your Strong CSV</strong> to see your own numbers, or drop the file here.'
     : `<span class="chip real">Your data</span> ${fmt(state.rows.length)} sets${state.cardio.length ? ` and ${fmt(state.cardio.length)} cardio entries` : ''} from <strong>${esc(state.file || 'your Strong export')}</strong>. Saved in this browser only.`;
@@ -711,7 +866,7 @@ function setUnit(u, save = true) {
 function loadText(text, name, save) {
   try {
     const { rows, cardio, unit } = fromStrong(text);
-    if (state.stepsSample) { state.steps = new Map(); }
+    if (state.healthSample) { state.steps = new Map(); state.dist = new Map(); state.walks = []; }
     state.rows = rows; state.cardio = cardio; state.sample = false; state.file = name; state.ex = null; state.metric = 'e1rm';
     if (unit) setUnit(unit);
     if (save) { store.set('liftlog.csv', text); store.set('liftlog.name', name); }
@@ -720,31 +875,43 @@ function loadText(text, name, save) {
     $('status').innerHTML = `<span class="err">Couldn’t read ${esc(name)}.</span> ${esc(e.message)}`;
   }
 }
-function saveSteps() { store.set('liftlog.steps', JSON.stringify([...state.steps])); }
-function loadSteps(text, name) {
-  try {
-    const add = fromSteps(text);
-    if (state.stepsSample) { state.steps = new Map(); state.stepsSample = false; }
-    add.forEach((v, k) => state.steps.set(k, v));
-    saveSteps(); renderSteps();
-    $('steps-sub').insertAdjacentHTML('afterbegin', `<span class="chip real">Loaded</span> ${fmt(add.size)} days from ${esc(name)}. `);
-    $('steps').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  } catch (e) {
-    $('status').innerHTML = `<span class="err">Couldn’t read ${esc(name)}.</span> ${esc(e.message)}`;
+function saveHealth() {
+  store.set('liftlog.steps', JSON.stringify([...state.steps]));
+  store.set('liftlog.dist', JSON.stringify([...state.dist]));
+  store.set('liftlog.walks', JSON.stringify(state.walks.map(w => [w.t, w.min, w.dist])));
+}
+function loadHealth(kind, text) {
+  if (state.healthSample) { state.steps = new Map(); state.dist = new Map(); state.walks = []; state.healthSample = false; }
+  if (kind === 'walks') {
+    const add = new Map(fromWalks(text).map(w => [walkKey(w), w])), m = new Map(state.walks.map(w => [walkKey(w), w]));
+    add.forEach((w, k) => m.set(k, w)); state.walks = [...m.values()].sort((a, b) => a.t - b.t);
+    return `${fmt(add.size)} walk${add.size === 1 ? '' : 's'}`;
   }
+  const add = fromDaily(text, kind), target = kind === 'steps' ? state.steps : state.dist;
+  add.forEach((v, k) => target.set(k, v));
+  return `${fmt(add.size)} days of ${kind === 'steps' ? 'steps' : 'distance'}`;
 }
-function readFile(f) {
-  if (!f) return; const r = new FileReader();
-  r.onload = () => { const t = String(r.result); isStepsFile(t) ? loadSteps(t, f.name) : loadText(t, f.name, true); };
-  r.readAsText(f);
+const readText = f => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result)); r.onerror = () => rej(r.error); r.readAsText(f); });
+async function readFiles(files) {
+  files = [...(files || [])]; if (!files.length) return;
+  const done = [], errs = [];
+  for (const f of files) {
+    let t; try { t = await readText(f); } catch (e) { errs.push(`Couldn’t open ${esc(f.name)}.`); continue; }
+    const kind = fileKind(t);
+    if (kind === 'strong') { loadText(t, f.name, true); continue; }
+    try { done.push(`${loadHealth(kind, t)} from ${esc(f.name)}`); } catch (e) { errs.push(`<span class="err">Couldn’t read ${esc(f.name)}.</span> ${esc(e.message)}`); }
+  }
+  if (done.length) { saveHealth(); renderWalking(); $('walk-sub').innerHTML = `<span class="chip real">Loaded</span> ${done.join(', ')}.`; $('walking').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  if (errs.length) $('status').innerHTML = errs.join(' ');
 }
-$('steps-file').addEventListener('change', e => { readFile(e.target.files[0]); e.target.value = ''; });
+const readFile = f => readFiles(f ? [f] : []);
+$('health-file').addEventListener('change', e => { readFiles(e.target.files); e.target.value = ''; });
 $('file').addEventListener('change', e => { readFile(e.target.files[0]); e.target.value = ''; });
 const ban = $('banner');
 ['dragenter', 'dragover'].forEach(t => document.addEventListener(t, e => { e.preventDefault(); ban.classList.add('drag'); }));
 ['dragleave', 'drop'].forEach(t => document.addEventListener(t, e => { e.preventDefault(); if (t === 'drop' || !e.relatedTarget) ban.classList.remove('drag'); }));
-document.addEventListener('drop', e => readFile(e.dataTransfer && e.dataTransfer.files[0]));
-$('reset').addEventListener('click', () => { store.del('liftlog.csv'); store.del('liftlog.name'); store.del('liftlog.steps'); state.steps = sampleSteps(); state.stepsSample = true; Object.assign(state, sample()); state.sample = true; state.ex = null; state.metric = 'e1rm'; setUnit('lb', false); renderAll(); });
+document.addEventListener('drop', e => readFiles(e.dataTransfer && e.dataTransfer.files));
+$('reset').addEventListener('click', () => { store.del('liftlog.csv'); store.del('liftlog.name'); ['liftlog.steps', 'liftlog.dist', 'liftlog.walks'].forEach(k => store.del(k)); Object.assign(state, sampleHealth()); state.healthSample = true; Object.assign(state, sample()); state.sample = true; state.ex = null; state.metric = 'e1rm'; setUnit('lb', false); renderAll(); });
 $('u-lb').addEventListener('click', () => { setUnit('lb'); renderAll(); });
 $('u-kg').addEventListener('click', () => { setUnit('kg'); renderAll(); });
 $('ex').addEventListener('change', e => { state.ex = e.target.value; state.metric = 'e1rm'; renderExercise(); renderPRs(); });
@@ -756,12 +923,19 @@ $('range').addEventListener('click', e => {
 const pick = tr => { state.ex = tr.dataset.ex; state.metric = 'e1rm'; renderExercise(); renderPRs(); $('ex').scrollIntoView({ behavior: 'smooth', block: 'center' }); };
 $('pr-body').addEventListener('click', e => { const tr = e.target.closest('tr'); if (tr) pick(tr); });
 $('pr-body').addEventListener('keydown', e => { const tr = e.target.closest('tr'); if (tr && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); pick(tr); } });
-let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { renderExercise(); renderWeeks(); renderVolume(); renderCardio(); renderSteps(); }, 150); });
+let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { renderExercise(); renderWeeks(); renderVolume(); renderCardio(); renderWalking(); }, 150); });
 
 const savedUnit = store.get('liftlog.unit'); if (savedUnit === 'kg' || savedUnit === 'lb') setUnit(savedUnit, false);
-try { const js = JSON.parse(store.get('liftlog.steps') || 'null'); if (Array.isArray(js) && js.length) { state.steps = new Map(js); state.stepsSample = false; } } catch (e) {}
+try {
+  const js = k => { const v = JSON.parse(store.get(k) || 'null'); return Array.isArray(v) ? v : []; };
+  const st = js('liftlog.steps'), ds = js('liftlog.dist'), wk = js('liftlog.walks');
+  if (st.length || ds.length || wk.length) {
+    state.steps = new Map(st); state.dist = new Map(ds);
+    state.walks = wk.map(([t, min, dist]) => ({ t, min, dist })); state.healthSample = false;
+  }
+} catch (e) {}
 const saved = store.get('liftlog.csv');
 if (saved) loadText(saved, store.get('liftlog.name') || 'your Strong export', false);
-if (!saved || state.sample) { Object.assign(state, sample()); state.sample = true; if (state.stepsSample) state.steps = sampleSteps(); renderAll(); }
+if (!saved || state.sample) { Object.assign(state, sample()); state.sample = true; if (state.healthSample) Object.assign(state, sampleHealth()); renderAll(); }
 })();
 </script>

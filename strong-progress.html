@@ -86,6 +86,7 @@ th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacin
 td { padding: 9px 10px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
 td.r, th.r { text-align: right; }
 tbody tr { cursor: pointer; }
+#cardio-body tr { cursor: default; }
 tbody tr:hover, tbody tr.sel { background: var(--s1-soft); }
 .up { color: var(--good); font-weight: 600; }
 .down { color: var(--bad); font-weight: 600; }
@@ -164,6 +165,21 @@ tbody tr:hover, tbody tr.sel { background: var(--s1-soft); }
     </section>
   </div>
 
+  <section class="panel" id="cardio" hidden>
+    <div>
+      <h2>Cardio</h2>
+      <div class="sub help" id="cardio-sub">Timed and distance exercises</div>
+    </div>
+    <div class="stats" id="cardio-stats"></div>
+    <div class="chart" id="c-cardio"></div>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Exercise</th><th class="r">Sessions</th><th class="r">Total time</th><th class="r">Longest</th><th class="r">Distance</th><th>Last done</th></tr></thead>
+        <tbody id="cardio-body"></tbody>
+      </table>
+    </div>
+  </section>
+
   <section class="panel">
     <div>
       <h2>Personal records</h2>
@@ -185,7 +201,7 @@ tbody tr:hover, tbody tr.sel { background: var(--s1-soft); }
       <li>Choose <strong>Save to Files</strong> (iPhone) or save it to your Downloads (Android).</li>
       <li>Come back here, tap <strong>Load Strong CSV</strong> and pick the file.</li>
     </ol>
-    <p>The export doesn't record which unit you use, so set lb or kg above to match your Strong settings. Warm-up sets are left out of records and volume. Estimated 1RM uses the Epley formula (weight × (1 + reps ÷ 30)) on sets of 12 reps or fewer.</p>
+    <p>The export doesn't record which unit you use, so set lb or kg above to match your Strong settings. Warm-up sets are left out of records and volume. Timed and distance exercises, like the elliptical or a run, appear under Cardio, and distance follows the same setting (mi with lb, km with kg). Estimated 1RM uses the Epley formula (weight × (1 + reps ÷ 30)) on sets of 12 reps or fewer.</p>
   </section>
 </div>
 
@@ -193,7 +209,7 @@ tbody tr:hover, tbody tr.sel { background: var(--s1-soft); }
 (() => {
 const $ = id => document.getElementById(id);
 const DAY = 864e5;
-const state = { rows: [], sample: true, unit: 'lb', ex: null, metric: 'e1rm', range: 0 };
+const state = { rows: [], cardio: [], sample: true, unit: 'lb', ex: null, metric: 'e1rm', range: 0 };
 const store = {
   get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
   set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
@@ -239,23 +255,29 @@ function fromStrong(text) {
   const head = table[0].map(h => h.trim().toLowerCase());
   const col = (...names) => head.findIndex(h => names.some(n => h === n || h.startsWith(n + ' (')));
   const iDate = col('date'), iName = col('workout name'), iEx = col('exercise name'),
-        iSet = col('set order'), iW = col('weight'), iR = col('reps');
+        iSet = col('set order'), iW = col('weight'), iR = col('reps'), iDist = col('distance'), iSec = col('seconds');
   if (iDate < 0 || iEx < 0 || iW < 0 || iR < 0) throw new Error('This doesn’t look like a Strong export. Expected columns like Date, Exercise Name, Weight and Reps.');
   const wHead = head[iW];
   const unit = /kg/.test(wHead) ? 'kg' : /lb/.test(wHead) ? 'lb' : null;
-  const rows = [];
+  const rows = [], cardio = [];
   for (let i = 1; i < table.length; i++) {
     const r = table[i]; if (!r[iEx]) continue;
     const set = iSet >= 0 ? String(r[iSet]).trim() : '1';
     if (/rest/i.test(set)) continue;
     const d = parseDate(r[iDate]); if (!d) continue;
     const reps = num(r[iR], delim), w = num(r[iW], delim);
-    if (reps <= 0) continue;
+    const wk = (iName >= 0 ? r[iName] : '') + '|' + r[iDate];
+    if (reps <= 0) {
+      const sec = iSec >= 0 ? num(r[iSec], delim) : 0, dist = iDist >= 0 ? num(r[iDist], delim) : 0;
+      if (sec > 0 || dist > 0) cardio.push({ d, t: d.getTime(), wk, ex: r[iEx].trim(), sec, dist });
+      continue;
+    }
     rows.push({ d, t: d.getTime(), wk: (iName >= 0 ? r[iName] : '') + '|' + r[iDate], ex: r[iEx].trim(), w, reps, warm: /^w$/i.test(set) });
   }
-  if (!rows.length) throw new Error('No sets with reps were found in that file.');
+  if (!rows.length && !cardio.length) throw new Error('No sets or cardio were found in that file.');
   rows.sort((a, b) => a.t - b.t);
-  return { rows, unit };
+  cardio.sort((a, b) => a.t - b.t);
+  return { rows, cardio, unit };
 }
 
 /* ---------- sample data ---------- */
@@ -271,7 +293,7 @@ function sample() {
     { ex: 'Incline Bench Press (Dumbbell)', start: 45, gain: 15, reps: [10, 10, 8], day: 2 }
   ];
   const names = ['Push Day', 'Leg Day', 'Pull Day'];
-  const rows = []; const end = new Date(); end.setHours(18, 0, 0, 0);
+  const rows = [], cardio = []; const end = new Date(); end.setHours(18, 0, 0, 0);
   const start = new Date(end.getTime() - 300 * DAY);
   let k = 0;
   for (let t = start.getTime(); t <= end.getTime(); t += DAY) {
@@ -279,6 +301,8 @@ function sample() {
     if (![1, 3, 5].includes(dow) || rnd() < 0.14) continue;
     const slot = k++ % 3; const p = (t - start.getTime()) / (end - start);
     const wk = names[slot] + '|' + t;
+    cardio.push({ d, t, wk, ex: 'Elliptical Machine', sec: 600 + Math.round(rnd() * 4) * 150, dist: 0 });
+    if (slot === 1 && rnd() < 0.6) cardio.push({ d, t, wk, ex: 'Running (Treadmill)', sec: 1200 + Math.round(p * 600 + rnd() * 300), dist: +(1.8 + p * 1.2 + rnd() * 0.3).toFixed(2) });
     lifts.filter(l => l.day === slot).forEach(l => {
       l.reps.forEach((rp, si) => {
         const noise = (rnd() - 0.5) * 0.06;
@@ -288,12 +312,24 @@ function sample() {
       });
     });
   }
-  return rows;
+  return { rows, cardio };
 }
 
 /* ---------- helpers ---------- */
 const e1 = (w, r) => r === 1 ? w : r <= 12 ? w * (1 + r / 30) : 0;
 const fmt = (n, dp = 0) => n.toLocaleString(undefined, { maximumFractionDigits: dp, minimumFractionDigits: dp });
+const fmtDur = sec => {
+  const m = Math.round(sec / 60);
+  if (sec < 60) return Math.round(sec) + 's';
+  if (m < 60) return m + 'm';
+  return Math.floor(m / 60) + 'h' + (m % 60 ? ' ' + (m % 60) + 'm' : '');
+};
+const allWorkouts = () => { const w = new Map(); [...state.rows, ...state.cardio].forEach(r => { if (!w.has(r.wk)) w.set(r.wk, r.t); }); return w; };
+const chartEnd = () => {
+  const last = Math.max(state.rows.length ? state.rows[state.rows.length - 1].t : 0, state.cardio.length ? state.cardio[state.cardio.length - 1].t : 0) || Date.now();
+  return weekStart(state.sample ? Date.now() : Math.max(last, Date.now() - 400 * DAY));
+};
+const distUnit = () => state.unit === 'kg' ? 'km' : 'mi';
 const fmtW = w => fmt(w, w % 1 ? 1 : 0);
 const fmtD = (d, o) => d.toLocaleDateString(undefined, o || { month: 'short', day: 'numeric', year: 'numeric' });
 const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -411,8 +447,7 @@ function barChart(el, bars, { yFmt, tipFmt, label, labelEvery }) {
 /* ---------- render ---------- */
 const U = () => state.unit;
 function renderTiles() {
-  const rows = state.rows, wks = new Map();
-  rows.forEach(r => { if (!wks.has(r.wk)) wks.set(r.wk, r.t); });
+  const rows = state.rows, wks = allWorkouts();
   const times = [...wks.values()];
   const now = Date.now(), yr = new Date().getFullYear();
   const thisYear = times.filter(t => new Date(t).getFullYear() === yr).length;
@@ -482,16 +517,15 @@ function renderExercise() {
 }
 
 function renderWeeks() {
-  const wks = new Map(); state.rows.forEach(r => { if (!wks.has(r.wk)) wks.set(r.wk, r.t); });
+  const wks = allWorkouts();
   const counts = new Map(); [...wks.values()].forEach(t => { const w = weekStart(t); counts.set(w, (counts.get(w) || 0) + 1); });
-  const lastT = state.rows.length ? state.rows[state.rows.length - 1].t : Date.now();
-  const end = weekStart(state.sample ? Date.now() : Math.max(lastT, Date.now() - 400 * DAY));
+  const end = chartEnd();
   const bars = [];
   for (let i = 25; i >= 0; i--) {
     const w = weekStart(end - i * 7 * DAY), d = new Date(w);
     bars.push({ v: counts.get(w) || 0, d, lab: fmtD(d, { month: 'short', day: 'numeric' }) });
   }
-  const avg = bars.reduce((a, b) => a + b.v, 0) / bars.length;
+  const active = bars.slice(Math.max(0, bars.findIndex(b => b.v > 0))), avg = active.reduce((a, b) => a + b.v, 0) / active.length;
   $('wk-sub').textContent = `26 weeks ending ${fmtD(new Date(end + 6 * DAY), { month: 'short', day: 'numeric' })} · average ${fmt(avg, 1)} a week`;
   barChart($('c-week'), bars, { yFmt: v => fmt(v), label: 'Workouts per week', labelEvery: $('c-week').clientWidth < 420 ? 8 : 4,
     tipFmt: b => `<b>${b.v} workout${b.v === 1 ? '' : 's'}</b><br>Week of ${fmtD(b.d)}` });
@@ -529,11 +563,43 @@ function renderPRs() {
   }).join('');
 }
 
+function renderCardio() {
+  const c = state.cardio, panel = $('cardio');
+  panel.hidden = !c.length;
+  if (!c.length) return;
+  const now = Date.now(), total = c.reduce((a, r) => a + r.sec, 0);
+  const sess = new Map(); c.forEach(r => sess.set(r.wk, (sess.get(r.wk) || 0) + r.sec));
+  const last30 = c.filter(r => r.t > now - 30 * DAY).reduce((a, r) => a + r.sec, 0);
+  const dist = c.reduce((a, r) => a + r.dist, 0);
+  $('cardio-stats').innerHTML = [
+    ['Total time', fmtDur(total)],
+    ['Last 30 days', fmtDur(last30)],
+    ['Sessions', fmt(sess.size)],
+    dist > 0 ? ['Distance', `${fmt(dist, 1)} ${distUnit()}`] : ['Per session', fmtDur(total / sess.size)]
+  ].map(([k, v]) => `<div><span class="k">${k}</span><span class="v">${v}</span></div>`).join('');
+  const end = chartEnd(), mins = new Map();
+  c.forEach(r => { const w = weekStart(r.t); mins.set(w, (mins.get(w) || 0) + r.sec / 60); });
+  const bars = [];
+  for (let i = 25; i >= 0; i--) {
+    const w = weekStart(end - i * 7 * DAY), d = new Date(w);
+    bars.push({ v: Math.round(mins.get(w) || 0), d, lab: fmtD(d, { month: 'short', day: 'numeric' }) });
+  }
+  const active = bars.slice(Math.max(0, bars.findIndex(b => b.v > 0))), avg = active.reduce((a, b) => a + b.v, 0) / active.length;
+  $('cardio-sub').textContent = `Minutes per week, 26 weeks · average ${fmt(avg)} min a week`;
+  barChart($('c-cardio'), bars, { yFmt: v => fmt(v), label: 'Cardio minutes per week', labelEvery: $('c-cardio').clientWidth < 420 ? 8 : 4,
+    tipFmt: b => `<b>${fmt(b.v)} min</b><br>Week of ${fmtD(b.d)}` });
+  const by = new Map();
+  c.forEach(r => { const o = by.get(r.ex) || { ex: r.ex, wks: new Set(), sec: 0, long: 0, dist: 0, last: 0 }; o.wks.add(r.wk); o.sec += r.sec; o.long = Math.max(o.long, r.sec); o.dist += r.dist; o.last = Math.max(o.last, r.t); by.set(r.ex, o); });
+  $('cardio-body').innerHTML = [...by.values()].sort((a, b) => b.sec - a.sec).map(o =>
+    `<tr><td>${esc(o.ex)}</td><td class="r">${o.wks.size}</td><td class="r">${fmtDur(o.sec)}</td><td class="r">${fmtDur(o.long)}</td>` +
+    `<td class="r">${o.dist > 0 ? fmt(o.dist, 1) + ' ' + distUnit() : '–'}</td><td>${fmtD(new Date(o.last))}</td></tr>`).join('');
+}
+
 function renderAll() {
-  renderTiles(); renderExercise(); renderWeeks(); renderVolume(); renderPRs();
+  renderTiles(); renderExercise(); renderWeeks(); renderVolume(); renderCardio(); renderPRs();
   $('status').innerHTML = state.sample
     ? '<span class="chip">Sample</span> Showing made-up example data. <strong>Load your Strong CSV</strong> to see your own numbers, or drop the file here.'
-    : `<span class="chip real">Your data</span> ${fmt(state.rows.length)} sets from <strong>${esc(state.file || 'your Strong export')}</strong>. Saved in this browser only.`;
+    : `<span class="chip real">Your data</span> ${fmt(state.rows.length)} sets${state.cardio.length ? ` and ${fmt(state.cardio.length)} cardio entries` : ''} from <strong>${esc(state.file || 'your Strong export')}</strong>. Saved in this browser only.`;
   $('reset').hidden = state.sample;
 }
 
@@ -544,8 +610,8 @@ function setUnit(u, save = true) {
 }
 function loadText(text, name, save) {
   try {
-    const { rows, unit } = fromStrong(text);
-    state.rows = rows; state.sample = false; state.file = name; state.ex = null; state.metric = 'e1rm';
+    const { rows, cardio, unit } = fromStrong(text);
+    state.rows = rows; state.cardio = cardio; state.sample = false; state.file = name; state.ex = null; state.metric = 'e1rm';
     if (unit) setUnit(unit);
     if (save) { store.set('liftlog.csv', text); store.set('liftlog.name', name); }
     renderAll();
@@ -559,7 +625,7 @@ const ban = $('banner');
 ['dragenter', 'dragover'].forEach(t => document.addEventListener(t, e => { e.preventDefault(); ban.classList.add('drag'); }));
 ['dragleave', 'drop'].forEach(t => document.addEventListener(t, e => { e.preventDefault(); if (t === 'drop' || !e.relatedTarget) ban.classList.remove('drag'); }));
 document.addEventListener('drop', e => readFile(e.dataTransfer && e.dataTransfer.files[0]));
-$('reset').addEventListener('click', () => { store.del('liftlog.csv'); store.del('liftlog.name'); state.rows = sample(); state.sample = true; state.ex = null; state.metric = 'e1rm'; setUnit('lb', false); renderAll(); });
+$('reset').addEventListener('click', () => { store.del('liftlog.csv'); store.del('liftlog.name'); Object.assign(state, sample()); state.sample = true; state.ex = null; state.metric = 'e1rm'; setUnit('lb', false); renderAll(); });
 $('u-lb').addEventListener('click', () => { setUnit('lb'); renderAll(); });
 $('u-kg').addEventListener('click', () => { setUnit('kg'); renderAll(); });
 $('ex').addEventListener('change', e => { state.ex = e.target.value; state.metric = 'e1rm'; renderExercise(); renderPRs(); });
@@ -571,11 +637,11 @@ $('range').addEventListener('click', e => {
 const pick = tr => { state.ex = tr.dataset.ex; state.metric = 'e1rm'; renderExercise(); renderPRs(); $('ex').scrollIntoView({ behavior: 'smooth', block: 'center' }); };
 $('pr-body').addEventListener('click', e => { const tr = e.target.closest('tr'); if (tr) pick(tr); });
 $('pr-body').addEventListener('keydown', e => { const tr = e.target.closest('tr'); if (tr && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); pick(tr); } });
-let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { renderExercise(); renderWeeks(); renderVolume(); }, 150); });
+let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { renderExercise(); renderWeeks(); renderVolume(); renderCardio(); }, 150); });
 
 const savedUnit = store.get('liftlog.unit'); if (savedUnit === 'kg' || savedUnit === 'lb') setUnit(savedUnit, false);
 const saved = store.get('liftlog.csv');
 if (saved) loadText(saved, store.get('liftlog.name') || 'your Strong export', false);
-if (!saved || state.sample) { state.rows = sample(); state.sample = true; renderAll(); }
+if (!saved || state.sample) { Object.assign(state, sample()); state.sample = true; renderAll(); }
 })();
 </script>

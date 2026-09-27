@@ -294,6 +294,7 @@ function sample() {
 /* ---------- helpers ---------- */
 const e1 = (w, r) => r === 1 ? w : r <= 12 ? w * (1 + r / 30) : 0;
 const fmt = (n, dp = 0) => n.toLocaleString(undefined, { maximumFractionDigits: dp, minimumFractionDigits: dp });
+const fmtW = w => fmt(w, w % 1 ? 1 : 0);
 const fmtD = (d, o) => d.toLocaleDateString(undefined, o || { month: 'short', day: 'numeric', year: 'numeric' });
 const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const weekStart = t => { const d = new Date(t); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.getTime(); };
@@ -452,7 +453,7 @@ function renderExercise() {
   const pts = all.map(s => {
     const v = s[key]; const pr = v > best && v > 0; if (pr) best = v;
     let note = '';
-    if (key === 'e1rm' && s.best) note = `${fmt(s.best.w)} ${U()} × ${s.best.reps}`;
+    if (key === 'e1rm' && s.best) note = `${fmtW(s.best.w)} ${U()} × ${s.best.reps}`;
     if (key === 'top') note = `${s.topReps} rep${s.topReps === 1 ? '' : 's'}`;
     return { t: s.t, d: s.d, y: v, pr, note };
   }).filter(p => p.y > 0);
@@ -465,7 +466,7 @@ function renderExercise() {
   $('ex-title').textContent = state.ex;
   const firstT = all.length ? all[0].d : null;
   $('ex-sub').textContent = `${all.length} session${all.length === 1 ? '' : 's'}` + (firstT ? ` since ${fmtD(firstT)}` : '');
-  const yFmt = (v, full) => full ? `${fmt(v, key === 'e1rm' && v < 100 ? 1 : 0)} ${units}` : (key === 'vol' ? compact(v) : fmt(v));
+  const yFmt = (v, full) => full ? `${key === 'top' ? fmtW(v) : fmt(v, key === 'e1rm' && v < 100 ? 1 : 0)} ${units}` : (key === 'vol' ? compact(v) : fmt(v));
   lineChart($('c-ex'), shown, { yFmt, label: `${state.ex}: ${names[key]}` });
 
   const bestP = pts.reduce((a, p) => p.y > (a ? a.y : -1) ? p : a, null);
@@ -522,7 +523,7 @@ function renderPRs() {
     const ch = f > 0 && ss[ss.length - 1].t - ss[0].t > 45 * DAY ? (l - f) / f * 100 : null;
     return `<tr tabindex="0" data-ex="${esc(o.ex)}" class="${o.ex === state.ex ? 'sel' : ''}"><td>${esc(o.ex)}</td><td class="r">${o.n}</td>` +
       `<td class="r">${o.bw ? '–' : fmt(be.e1rm) + ' ' + U()}</td>` +
-      `<td class="r">${o.bw ? '–' : fmt(top.top) + ' × ' + top.topReps}</td><td class="r">${reps}</td>` +
+      `<td class="r">${o.bw ? '–' : fmtW(top.top) + ' × ' + top.topReps}</td><td class="r">${reps}</td>` +
       `<td class="r">${ch == null ? '–' : `<span class="${ch >= 0 ? 'up' : 'down'}">${ch >= 0 ? '+' : ''}${fmt(ch, 0)}%</span>`}</td>` +
       `<td>${fmtD(new Date(o.last))}</td></tr>`;
   }).join('');

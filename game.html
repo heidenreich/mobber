@@ -1,0 +1,673 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Mobber: The Game</title>
+<link href="https://fonts.googleapis.com/css?family=Didact+Gothic" rel="stylesheet">
+<style>
+  :root {
+    --bg: #14161f;
+    --panel: rgba(16, 18, 28, 0.88);
+    --ink: #f3f1ea;
+    --muted: #9aa0b4;
+    --you: #ffb627;
+    --accent: #ff5e5b;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--ink);
+    font-family: "Didact Gothic", system-ui, sans-serif; touch-action: none; user-select: none; -webkit-user-select: none; }
+  canvas { display: block; width: 100vw; height: 100vh; }
+  .overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px;
+    background: radial-gradient(ellipse at center, rgba(20,22,31,0.55), rgba(10,11,16,0.92)); }
+  .overlay.hidden { display: none; }
+  .card { background: var(--panel); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 28px;
+    max-width: 520px; width: 100%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+  .card h1 { font-size: 46px; margin: 0 0 4px; letter-spacing: 2px; }
+  .card h1 span { color: var(--you); }
+  .card h2 { margin: 0 0 8px; font-size: 28px; }
+  .tag { color: var(--muted); margin: 0 0 20px; }
+  .rules { text-align: left; font-size: 14px; line-height: 1.55; color: #d5d7e0; margin: 0 0 18px; padding-left: 18px; }
+  .rules b { color: var(--ink); }
+  label { display: block; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 6px; }
+  input[type=text] { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(0,0,0,0.35); color: var(--ink); font: inherit; font-size: 15px; margin-bottom: 18px; }
+  button { font: inherit; font-size: 18px; padding: 12px 28px; border-radius: 999px; border: 0; cursor: pointer;
+    background: var(--you); color: #1b1300; font-weight: bold; letter-spacing: 1px; }
+  button:hover { filter: brightness(1.08); }
+  .broadcast { background: rgba(255,182,39,0.1); border-left: 3px solid var(--you); padding: 12px 14px; text-align: left;
+    border-radius: 6px; margin: 14px 0 18px; font-size: 16px; }
+  .broadcast small { display: block; color: var(--muted); font-size: 12px; margin-top: 6px; }
+  .stars { font-size: 34px; color: var(--you); letter-spacing: 6px; margin: 6px 0; }
+  .stats { color: var(--muted); font-size: 14px; margin-bottom: 18px; }
+  #rally { position: fixed; left: 16px; bottom: 16px; width: 84px; height: 84px; border-radius: 50%; padding: 0;
+    font-size: 13px; display: none; background: rgba(255,182,39,0.9); }
+  #rally.cooling { background: rgba(120,120,140,0.6); color: #ddd; }
+  .back { position: fixed; top: 12px; right: 16px; color: var(--muted); font-size: 13px; text-decoration: none; }
+  @media (max-width: 520px) { .card { padding: 20px; } .card h1 { font-size: 36px; } }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<button id="rally">RALLY</button>
+
+<div id="menu" class="overlay">
+  <div class="card">
+    <h1>MOB<span>BER</span></h1>
+    <p class="tag">Start a mob. Spread the word. Launch the message.</p>
+    <ul class="rules">
+      <li><b>Move</b> with WASD / arrow keys, or hold the mouse or a finger where you want to go.</li>
+      <li>Stand near bystanders to <b>recruit</b> them. A bigger mob gives you a bigger hype radius.</li>
+      <li><b>Rival mobs</b> steal your followers if theirs is bigger. If yours is bigger, you can steal theirs.</li>
+      <li><b>Buzzkills</b> (red) talk your followers out of it. Press <b>Space</b> / RALLY to blast your megaphone and scare them off.</li>
+      <li>Reach the mob size before the clock runs out and your message goes out.</li>
+    </ul>
+    <label for="msg">Your mob message</label>
+    <input id="msg" type="text" maxlength="90" value="Free concert in the park tonight. Bring everyone!">
+    <button id="start">START A MOB</button>
+  </div>
+</div>
+
+<div id="result" class="overlay hidden">
+  <div class="card" id="resultCard"></div>
+</div>
+
+<a class="back" href="index.html">&larr; back to Mobber</a>
+
+<script>
+(() => {
+  "use strict";
+  const cv = document.getElementById("c");
+  const ctx = cv.getContext("2d");
+  const WORLD_W = 2400, WORLD_H = 1600;
+  const COLORS = { neutral: "#6b7088", you: "#ffb627", buzz: "#ff3b3b" };
+  const RIVALS = [
+    { name: "The Skeptics Society", color: "#4fc3f7" },
+    { name: "Flash Mob Collective", color: "#b388ff" },
+    { name: "Hashtag Brigade", color: "#69f0ae" },
+    { name: "Viral Vandals", color: "#ff80ab" },
+    { name: "Retweet Rangers", color: "#80deea" },
+  ];
+  const LEVELS = [
+    { name: "Garage Gig",      target: 25,  time: 60,  rivals: 0, buzz: 0, crowd: 120 },
+    { name: "Block Party",     target: 50,  time: 75,  rivals: 1, buzz: 1, crowd: 160 },
+    { name: "Street Festival", target: 80,  time: 90,  rivals: 2, buzz: 3, crowd: 210 },
+    { name: "Arena Night",     target: 120, time: 100, rivals: 3, buzz: 4, crowd: 250 },
+    { name: "World Tour",      target: 180, time: 120, rivals: 4, buzz: 6, crowd: 320 },
+  ];
+  function levelCfg(i) {
+    if (i < LEVELS.length) return LEVELS[i];
+    const extra = i - LEVELS.length + 1;
+    return { name: "Encore #" + extra, target: 180 + extra * 30, time: 120, rivals: 5,
+             buzz: 6 + extra, crowd: Math.min(420, 320 + extra * 25) };
+  }
+
+  // ---------- Setup ----------
+  let vw = 0, vh = 0, dpr = 1;
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    vw = window.innerWidth; vh = window.innerHeight;
+    cv.width = vw * dpr; cv.height = vh * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  window.addEventListener("resize", resize);
+  resize();
+
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const isTouch = matchMedia("(pointer: coarse)").matches;
+
+  // ---------- Audio ----------
+  let actx = null;
+  function blip(freq, dur = 0.07, type = "triangle", vol = 0.05) {
+    if (!actx) return;
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = type; o.frequency.value = freq;
+    g.gain.setValueAtTime(vol, actx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + dur);
+    o.connect(g).connect(actx.destination);
+    o.start(); o.stop(actx.currentTime + dur);
+  }
+  let lastBlip = 0;
+
+  // ---------- State ----------
+  let state = "menu";
+  let levelIdx = 0, totalScore = 0;
+  let level, timeLeft, people, leaders, buzzkills, floaters, decor, player, cam, message = "";
+  const counts = new Map();
+
+  function makeLeader(team, color, name, x, y, isPlayer) {
+    return { team, color, name, x, y, vx: 0, vy: 0, isPlayer, stun: 0, rally: 0, rallyCd: 0,
+             goal: null, think: 0 };
+  }
+  function makePerson(x, y) {
+    return { x, y, vx: 0, vy: 0, team: 0, convTeam: 0, conv: 0, ang: rand(0, Math.PI * 2),
+             ox: rand(-1, 1), oy: rand(-1, 1), shade: rand(-12, 12), cool: 0 };
+  }
+  function spawnEdgePerson() {
+    const side = Math.floor(rand(0, 4));
+    const x = side === 0 ? 10 : side === 1 ? WORLD_W - 10 : rand(0, WORLD_W);
+    const y = side === 2 ? 10 : side === 3 ? WORLD_H - 10 : rand(0, WORLD_H);
+    return makePerson(x, y);
+  }
+
+  function startLevel(i) {
+    levelIdx = i;
+    level = levelCfg(i);
+    timeLeft = level.time;
+    people = []; floaters = [];
+    for (let k = 0; k < level.crowd; k++) people.push(makePerson(rand(40, WORLD_W - 40), rand(40, WORLD_H - 40)));
+    player = makeLeader(1, COLORS.you, "You", WORLD_W / 2, WORLD_H / 2, true);
+    leaders = [player];
+    for (let r = 0; r < level.rivals; r++) {
+      const rv = RIVALS[r % RIVALS.length];
+      const a = (r / Math.max(1, level.rivals)) * Math.PI * 2;
+      leaders.push(makeLeader(2 + r, rv.color, rv.name,
+        WORLD_W / 2 + Math.cos(a) * 800, WORLD_H / 2 + Math.sin(a) * 550, false));
+    }
+    // Rivals start with a few followers so they're a real threat.
+    for (const L of leaders) if (!L.isPlayer) {
+      for (let k = 0; k < 4 + levelIdx * 2; k++) {
+        const p = makePerson(L.x + rand(-30, 30), L.y + rand(-30, 30));
+        p.team = L.team; people.push(p);
+      }
+    }
+    buzzkills = [];
+    for (let b = 0; b < level.buzz; b++) {
+      buzzkills.push({ x: rand(100, WORLD_W - 100), y: rand(100, WORLD_H - 100), vx: 0, vy: 0,
+                       ang: rand(0, 6.28), scared: 0 });
+    }
+    decor = [];
+    for (let k = 0; k < 14; k++) decor.push({ x: rand(0, WORLD_W), y: rand(0, WORLD_H), r: rand(40, 110),
+                                              kind: Math.random() < 0.5 ? "plaza" : "tree" });
+    cam = { x: player.x, y: player.y };
+    state = "play";
+    document.getElementById("rally").style.display = isTouch ? "block" : "none";
+    flash(level.name + " - recruit " + level.target + "!", 2.5);
+  }
+
+  // ---------- Input ----------
+  const keys = new Set();
+  let pointer = null;
+  window.addEventListener("keydown", e => {
+    if (e.target.tagName === "INPUT") { if (e.key === "Enter") begin(); return; }
+    keys.add(e.key.toLowerCase());
+    if (e.key === " ") { e.preventDefault(); tryRally(); }
+    if (e.key === "Enter" && state !== "play") onEnterOverlay();
+  });
+  window.addEventListener("keyup", e => keys.delete(e.key.toLowerCase()));
+  cv.addEventListener("pointerdown", e => { pointer = { x: e.clientX, y: e.clientY }; cv.setPointerCapture(e.pointerId); });
+  cv.addEventListener("pointermove", e => { if (pointer) pointer = { x: e.clientX, y: e.clientY }; });
+  const endPointer = () => { pointer = null; };
+  cv.addEventListener("pointerup", endPointer);
+  cv.addEventListener("pointercancel", endPointer);
+  document.getElementById("rally").addEventListener("pointerdown", e => { e.preventDefault(); tryRally(); });
+
+  function tryRally() {
+    if (state !== "play" || player.rallyCd > 0) return;
+    player.rally = 1.6; player.rallyCd = 8;
+    blip(330, 0.25, "sawtooth", 0.06); setTimeout(() => blip(495, 0.3, "sawtooth", 0.05), 90);
+    floaters.push({ x: player.x, y: player.y - 30, text: "RALLY!", life: 1.2, color: COLORS.you, big: true });
+  }
+
+  // ---------- Simulation ----------
+  const radiusFor = (L) => (55 + 6.5 * Math.sqrt(counts.get(L.team) || 0)) * (L.rally > 0 ? 1.9 : 1);
+
+  const GRID = 64;
+  let grid = new Map();
+  function buildGrid() {
+    grid = new Map();
+    for (const p of people) {
+      const k = ((p.x / GRID) | 0) + ((p.y / GRID) | 0) * 1000;
+      let cell = grid.get(k);
+      if (!cell) grid.set(k, cell = []);
+      cell.push(p);
+    }
+  }
+  function neighbors(x, y, fn) {
+    const cx = (x / GRID) | 0, cy = (y / GRID) | 0;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      const cell = grid.get(cx + dx + (cy + dy) * 1000);
+      if (cell) for (const q of cell) fn(q);
+    }
+  }
+
+  function recount() {
+    counts.clear();
+    for (const p of people) if (p.team) counts.set(p.team, (counts.get(p.team) || 0) + 1);
+  }
+
+  function updateLeader(L, dt) {
+    L.rally = Math.max(0, L.rally - dt);
+    L.rallyCd = Math.max(0, L.rallyCd - dt);
+    L.stun = Math.max(0, L.stun - dt);
+    const size = counts.get(L.team) || 0;
+    const speed = (L.isPlayer ? 210 : 165) - Math.min(55, size * 0.25);
+    let dx = 0, dy = 0;
+    if (L.isPlayer) {
+      if (keys.has("arrowleft") || keys.has("a")) dx -= 1;
+      if (keys.has("arrowright") || keys.has("d")) dx += 1;
+      if (keys.has("arrowup") || keys.has("w")) dy -= 1;
+      if (keys.has("arrowdown") || keys.has("s")) dy += 1;
+      if (pointer && !dx && !dy) {
+        const wx = pointer.x - vw / 2 + cam.x, wy = pointer.y - vh / 2 + cam.y;
+        const ddx = wx - L.x, ddy = wy - L.y, d = Math.hypot(ddx, ddy);
+        if (d > 8) { dx = ddx / d * Math.min(1, d / 60); dy = ddy / d * Math.min(1, d / 60); }
+      }
+    } else {
+      L.think -= dt;
+      if (L.think <= 0 || !L.goal) {
+        L.think = rand(0.8, 1.6);
+        const mySize = size, pSize = counts.get(1) || 0;
+        const dp = Math.hypot(player.x - L.x, player.y - L.y);
+        if (mySize > pSize + 3 && dp < 650) {
+          L.goal = { x: player.x, y: player.y };            // hunt the player's mob
+        } else if (pSize > mySize + 3 && dp < 280) {
+          L.goal = { x: L.x * 2 - player.x, y: L.y * 2 - player.y }; // flee
+        } else {
+          // head toward the nearest bunch of neutrals (sampled)
+          let best = null, bestScore = -1;
+          for (let k = 0; k < 24; k++) {
+            const p = people[(Math.random() * people.length) | 0];
+            if (!p || p.team) continue;
+            let n = 0; neighbors(p.x, p.y, q => { if (!q.team) n++; });
+            const sc = n / (1 + Math.hypot(p.x - L.x, p.y - L.y) / 300);
+            if (sc > bestScore) { bestScore = sc; best = p; }
+          }
+          if (best) L.goal = { x: best.x, y: best.y };
+        }
+      }
+      if (L.goal) {
+        const ddx = L.goal.x - L.x, ddy = L.goal.y - L.y, d = Math.hypot(ddx, ddy);
+        if (d > 20) { dx = ddx / d; dy = ddy / d; }
+      }
+    }
+    const m = Math.hypot(dx, dy);
+    if (m > 1) { dx /= m; dy /= m; }
+    const sp = L.stun > 0 ? speed * 0.25 : speed;
+    L.vx += (dx * sp - L.vx) * Math.min(1, dt * 8);
+    L.vy += (dy * sp - L.vy) * Math.min(1, dt * 8);
+    L.x = clamp(L.x + L.vx * dt, 15, WORLD_W - 15);
+    L.y = clamp(L.y + L.vy * dt, 15, WORLD_H - 15);
+  }
+
+  function convert(p, team) {
+    const was = p.team;
+    p.team = team; p.conv = 0; p.convTeam = 0; p.cool = 0.6;
+    if (team === 1) {
+      floaters.push({ x: p.x, y: p.y - 12, text: was > 1 ? "stolen!" : "+1", life: 0.9, color: COLORS.you });
+      const now = performance.now();
+      if (now - lastBlip > 45) { blip(520 + Math.min(600, (counts.get(1) || 0) * 4), 0.06); lastBlip = now; }
+    } else if (was === 1) {
+      floaters.push({ x: p.x, y: p.y - 12, text: "-1", life: 0.9, color: "#ff6b6b" });
+      blip(180, 0.08, "square", 0.03);
+    }
+  }
+
+  function updatePerson(p, dt) {
+    p.cool = Math.max(0, p.cool - dt);
+    // Conversion: nearest eligible leader whose hype radius covers this person.
+    let best = null, bestD = Infinity;
+    for (const L of leaders) {
+      if (L.team === p.team || L.stun > 0) continue;
+      const d = Math.hypot(L.x - p.x, L.y - p.y);
+      if (d > radiusFor(L)) continue;
+      const mine = counts.get(L.team) || 0, theirs = p.team ? (counts.get(p.team) || 0) : -1;
+      if (p.team && mine <= theirs) continue; // must be bigger to poach
+      if (d < bestD) { bestD = d; best = L; }
+    }
+    if (best && p.cool <= 0) {
+      if (p.convTeam !== best.team) { p.convTeam = best.team; p.conv = 0; }
+      const rate = (p.team ? 0.75 : 1.6) * (best.rally > 0 ? 2.2 : 1);
+      p.conv += dt * rate;
+      if (p.conv >= 1) convert(p, best.team);
+    } else {
+      p.conv = Math.max(0, p.conv - dt * 0.8);
+    }
+
+    let ax = 0, ay = 0, maxSp;
+    if (p.team) {
+      const L = leaders.find(l => l.team === p.team);
+      const n = counts.get(p.team) || 1;
+      const spread = 14 + Math.sqrt(n) * 7.5;
+      const tx = L.x + p.ox * spread - L.vx * 0.12, ty = L.y + p.oy * spread - L.vy * 0.12;
+      const dx = tx - p.x, dy = ty - p.y, d = Math.hypot(dx, dy) || 1;
+      maxSp = Math.hypot(L.vx, L.vy) + 60 + Math.min(200, d);
+      ax = dx / d * maxSp - p.vx; ay = dy / d * maxSp - p.vy;
+      ax *= 4; ay *= 4;
+      if (d > 520) { convert(p, 0); } // lost interest, wandered off
+    } else {
+      p.ang += rand(-1.2, 1.2) * dt;
+      maxSp = 32;
+      ax = (Math.cos(p.ang) * maxSp - p.vx) * 2; ay = (Math.sin(p.ang) * maxSp - p.vy) * 2;
+    }
+    // Separation
+    neighbors(p.x, p.y, q => {
+      if (q === p) return;
+      const dx = p.x - q.x, dy = p.y - q.y, d2 = dx * dx + dy * dy;
+      if (d2 < 196 && d2 > 0.01) { const d = Math.sqrt(d2); ax += dx / d * (14 - d) * 40; ay += dy / d * (14 - d) * 40; }
+    });
+    // Keep away from leaders' bodies
+    for (const L of leaders) {
+      const dx = p.x - L.x, dy = p.y - L.y, d = Math.hypot(dx, dy);
+      if (d < 22 && d > 0.01) { ax += dx / d * 600; ay += dy / d * 600; }
+    }
+    p.vx += ax * dt; p.vy += ay * dt;
+    const sp = Math.hypot(p.vx, p.vy), cap = (maxSp || 40) * 1.6 + 40;
+    if (sp > cap) { p.vx *= cap / sp; p.vy *= cap / sp; }
+    p.x += p.vx * dt; p.y += p.vy * dt;
+    if (p.x < 6) { p.x = 6; p.ang = 0; } else if (p.x > WORLD_W - 6) { p.x = WORLD_W - 6; p.ang = Math.PI; }
+    if (p.y < 6) { p.y = 6; p.ang = Math.PI / 2; } else if (p.y > WORLD_H - 6) { p.y = WORLD_H - 6; p.ang = -Math.PI / 2; }
+  }
+
+  function updateBuzz(b, dt) {
+    b.scared = Math.max(0, b.scared - dt);
+    let tx = null, ty = null;
+    const dpl = Math.hypot(player.x - b.x, player.y - b.y);
+    if (player.rally > 0 && dpl < radiusFor(player) + 40) b.scared = 2.5;
+    if (b.scared > 0) {
+      const d = dpl || 1;
+      b.vx += ((b.x - player.x) / d * 230 - b.vx) * dt * 5;
+      b.vy += ((b.y - player.y) / d * 230 - b.vy) * dt * 5;
+    } else {
+      // Hunt the nearest mob follower (any team, prefers the player's mob).
+      let best = null, bestD = 340;
+      for (const p of people) {
+        if (!p.team) continue;
+        const d = Math.hypot(p.x - b.x, p.y - b.y) * (p.team === 1 ? 0.8 : 1);
+        if (d < bestD) { bestD = d; best = p; }
+      }
+      if (best) { tx = best.x; ty = best.y; }
+      if (tx !== null) {
+        const dx = tx - b.x, dy = ty - b.y, d = Math.hypot(dx, dy) || 1;
+        b.vx += (dx / d * 120 - b.vx) * dt * 3; b.vy += (dy / d * 120 - b.vy) * dt * 3;
+      } else {
+        b.ang += rand(-1, 1) * dt;
+        b.vx += (Math.cos(b.ang) * 60 - b.vx) * dt * 2; b.vy += (Math.sin(b.ang) * 60 - b.vy) * dt * 2;
+      }
+      // Talk people out of it
+      neighbors(b.x, b.y, q => {
+        if (q.team && Math.hypot(q.x - b.x, q.y - b.y) < 16) {
+          convert(q, 0); q.cool = 2.5;
+          const a = Math.atan2(q.y - b.y, q.x - b.x); q.vx = Math.cos(a) * 160; q.vy = Math.sin(a) * 160; q.ang = a;
+        }
+      });
+      for (const L of leaders) {
+        if (L.stun <= 0 && Math.hypot(L.x - b.x, L.y - b.y) < 22) {
+          L.stun = 1.2;
+          if (L.isPlayer) { floaters.push({ x: L.x, y: L.y - 30, text: "Buzzkill!", life: 1.2, color: COLORS.buzz, big: true }); blip(110, 0.3, "square", 0.05); }
+          b.scared = 1.5;
+        }
+      }
+    }
+    b.x = clamp(b.x + b.vx * dt, 10, WORLD_W - 10);
+    b.y = clamp(b.y + b.vy * dt, 10, WORLD_H - 10);
+    if (b.x <= 10 || b.x >= WORLD_W - 10) b.ang = Math.PI - b.ang;
+    if (b.y <= 10 || b.y >= WORLD_H - 10) b.ang = -b.ang;
+  }
+
+  let flashText = "", flashT = 0;
+  function flash(t, dur) { flashText = t; flashT = dur; }
+
+  function update(dt) {
+    timeLeft -= dt;
+    recount();
+    buildGrid();
+    for (const L of leaders) updateLeader(L, dt);
+    for (const p of people) updatePerson(p, dt);
+    for (const b of buzzkills) updateBuzz(b, dt);
+    // Keep the streets populated with fresh bystanders.
+    let neutral = 0; for (const p of people) if (!p.team) neutral++;
+    if (neutral < level.crowd * 0.45 && Math.random() < dt * 6) people.push(spawnEdgePerson());
+    for (const f of floaters) { f.life -= dt; f.y -= dt * 30; }
+    floaters = floaters.filter(f => f.life > 0);
+    flashT = Math.max(0, flashT - dt);
+    cam.x += (player.x - cam.x) * Math.min(1, dt * 6);
+    cam.y += (player.y - cam.y) * Math.min(1, dt * 6);
+    recount();
+    const mine = counts.get(1) || 0;
+    if (mine >= level.target) return finish(true);
+    if (timeLeft <= 0) return finish(false);
+  }
+
+  // ---------- End states ----------
+  const resultEl = document.getElementById("result");
+  const resultCard = document.getElementById("resultCard");
+  let pendingAction = null;
+  function esc(s) { return s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+  function finish(won) {
+    state = won ? "won" : "lost";
+    document.getElementById("rally").style.display = "none";
+    const mine = counts.get(1) || 0;
+    if (won) {
+      const ratio = timeLeft / level.time;
+      const stars = ratio > 0.45 ? 3 : ratio > 0.2 ? 2 : 1;
+      const pts = Math.round(mine * 10 + timeLeft * 25) * (levelIdx + 1);
+      totalScore += pts;
+      const reach = mine * (37 + Math.floor(Math.random() * 90));
+      blip(523, 0.15); setTimeout(() => blip(659, 0.15), 120); setTimeout(() => blip(784, 0.3), 240);
+      resultCard.innerHTML = `
+        <h2>Mob launched!</h2>
+        <div class="stars">${"★".repeat(stars)}${"☆".repeat(3 - stars)}</div>
+        <div class="broadcast">“${esc(message)}”<small>Sent by ${mine} mobbers &middot; reached about ${reach.toLocaleString()} people</small></div>
+        <div class="stats">${esc(level.name)} cleared with ${Math.ceil(timeLeft)}s to spare &middot; +${pts.toLocaleString()} pts &middot; Total ${totalScore.toLocaleString()}</div>
+        <button id="next">NEXT: ${esc(levelCfg(levelIdx + 1).name.toUpperCase())}</button>`;
+      pendingAction = () => startLevel(levelIdx + 1);
+    } else {
+      blip(300, 0.2, "square", 0.04); setTimeout(() => blip(200, 0.4, "square", 0.04), 180);
+      resultCard.innerHTML = `
+        <h2>This mob has ended.</h2>
+        <p class="tag">You gathered ${mine} of ${level.target} mobbers. The message never went out.</p>
+        <div class="stats">Final score: ${totalScore.toLocaleString()} &middot; reached ${esc(level.name)}</div>
+        <button id="next">TRY AGAIN</button>`;
+      pendingAction = () => { totalScore = 0; startLevel(levelIdx); };
+    }
+    resultEl.classList.remove("hidden");
+    document.getElementById("next").onclick = onEnterOverlay;
+  }
+  function onEnterOverlay() {
+    if (state === "menu") return begin();
+    if (!pendingAction) return;
+    resultEl.classList.add("hidden");
+    const a = pendingAction; pendingAction = null; a();
+  }
+
+  function begin() {
+    if (state !== "menu") return;
+    message = document.getElementById("msg").value.trim() || "Join the mob!";
+    try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
+    document.getElementById("menu").classList.add("hidden");
+    startLevel(0);
+  }
+  document.getElementById("start").onclick = begin;
+
+  // ---------- Rendering ----------
+  function drawWorld() {
+    ctx.fillStyle = "#1c1f2b";
+    ctx.fillRect(0, 0, WORLD_W, WORLD_H);
+    // City blocks / streets
+    ctx.strokeStyle = "rgba(255,255,255,0.035)"; ctx.lineWidth = 1;
+    for (let x = 0; x <= WORLD_W; x += 80) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, WORLD_H); ctx.stroke(); }
+    for (let y = 0; y <= WORLD_H; y += 80) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(WORLD_W, y); ctx.stroke(); }
+    ctx.fillStyle = "rgba(255,255,255,0.04)";
+    for (let x = 400; x < WORLD_W; x += 400) ctx.fillRect(x - 18, 0, 36, WORLD_H);
+    for (let y = 400; y < WORLD_H; y += 400) ctx.fillRect(0, y - 18, WORLD_W, 36);
+    for (const d of decor) {
+      if (d.kind === "plaza") {
+        ctx.fillStyle = "rgba(255,255,255,0.03)";
+        ctx.beginPath(); ctx.arc(d.x, d.y, d.r, 0, 6.283); ctx.fill();
+        ctx.strokeStyle = "rgba(255,255,255,0.06)"; ctx.stroke();
+      } else {
+        ctx.fillStyle = "rgba(76,175,80,0.10)";
+        ctx.beginPath(); ctx.arc(d.x, d.y, d.r * 0.35, 0, 6.283); ctx.fill();
+      }
+    }
+    ctx.strokeStyle = "rgba(255,182,39,0.25)"; ctx.lineWidth = 4;
+    ctx.strokeRect(0, 0, WORLD_W, WORLD_H);
+  }
+
+  function drawRadius(L, t) {
+    const r = radiusFor(L);
+    ctx.save();
+    ctx.strokeStyle = L.color; ctx.globalAlpha = L.rally > 0 ? 0.6 : 0.22; ctx.lineWidth = L.rally > 0 ? 3 : 1.5;
+    ctx.setLineDash([8, 8]); ctx.lineDashOffset = -t * 30;
+    ctx.beginPath(); ctx.arc(L.x, L.y, r, 0, 6.283); ctx.stroke();
+    ctx.globalAlpha = L.rally > 0 ? 0.12 : 0.05; ctx.fillStyle = L.color; ctx.fill();
+    ctx.restore();
+  }
+
+  function teamColor(team) {
+    if (!team) return COLORS.neutral;
+    const L = leaders.find(l => l.team === team);
+    return L ? L.color : COLORS.neutral;
+  }
+
+  function drawPeople() {
+    for (const p of people) {
+      const c = teamColor(p.team);
+      ctx.fillStyle = c;
+      ctx.beginPath(); ctx.arc(p.x, p.y, 6, 0, 6.283); ctx.fill();
+      ctx.fillStyle = "rgba(0,0,0,0.25)";
+      ctx.beginPath(); ctx.arc(p.x, p.y + 1.5, 3, 0, 6.283); ctx.fill();
+      if (p.conv > 0.02 && p.convTeam) {
+        ctx.strokeStyle = teamColor(p.convTeam); ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.arc(p.x, p.y, 10, -Math.PI / 2, -Math.PI / 2 + p.conv * 6.283); ctx.stroke();
+      }
+    }
+  }
+
+  function drawLeader(L, t) {
+    const bob = Math.sin(t * 10 + L.team) * (Math.hypot(L.vx, L.vy) > 20 ? 1.5 : 0);
+    ctx.save();
+    ctx.translate(L.x, L.y + bob);
+    if (L.stun > 0) ctx.globalAlpha = 0.5 + 0.5 * Math.sin(t * 30);
+    ctx.fillStyle = "rgba(0,0,0,0.35)";
+    ctx.beginPath(); ctx.ellipse(0, 12, 12, 4, 0, 0, 6.283); ctx.fill();
+    ctx.fillStyle = L.color;
+    ctx.beginPath(); ctx.arc(0, 0, 12, 0, 6.283); ctx.fill();
+    ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.stroke();
+    // megaphone pointing in the direction of travel
+    const a = Math.hypot(L.vx, L.vy) > 5 ? Math.atan2(L.vy, L.vx) : 0;
+    ctx.rotate(a);
+    ctx.fillStyle = "#fff";
+    ctx.beginPath(); ctx.moveTo(8, -3); ctx.lineTo(20, -8); ctx.lineTo(20, 8); ctx.lineTo(8, 3); ctx.closePath(); ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = L.color; ctx.font = "bold 12px Didact Gothic, sans-serif"; ctx.textAlign = "center";
+    const n = counts.get(L.team) || 0;
+    ctx.fillText(`${L.name} (${n})`, L.x, L.y - 22);
+  }
+
+  function drawBuzz(b, t) {
+    ctx.save(); ctx.translate(b.x, b.y);
+    ctx.fillStyle = b.scared > 0 ? "rgba(255,59,59,0.5)" : COLORS.buzz;
+    ctx.beginPath(); ctx.arc(0, 0, 9, 0, 6.283); ctx.fill();
+    ctx.fillStyle = "#fff"; ctx.font = "bold 13px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(b.scared > 0 ? "?" : "✕", 0, 1);
+    ctx.restore();
+  }
+
+  function roundRect(x, y, w, h, r) {
+    ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  }
+
+  function drawHUD() {
+    const mine = counts.get(1) || 0;
+    const w = Math.min(420, vw - 32), x = (vw - w) / 2, y = 14;
+    ctx.fillStyle = "rgba(10,11,16,0.75)"; roundRect(x, y, w, 58, 10); ctx.fill();
+    ctx.textAlign = "left"; ctx.fillStyle = "#9aa0b4"; ctx.font = "12px Didact Gothic, sans-serif";
+    ctx.fillText(`LEVEL ${levelIdx + 1} · ${level.name.toUpperCase()}`, x + 12, y + 18);
+    ctx.textAlign = "right";
+    const tl = Math.max(0, timeLeft), mm = Math.floor(tl / 60), ss = Math.floor(tl % 60);
+    ctx.fillStyle = tl < 10 ? (Math.floor(tl * 4) % 2 ? "#ff5e5b" : "#fff") : "#f3f1ea";
+    ctx.font = "bold 14px Didact Gothic, sans-serif";
+    ctx.fillText(`⏱ This mob ends in ${mm}:${String(ss).padStart(2, "0")}`, x + w - 12, y + 18);
+    // progress bar
+    const bx = x + 12, by = y + 28, bw = w - 24, bh = 18;
+    ctx.fillStyle = "rgba(255,255,255,0.08)"; roundRect(bx, by, bw, bh, 9); ctx.fill();
+    const f = clamp(mine / level.target, 0, 1);
+    if (f > 0) { ctx.fillStyle = COLORS.you; roundRect(bx, by, Math.max(18, bw * f), bh, 9); ctx.fill(); }
+    ctx.fillStyle = f > 0.5 ? "#1b1300" : "#fff"; ctx.textAlign = "center"; ctx.font = "bold 12px Didact Gothic, sans-serif";
+    ctx.fillText(`${mine} / ${level.target} mobbers`, bx + bw / 2, by + 13);
+
+    // Rally indicator (desktop)
+    if (!isTouch) {
+      ctx.textAlign = "left"; ctx.font = "13px Didact Gothic, sans-serif";
+      ctx.fillStyle = player.rallyCd > 0 ? "#9aa0b4" : COLORS.you;
+      ctx.fillText(player.rallyCd > 0 ? `Rally recharging ${player.rallyCd.toFixed(1)}s` : "SPACE: Rally ready!", 16, vh - 18);
+    } else {
+      const btn = document.getElementById("rally");
+      btn.classList.toggle("cooling", player.rallyCd > 0);
+      btn.textContent = player.rallyCd > 0 ? Math.ceil(player.rallyCd) + "s" : "RALLY";
+    }
+
+    // Leaderboard
+    const board = leaders.map(L => ({ L, n: counts.get(L.team) || 0 })).sort((a, b) => b.n - a.n);
+    if (board.length > 1 && vw > 600) {
+      const lx = 16, ly = 14, lw = 190;
+      ctx.fillStyle = "rgba(10,11,16,0.7)"; roundRect(lx, ly, lw, 22 + board.length * 18, 8); ctx.fill();
+      ctx.font = "11px Didact Gothic, sans-serif"; ctx.textAlign = "left"; ctx.fillStyle = "#9aa0b4";
+      ctx.fillText("MOB SIZES", lx + 10, ly + 15);
+      board.forEach((e, i) => {
+        ctx.fillStyle = e.L.color; ctx.font = (e.L.isPlayer ? "bold " : "") + "12px Didact Gothic, sans-serif";
+        ctx.fillText(e.L.name, lx + 10, ly + 33 + i * 18);
+        ctx.textAlign = "right"; ctx.fillText(e.n, lx + lw - 10, ly + 33 + i * 18); ctx.textAlign = "left";
+      });
+    }
+
+    // Minimap
+    const mw = vw > 600 ? 180 : 120, mh = mw * WORLD_H / WORLD_W, mx = vw - mw - 16, my = vh - mh - 16;
+    ctx.fillStyle = "rgba(10,11,16,0.75)"; roundRect(mx - 4, my - 4, mw + 8, mh + 8, 6); ctx.fill();
+    const sx = mw / WORLD_W, sy = mh / WORLD_H;
+    for (const p of people) { ctx.fillStyle = teamColor(p.team); ctx.globalAlpha = p.team ? 0.9 : 0.35; ctx.fillRect(mx + p.x * sx - 1, my + p.y * sy - 1, 2, 2); }
+    ctx.globalAlpha = 1;
+    for (const b of buzzkills) { ctx.fillStyle = COLORS.buzz; ctx.fillRect(mx + b.x * sx - 2, my + b.y * sy - 2, 4, 4); }
+    for (const L of leaders) { ctx.fillStyle = L.color; ctx.beginPath(); ctx.arc(mx + L.x * sx, my + L.y * sy, L.isPlayer ? 4 : 3, 0, 6.283); ctx.fill(); }
+    ctx.strokeStyle = "rgba(255,255,255,0.4)"; ctx.lineWidth = 1;
+    ctx.strokeRect(mx + (cam.x - vw / 2) * sx, my + (cam.y - vh / 2) * sy, vw * sx, vh * sy);
+
+    if (flashT > 0) {
+      ctx.globalAlpha = Math.min(1, flashT);
+      ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.font = "bold 26px Didact Gothic, sans-serif";
+      ctx.fillText(flashText, vw / 2, vh * 0.28);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  let last = performance.now(), t = 0;
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
+    if (state === "play") update(dt);
+    ctx.fillStyle = "#14161f"; ctx.fillRect(0, 0, vw, vh);
+    if (level) {
+      ctx.save();
+      ctx.translate(Math.round(vw / 2 - cam.x), Math.round(vh / 2 - cam.y));
+      drawWorld();
+      for (const L of leaders) drawRadius(L, t);
+      drawPeople();
+      for (const b of buzzkills) drawBuzz(b, t);
+      for (const L of leaders) drawLeader(L, t);
+      for (const f of floaters) {
+        ctx.globalAlpha = clamp(f.life, 0, 1); ctx.fillStyle = f.color; ctx.textAlign = "center";
+        ctx.font = (f.big ? "bold 18px " : "bold 12px ") + "Didact Gothic, sans-serif";
+        ctx.fillText(f.text, f.x, f.y);
+      }
+      ctx.globalAlpha = 1;
+      ctx.restore();
+      if (state === "play") drawHUD();
+    } else {
+      // Attract-mode backdrop on the menu
+      ctx.fillStyle = "rgba(255,182,39,0.08)";
+      for (let i = 0; i < 60; i++) {
+        const x = (Math.sin(i * 12.9898) * 43758.5453 % 1 + 1) % 1 * vw;
+        const y = ((Math.cos(i * 78.233) * 12345.678 % 1 + 1) % 1 * vh + t * (10 + i % 7 * 5)) % vh;
+        ctx.beginPath(); ctx.arc(x, y, 6, 0, 6.283); ctx.fill();
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

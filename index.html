@@ -3,1285 +3,1127 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Mobber</title>
+<title>Mobber: Three Reels</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Limelight&family=Permanent+Marker&family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Special+Elite&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Limelight&family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Special+Elite&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --ink: #2b2620;
-    --red: #a3271c;
-    --card: #f4ecd8;
-    --paper: #efe6d2;
-  }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #120a05; color: var(--card);
-    font-family: "Special Elite", "Courier New", monospace; touch-action: none; user-select: none; -webkit-user-select: none; }
-  canvas { display: block; width: 100vw; height: 100vh; }
-  .overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 40px 16px 16px;
-    background: radial-gradient(ellipse at 46% 42%, rgba(18,10,5,0.1), rgba(8,4,1,0.8)); overflow-y: auto; }
-  .overlay.hidden { display: none; }
-
-  /* Menu: a manila dossier on the Don's desk */
-  .dossier { position: relative; max-width: 540px; width: 100%; text-align: center; color: var(--ink);
-    background: linear-gradient(160deg, #e4cc96, #cdb07a); padding: 34px 30px 28px; border-radius: 2px 4px 4px 4px;
-    box-shadow: 0 30px 80px rgba(0,0,0,0.75), inset 0 0 70px rgba(120,80,30,0.3); transform: rotate(-0.8deg); margin: auto; }
-  .dossier::before { content: "FILE No. 31-0412"; position: absolute; top: -27px; left: 22px; padding: 6px 18px 5px;
-    background: #dcc289; border-radius: 7px 7px 0 0; font-size: 12px; letter-spacing: 2px; color: rgba(43,38,32,0.7); }
-  .stamp { position: absolute; top: 18px; right: -10px; transform: rotate(11deg); border: 3px solid var(--red); color: var(--red);
-    padding: 5px 12px; font-size: 18px; letter-spacing: 3px; opacity: 0.78; outline: 1px solid var(--red); outline-offset: -7px; }
-  .title { font-family: "Limelight", serif; font-size: 66px; margin: 0; letter-spacing: 5px; color: var(--ink); }
-  .deco { color: var(--red); letter-spacing: 8px; margin: 0 0 6px; opacity: 0.8; }
-  .tag { color: rgba(43,38,32,0.75); margin: 0 0 18px; font-style: italic; }
-  .rules { text-align: left; font-size: 14px; line-height: 1.6; margin: 0 0 18px; padding-left: 18px; }
-  .rules b { color: var(--red); font-weight: normal; }
-  label { display: block; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; color: rgba(43,38,32,0.7); margin-bottom: 4px; }
-  .famrow { display: flex; align-items: baseline; gap: 8px; margin-bottom: 22px; font-size: 20px; }
-  input[type=text] { flex: 1; min-width: 0; padding: 4px 6px; border: 0; border-bottom: 2px solid var(--ink); border-radius: 0;
-    background: transparent; color: var(--ink); font: inherit; font-size: 22px; outline: none; }
-  .dossier button, .paper button { font-family: "Special Elite", monospace; font-size: 20px; padding: 10px 26px; cursor: pointer;
-    letter-spacing: 3px; background: transparent; color: var(--red); border: 3px solid var(--red); border-radius: 3px;
-    outline: 1px solid var(--red); outline-offset: -8px; transform: rotate(-1.5deg); }
-  .dossier button:hover, .paper button:hover { background: rgba(163,39,28,0.1); }
-  .alt { margin: 18px 0 0; font-size: 13px; }
-  .alt a { color: var(--ink); opacity: 0.75; }
-  .alt a:hover { opacity: 1; }
-
-  /* Result: the morning paper */
-  .paper { background: var(--paper); color: var(--ink); font-family: "Playfair Display", Georgia, serif; text-align: center;
-    padding: 26px 28px; max-width: 560px; width: 100%; box-shadow: 0 24px 70px rgba(0,0,0,0.8); transform: rotate(-1deg); margin: auto; }
-  .masthead { font-family: "Limelight", serif; font-size: 34px; letter-spacing: 2px; border-bottom: 3px double var(--ink); padding-bottom: 6px; }
-  .dateline { display: flex; justify-content: space-between; font-family: "Special Elite", monospace; font-size: 11px;
-    border-bottom: 1px solid var(--ink); padding: 4px 0; margin-bottom: 12px; }
-  .headline { font-weight: 900; font-size: 34px; line-height: 1.05; margin: 6px 0 8px; text-transform: uppercase; }
-  .subhead { font-style: italic; font-size: 17px; margin: 0 0 12px; }
-  .story { font-family: "Special Elite", monospace; font-size: 13px; text-align: left; line-height: 1.55; column-count: 2; column-gap: 20px;
-    border-top: 1px solid var(--ink); padding-top: 10px; margin-bottom: 16px; }
-  @media (max-width: 520px) { .story { column-count: 1; } .headline { font-size: 26px; } .title { font-size: 48px; } .dossier { padding: 28px 18px 22px; } }
-
-  /* Touch controls: poker chips */
-  .chip { position: fixed; bottom: 18px; width: 88px; height: 88px; border-radius: 50%; padding: 0; display: none;
-    font-family: "Special Elite", monospace; font-size: 13px; line-height: 1.25; letter-spacing: 1px; color: var(--card);
-    background: #8e2219; border: 7px dashed var(--card); box-shadow: 0 0 0 4px #8e2219, 0 8px 16px rgba(0,0,0,0.6); }
-  #bribe { left: 18px; }
-  #hire { left: 122px; background: #1e1a16; box-shadow: 0 0 0 4px #1e1a16, 0 8px 16px rgba(0,0,0,0.6); }
-  .chip.off { opacity: 0.45; }
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+  canvas { display: block; width: 100vw; height: 100vh; cursor: crosshair; }
+  #fire { position: fixed; right: 22px; bottom: 22px; width: 88px; height: 88px; border-radius: 50%; display: none;
+    border: 2px solid rgba(236,230,218,0.7); background: rgba(236,230,218,0.12); color: #ece6da;
+    font: 15px "Special Elite", monospace; letter-spacing: 2px; }
+  #swap { position: fixed; right: 124px; bottom: 34px; width: 64px; height: 64px; border-radius: 50%; display: none;
+    border: 2px solid rgba(236,230,218,0.5); background: rgba(236,230,218,0.08); color: #ece6da; font: 12px "Special Elite", monospace; }
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
-<button id="bribe" class="chip">BRIBE<br>$150</button>
-<button id="hire" class="chip">HIRE<br>$200</button>
-
-<div id="menu" class="overlay">
-  <div class="dossier">
-    <div class="stamp">CONFIDENTIAL</div>
-    <h1 class="title">MOBBER</h1>
-    <div class="deco">◆ ◆ ◆</div>
-    <p class="tag">The city sleeps. By dawn, it'll be yours.</p>
-    <ul class="rules">
-      <li><b>Move your Don</b> with WASD / arrow keys, or hold the mouse or a finger where you want to go.</li>
-      <li>Walk near <b>street toughs</b> (plain wooden pieces) to bring them into the family. A bigger crew means more pull.</li>
-      <li>Park your Don inside a block with more muscle than anyone else to <b>take the turf</b>. Every block you own pays protection money.</li>
-      <li><b>Rival families</b> want the same blocks. When crews collide, the bigger crew wins the brawl.</li>
-      <li>Muscle draws <b>heat</b>, and heat brings cops (blue pieces). <b>Space</b>: bribe nearby cops ($150). <b>E</b>: hire 4 goons ($200).</li>
-      <li>Hold enough blocks before dawn, and before a rival family does.</li>
-    </ul>
-    <label for="fam">Name your family</label>
-    <div class="famrow"><span>The</span><input id="fam" type="text" maxlength="16" value="Moretti"><span>Family</span></div>
-    <button id="start">TAKE THE CITY</button>
-    <p class="alt"><a href="fps.html">Or see it from the street: <i>Mobber, the picture</i> (first-person) &rarr;</a></p>
-  </div>
-</div>
-
-<div id="result" class="overlay hidden">
-  <div class="paper" id="resultCard"></div>
-</div>
-
+<button id="fire">FIRE</button>
+<button id="swap">SWAP</button>
 <script>
 (() => {
   "use strict";
-  const cv = document.getElementById("c");
-  const ctx = cv.getContext("2d");
-  const BW = 400, COLS = 6, ROWS = 4, WORLD_W = BW * COLS, WORLD_H = BW * ROWS, INSET = 26;
-  const FONT = "'Special Elite', 'Courier New', monospace";
-  const DECO = "Limelight, serif";
-  const GOLD = "#d39a17";
-  const RIVALS = [
-    { name: "Vitale",    color: "#c0392b" },
-    { name: "Santoro",   color: "#1f9584" },
-    { name: "O'Rourke",  color: "#5f9a24" },
-    { name: "Ferraro",   color: "#7d4fb8" },
-    { name: "Delacroix", color: "#b03a7a" },
-  ];
-  const RIVAL_HOMES = [23, 18, 5, 0, 21];
-  const PLAYER_HOME = 8;
-  const BIZ = [
-    ["Sal's Barbershop", 8], ["Rosa's Bakery", 8], ["Lucky Seven Casino", 24], ["Blue Note Club", 18],
-    ["Pier 9 Docks", 16], ["Golden Lotus Laundry", 9], ["The Gin Joint", 20], ["Fulton Fish Market", 12],
-    ["Hotel Regent", 22], ["Rail Yard", 14], ["Corner Pawn Shop", 10], ["Eight Ball Pool Hall", 12],
-    ["Midnight Diner", 9], ["Fine Tailoring", 10], ["Butcher Shop", 9], ["Checker Cab Co.", 14],
-    ["Shoe Shine Stand", 6], ["Racetrack Bookie", 22], ["Newsstand", 6], ["Back-Alley Speakeasy", 20],
-    ["Warehouse Row", 13], ["Boxing Gym", 11], ["Cigar Lounge", 15], ["Grand Theater", 17],
-  ];
-  const LEVELS = [
-    { name: "Little Italy",   target: 6,  time: 150, rivals: 1, cops: 1, toughs: 110 },
-    { name: "The Docks",      target: 7,  time: 165, rivals: 2, cops: 1, toughs: 150 },
-    { name: "Downtown",       target: 9,  time: 180, rivals: 3, cops: 2, toughs: 190 },
-    { name: "Uptown",         target: 11, time: 195, rivals: 4, cops: 2, toughs: 220 },
-    { name: "The Whole City", target: 13, time: 210, rivals: 5, cops: 3, toughs: 260 },
-  ];
-  function levelCfg(i) {
-    if (i < LEVELS.length) return LEVELS[i];
-    const extra = i - LEVELS.length + 1;
-    return { name: "Encore Night " + extra, target: Math.min(16, 13 + extra), time: 210, rivals: 5,
-             cops: 3 + extra, toughs: 280 };
-  }
-  const BRIBE_COST = 150, HIRE_COST = 200;
+  const cv = document.getElementById("c"), ctx = cv.getContext("2d");
+  const W = 640, H = 360, HALF = H / 2, PLANE = 0.75, K = (W / 2) / PLANE;
+  const buf = document.createElement("canvas"); buf.width = W; buf.height = H;
+  const bctx = buf.getContext("2d");
+  const img = bctx.createImageData(W, H);
+  const out = new Uint32Array(img.data.buffer);
+  const luma = new Float32Array(W * H);
+  const zbuf = new Float32Array(W);
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+  const isTouch = matchMedia("(pointer: coarse)").matches;
+  const DECO = "Limelight, serif", SERIF = "'Playfair Display', Georgia, serif", TYPE = "'Special Elite', 'Courier New', monospace";
+  const CREAM = "#ece6da";
 
-  // ---------- Canvas ----------
-  let vw = 0, vh = 0, dpr = 1, zoom = 1;
+  let vw = 0, vh = 0, dpr = 1, film = { x: 0, y: 0, w: 0, h: 0 };
   function resize() {
     dpr = Math.min(window.devicePixelRatio || 1, 2);
     vw = window.innerWidth; vh = window.innerHeight;
-    zoom = clamp(Math.min(vw, vh) / 760, 0.55, 1); // see more of the city on small screens
     cv.width = vw * dpr; cv.height = vh * dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    // Letterboxed 16:9 frame, like a projected reel
+    const s = Math.min(vw / W, vh / H);
+    film = { w: W * s, h: H * s, x: (vw - W * s) / 2, y: (vh - H * s) / 2, s };
   }
   window.addEventListener("resize", resize);
-
-  const rand = (a, b) => a + Math.random() * (b - a);
-  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-  const pick = arr => arr[(Math.random() * arr.length) | 0];
-  const money = n => "$" + Math.floor(n).toLocaleString();
-  const isTouch = matchMedia("(pointer: coarse)").matches;
   resize();
+  if (document.fonts) ["16px Limelight", "italic 700 16px 'Playfair Display'", "900 16px 'Playfair Display'", "16px 'Special Elite'"]
+    .forEach(f => document.fonts.load(f).catch(() => {}));
+
+  // ---------- Film stock ----------
+  const LUT = new Uint32Array(256);
+  for (let v = 0; v < 256; v++) {
+    const b = 9 + v * 0.95;
+    const r = Math.min(255, b), g = Math.min(255, b * 0.97), bl = Math.min(255, b * 0.9);
+    LUT[v] = (255 << 24) | ((bl | 0) << 16) | ((g | 0) << 8) | (r | 0);
+  }
+  const GRAIN = new Float32Array(256 * 256);
+  for (let i = 0; i < GRAIN.length; i++) GRAIN[i] = (Math.random() + Math.random() + Math.random() - 1.5) * 20;
+  const VIG = new Float32Array(W * H);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const dx = (x - W / 2) / (W / 2), dy = (y - H / 2) / (H / 2);
+    VIG[y * W + x] = clamp(1.1 - 0.32 * Math.pow(dx * dx * 0.8 + dy * dy, 1.3), 0, 1.12);
+  }
+  const noiseCv = document.createElement("canvas"); noiseCv.width = 640; noiseCv.height = 360;
+  { const g = noiseCv.getContext("2d"), d = g.createImageData(640, 360);
+    for (let i = 0; i < d.data.length; i += 4) { const v = Math.random() * 255; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255; }
+    g.putImageData(d, 0, 0); }
+
+  // ---------- Procedural art ----------
+  const gray = v => { v = clamp(v | 0, 0, 255); return `rgb(${v},${v},${v})`; };
+  function bitmap(w, h, draw) {
+    const c = document.createElement("canvas"); c.width = w; c.height = h;
+    const g = c.getContext("2d"); draw(g, w, h);
+    const d = g.getImageData(0, 0, w, h).data, L = new Uint8Array(w * h), A = new Uint8Array(w * h);
+    for (let i = 0; i < w * h; i++) { A[i] = d[i * 4 + 3]; L[i] = d[i * 4] * 0.3 + d[i * 4 + 1] * 0.59 + d[i * 4 + 2] * 0.11; }
+    return { w, h, L, A };
+  }
+  function speckle(g, w, h, n, a) {
+    for (let i = 0; i < n; i++) { const c = Math.random() < 0.5 ? 0 : 255; g.fillStyle = `rgba(${c},${c},${c},${a * Math.random()})`; g.fillRect(Math.random() * w, Math.random() * h, 1, 1); }
+  }
+
+  const TEX = {
+    brick: bitmap(64, 64, g => {
+      g.fillStyle = gray(48); g.fillRect(0, 0, 64, 64);
+      for (let r = 0; r < 8; r++) { const off = r % 2 ? 8 : 0; for (let c = -1; c < 4; c++) { g.fillStyle = gray(92 + rand(-20, 22)); g.fillRect(c * 16 + off + 1, r * 8 + 1, 14, 6); } }
+      speckle(g, 64, 64, 700, 0.35);
+    }),
+    paper: bitmap(64, 64, g => {
+      g.fillStyle = gray(150); g.fillRect(0, 0, 64, 64);
+      for (let x = 0; x < 64; x += 8) { g.fillStyle = gray(165); g.fillRect(x, 0, 2, 46); }
+      g.strokeStyle = gray(105); g.lineWidth = 1;
+      for (let y = 4; y < 44; y += 16) for (let x = 0; x < 64; x += 16) {
+        g.beginPath(); g.moveTo(x + 8, y); g.lineTo(x + 13, y + 6); g.lineTo(x + 8, y + 12); g.lineTo(x + 3, y + 6); g.closePath(); g.stroke();
+        g.fillStyle = gray(120); g.fillRect(x + 7, y + 5, 2, 2);
+      }
+      g.fillStyle = gray(62); g.fillRect(0, 46, 64, 18);
+      g.fillStyle = gray(118); g.fillRect(0, 45, 64, 3);
+      g.fillStyle = gray(45); for (let x = 0; x < 64; x += 16) g.fillRect(x, 50, 1, 14);
+      speckle(g, 64, 64, 300, 0.2);
+    }),
+    panel: bitmap(64, 64, g => {
+      g.fillStyle = gray(86); g.fillRect(0, 0, 64, 64);
+      for (let x = 0; x < 64; x += 16) { g.fillStyle = gray(52); g.fillRect(x, 0, 1, 64); }
+      g.strokeStyle = "rgba(30,30,30,0.35)";
+      for (let i = 0; i < 18; i++) { const x = rand(0, 64); g.beginPath(); g.moveTo(x, 0); g.bezierCurveTo(x + rand(-4, 4), 20, x + rand(-4, 4), 44, x + rand(-3, 3), 64); g.stroke(); }
+      g.fillStyle = gray(124); g.fillRect(0, 28, 64, 3);
+      g.strokeStyle = gray(60); g.lineWidth = 2; g.strokeRect(4, 36, 24, 24); g.strokeRect(36, 36, 24, 24); g.strokeRect(4, 4, 24, 20); g.strokeRect(36, 4, 24, 20);
+    }),
+    bar: bitmap(64, 64, g => {
+      g.fillStyle = gray(32); g.fillRect(0, 0, 64, 64);
+      for (const sy of [22, 42]) {
+        let x = 2;
+        while (x < 60) {
+          const bw = rand(4, 6), bh = rand(10, 15), v = rand(70, 215);
+          g.fillStyle = gray(v); g.fillRect(x, sy - bh, bw, bh); g.fillRect(x + bw / 2 - 1, sy - bh - 4, 2, 4);
+          g.fillStyle = gray(Math.min(255, v + 40)); g.fillRect(x + 1, sy - bh + 2, 1, bh - 4);
+          x += bw + rand(1, 3);
+        }
+        g.fillStyle = gray(140); g.fillRect(0, sy, 64, 3);
+      }
+      g.fillStyle = gray(88); g.fillRect(0, 50, 64, 14); g.fillStyle = gray(150); g.fillRect(0, 50, 64, 2);
+    }),
+    deco: bitmap(64, 64, g => {
+      g.fillStyle = gray(200); g.fillRect(0, 0, 64, 64);
+      for (let i = 0; i < 9; i++) {
+        const a0 = Math.PI + i * Math.PI / 9, a1 = a0 + Math.PI / 18;
+        g.fillStyle = gray(i % 2 ? 70 : 140); g.beginPath(); g.moveTo(32, 64);
+        g.lineTo(32 + Math.cos(a0) * 70, 64 + Math.sin(a0) * 70); g.lineTo(32 + Math.cos(a1) * 70, 64 + Math.sin(a1) * 70); g.fill();
+      }
+      g.fillStyle = gray(230); g.beginPath(); g.arc(32, 64, 12, Math.PI, 0); g.fill();
+      g.fillStyle = gray(40); g.fillRect(0, 0, 64, 3); g.fillRect(0, 61, 64, 3); g.fillRect(0, 0, 2, 64);
+    }),
+    door: bitmap(64, 64, g => {
+      g.fillStyle = gray(30); g.fillRect(0, 0, 64, 64);
+      g.fillStyle = gray(112); g.fillRect(10, 4, 44, 60);
+      g.strokeStyle = gray(70); g.lineWidth = 2; g.strokeRect(16, 20, 32, 16); g.strokeRect(16, 42, 32, 18);
+      g.fillStyle = gray(225); g.beginPath(); g.arc(47, 41, 2.5, 0, 6.283); g.fill();
+      g.fillStyle = gray(15); g.fillRect(18, 7, 28, 10);
+      g.fillStyle = gray(240); g.font = "bold 8px monospace"; g.textAlign = "center"; g.fillText("EXIT", 32, 15);
+    }),
+  };
+  const FLOORS = {
+    checker: bitmap(64, 64, g => {
+      for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) { g.fillStyle = gray((x + y) % 2 ? 36 : 196); g.fillRect(x * 16, y * 16, 16, 16); }
+      g.fillStyle = gray(110); for (let i = 0; i <= 64; i += 16) { g.fillRect(i, 0, 1, 64); g.fillRect(0, i, 64, 1); }
+      speckle(g, 64, 64, 400, 0.3);
+    }),
+    concrete: bitmap(64, 64, g => {
+      g.fillStyle = gray(96); g.fillRect(0, 0, 64, 64); speckle(g, 64, 64, 1600, 0.35);
+      g.strokeStyle = gray(60); g.beginPath(); g.moveTo(5, 10); g.lineTo(20, 22); g.lineTo(26, 40); g.stroke();
+      g.fillStyle = gray(70); g.fillRect(0, 0, 64, 1); g.fillRect(0, 0, 1, 64);
+    }),
+    carpet: bitmap(64, 64, g => {
+      g.fillStyle = gray(58); g.fillRect(0, 0, 64, 64);
+      g.strokeStyle = gray(95); g.lineWidth = 2;
+      for (let y = 0; y < 64; y += 32) for (let x = 0; x < 64; x += 32) {
+        g.beginPath(); g.moveTo(x + 16, y + 2); g.lineTo(x + 30, y + 16); g.lineTo(x + 16, y + 30); g.lineTo(x + 2, y + 16); g.closePath(); g.stroke();
+        g.fillStyle = gray(120); g.fillRect(x + 14, y + 14, 4, 4);
+      }
+      speckle(g, 64, 64, 500, 0.25);
+    }),
+  };
+  const CEILS = {
+    tin: bitmap(64, 64, g => {
+      g.fillStyle = gray(118); g.fillRect(0, 0, 64, 64);
+      for (let y = 0; y < 64; y += 16) for (let x = 0; x < 64; x += 16) {
+        g.fillStyle = gray(150); g.fillRect(x + 2, y + 2, 12, 2); g.fillRect(x + 2, y + 2, 2, 12);
+        g.fillStyle = gray(80); g.fillRect(x + 2, y + 12, 12, 2); g.fillRect(x + 12, y + 2, 2, 12);
+      }
+    }),
+    beams: bitmap(64, 64, g => {
+      g.fillStyle = gray(40); g.fillRect(0, 0, 64, 64);
+      g.fillStyle = gray(78); g.fillRect(0, 0, 64, 10); g.fillRect(0, 32, 64, 10);
+      g.fillStyle = gray(25); g.fillRect(0, 10, 64, 2); g.fillRect(0, 42, 64, 2);
+      speckle(g, 64, 64, 300, 0.3);
+    }),
+    plaster: bitmap(64, 64, g => {
+      g.fillStyle = gray(150); g.fillRect(0, 0, 64, 64); speckle(g, 64, 64, 600, 0.15);
+      g.strokeStyle = gray(120); g.strokeRect(0.5, 0.5, 63, 63);
+    }),
+  };
+
+  // People, drawn facing the camera
+  function person(g, o, pose) {
+    const cx = 32;
+    g.save();
+    if (o.wide) { g.translate(cx, 64); g.scale(1.18, 1); g.translate(-cx, -64); }
+    if (pose === "hurt") { g.translate(cx, 64); g.rotate(0.12); g.translate(-cx, -64); }
+    g.fillStyle = gray(o.pants); g.fillRect(cx - 7, 46, 5, 16); g.fillRect(cx + 2, 46, 5, 16);
+    g.fillStyle = gray(18); g.fillRect(cx - 8, 61, 7, 3); g.fillRect(cx + 1, 61, 7, 3);
+    g.fillStyle = gray(o.coat); g.beginPath(); g.moveTo(cx - 10, 19); g.lineTo(cx + 10, 19); g.lineTo(cx + 12, 52); g.lineTo(cx - 12, 52); g.closePath(); g.fill();
+    if (o.stripes) { g.strokeStyle = "rgba(255,255,255,0.18)"; g.lineWidth = 0.6; for (let x = -10; x <= 10; x += 3) { g.beginPath(); g.moveTo(cx + x, 20); g.lineTo(cx + x * 1.15, 52); g.stroke(); } }
+    g.fillStyle = gray(228); g.beginPath(); g.moveTo(cx - 3, 19); g.lineTo(cx + 3, 19); g.lineTo(cx, 30); g.fill();
+    g.fillStyle = gray(o.tie); g.fillRect(cx - 1, 20, 2, 9);
+    g.strokeStyle = gray(o.coat - 35); g.lineWidth = 1; g.beginPath(); g.moveTo(cx, 30); g.lineTo(cx, 52); g.stroke();
+    g.fillStyle = gray(o.skin); g.beginPath(); g.ellipse(cx, 13.5, 5, 6, 0, 0, 6.283); g.fill();
+    g.fillStyle = gray(o.skin - 85); g.fillRect(cx - 5, 10, 10, 3);
+    g.fillStyle = gray(o.hat); g.fillRect(cx - 9, 7.5, 18, 3);
+    g.beginPath(); g.moveTo(cx - 6, 8); g.lineTo(cx - 5, 1); g.lineTo(cx + 5, 1); g.lineTo(cx + 6, 8); g.fill();
+    g.fillStyle = gray(o.band); g.fillRect(cx - 6, 5.5, 12, 2);
+    if (o.cigar) { g.fillStyle = gray(90); g.fillRect(cx + 1, 16, 5, 1.5); g.fillStyle = gray(255); g.fillRect(cx + 6, 15.6, 1.5, 2); }
+    // Arms and the gun
+    g.fillStyle = gray(o.coat - 12);
+    if (pose === "aim" || pose === "fire") {
+      g.fillRect(cx - 11, 22, 5, 12); g.fillRect(cx + 6, 22, 5, 12);
+      g.fillStyle = gray(o.skin); g.fillRect(cx - 5, 31, 4, 3); g.fillRect(cx + 1, 29, 4, 3);
+      if (o.weapon === "tommy") { g.fillStyle = gray(24); g.beginPath(); g.arc(cx, 34, 5, 0, 6.283); g.fill(); g.fillStyle = gray(70); g.beginPath(); g.arc(cx - 1, 33, 1.6, 0, 6.283); g.fill(); }
+      g.fillStyle = gray(30); g.fillRect(cx - 2.5, 25, 5, 6);
+      g.fillStyle = gray(5); g.beginPath(); g.arc(cx, 27, 1.6, 0, 6.283); g.fill();
+      if (pose === "fire") {
+        g.fillStyle = gray(255);
+        g.beginPath();
+        for (let i = 0; i < 16; i++) { const a = i * Math.PI / 8, r = i % 2 ? 4 : 11; g.lineTo(cx + Math.cos(a) * r, 26 + Math.sin(a) * r); }
+        g.closePath(); g.fill();
+      }
+    } else {
+      g.fillRect(cx - 12, 21, 4, 18); g.fillRect(cx + 8, 21, 4, 16);
+      g.save(); g.translate(cx, 36); g.rotate(pose === "hurt" ? 0.6 : -0.45);
+      g.fillStyle = gray(26);
+      if (o.weapon === "tommy") { g.fillRect(-13, -2, 26, 4); g.beginPath(); g.arc(-2, 3, 4, 0, 6.283); g.fill(); g.fillRect(-16, -1, 4, 6); }
+      else if (o.weapon === "shotgun") { g.fillRect(-15, -1.5, 30, 3); g.fillRect(-16, -1, 6, 6); }
+      else { g.fillRect(4, -2, 8, 3); g.fillRect(4, 0, 3, 5); }
+      g.restore();
+      g.fillStyle = gray(o.skin); g.fillRect(cx - 12, 37, 4, 3); g.fillRect(cx + 8, 35, 4, 3);
+    }
+    g.restore();
+  }
+  function personSet(o) {
+    const f = pose => bitmap(64, 64, g => person(g, o, pose));
+    return {
+      idle: f("idle"), aim: f("aim"), fire: f("fire"), hurt: f("hurt"),
+      fall: bitmap(64, 64, g => { g.translate(32, 64); g.rotate(-0.85); g.translate(-32, -64); person(g, o, "hurt"); }),
+      dead: bitmap(64, 64, g => {
+        g.fillStyle = gray(o.coat); g.beginPath(); g.ellipse(30, 58, 20, 5, 0, 0, 6.283); g.fill();
+        g.fillStyle = gray(o.pants); g.fillRect(44, 56, 14, 4);
+        g.fillStyle = gray(o.skin); g.beginPath(); g.ellipse(10, 57, 4, 3.5, 0, 0, 6.283); g.fill();
+        g.fillStyle = gray(o.hat); g.beginPath(); g.ellipse(4, 61, 6, 2.5, 0, 0, 6.283); g.fill();
+      }),
+    };
+  }
+  const GOON = personSet({ coat: 74, hat: 34, band: 14, pants: 48, tie: 28, skin: 168, weapon: "tommy" });
+  const HEAVY = personSet({ coat: 182, hat: 200, band: 40, pants: 66, tie: 40, skin: 160, weapon: "shotgun", wide: true });
+  const BOSS = personSet({ coat: 30, hat: 232, band: 18, pants: 30, tie: 232, skin: 172, weapon: "pistol", stripes: true, cigar: true, wide: true });
+
+  const OBJ = {
+    table: bitmap(64, 64, g => {
+      g.fillStyle = gray(212); g.beginPath(); g.moveTo(14, 40); g.lineTo(50, 40); g.lineTo(54, 63); g.lineTo(10, 63); g.closePath(); g.fill();
+      g.strokeStyle = gray(170); for (let x = 16; x < 50; x += 6) { g.beginPath(); g.moveTo(x, 42); g.lineTo(x - 2 + (x - 32) * 0.1, 63); g.stroke(); }
+      g.fillStyle = gray(235); g.beginPath(); g.ellipse(32, 40, 19, 3, 0, 0, 6.283); g.fill();
+      g.fillStyle = gray(60); g.fillRect(31, 30, 2, 9); g.fillStyle = gray(250); g.beginPath(); g.moveTo(26, 31); g.lineTo(38, 31); g.lineTo(35, 24); g.lineTo(29, 24); g.fill();
+      g.fillStyle = gray(90); g.fillRect(41, 31, 3, 8); g.fillRect(41.8, 28, 1.4, 3);
+    }),
+    crate: bitmap(64, 64, g => {
+      g.fillStyle = gray(118); g.fillRect(8, 18, 48, 46);
+      g.fillStyle = gray(80); for (let y = 18; y < 64; y += 9) g.fillRect(8, y, 48, 1);
+      g.strokeStyle = gray(70); g.lineWidth = 3; g.strokeRect(9.5, 19.5, 45, 43); g.beginPath(); g.moveTo(10, 20); g.lineTo(54, 62); g.stroke();
+      g.fillStyle = gray(30); g.font = "bold 10px monospace"; g.textAlign = "center"; g.fillText("RYE", 22, 34);
+    }),
+    piano: bitmap(64, 64, g => {
+      g.fillStyle = gray(24); g.fillRect(4, 16, 56, 48);
+      g.fillStyle = gray(56); g.fillRect(4, 16, 56, 4);
+      g.fillStyle = gray(225); g.fillRect(6, 38, 52, 6);
+      g.fillStyle = gray(20); for (let x = 8; x < 58; x += 4) if ((x / 4 | 0) % 7 !== 2 && (x / 4 | 0) % 7 !== 6) g.fillRect(x, 38, 2, 4);
+      g.fillStyle = gray(200); g.fillRect(24, 22, 16, 10); g.fillStyle = gray(120); for (let y = 24; y < 31; y += 2) g.fillRect(26, y, 12, 1);
+    }),
+    lamp: bitmap(64, 64, g => {
+      g.fillStyle = gray(40); g.fillRect(31, 18, 2, 44); g.beginPath(); g.ellipse(32, 62, 8, 2, 0, 0, 6.283); g.fill();
+      g.fillStyle = gray(250); g.beginPath(); g.moveTo(24, 20); g.lineTo(40, 20); g.lineTo(36, 6); g.lineTo(28, 6); g.closePath(); g.fill();
+      g.fillStyle = gray(200); g.fillRect(24, 19, 16, 2);
+    }),
+    hanging: bitmap(64, 64, g => {
+      g.fillStyle = gray(30); g.fillRect(31.5, 0, 1, 22);
+      g.fillStyle = gray(70); g.beginPath(); g.moveTo(32, 20); g.lineTo(44, 30); g.lineTo(20, 30); g.closePath(); g.fill();
+      g.fillStyle = gray(255); g.beginPath(); g.arc(32, 31, 4, 0, 6.283); g.fill();
+    }),
+    barrel: bitmap(64, 64, g => {
+      g.fillStyle = gray(76); g.beginPath(); g.ellipse(32, 42, 15, 22, 0, 0, 6.283); g.fill();
+      g.fillStyle = gray(40); g.fillRect(16, 28, 32, 3); g.fillRect(16, 52, 32, 3);
+      g.fillStyle = gray(110); g.fillRect(24, 22, 3, 38);
+    }),
+    cash: bitmap(64, 64, g => {
+      for (let i = 0; i < 3; i++) { g.fillStyle = gray(150 - i * 10); g.fillRect(20 + i * 2, 52 - i * 4, 22, 6); g.fillStyle = gray(240); g.fillRect(29 + i * 2, 52 - i * 4, 4, 6); }
+      g.fillStyle = gray(30); g.font = "bold 7px monospace"; g.fillText("$", 23, 50);
+    }),
+    medkit: bitmap(64, 64, g => {
+      g.fillStyle = gray(225); g.fillRect(20, 46, 24, 17); g.fillStyle = gray(40); g.fillRect(30, 49, 4, 11); g.fillRect(26, 53, 12, 3);
+      g.fillStyle = gray(150); g.fillRect(28, 43, 8, 3);
+    }),
+    ammo: bitmap(64, 64, g => {
+      g.fillStyle = gray(34); g.beginPath(); g.arc(32, 52, 10, 0, 6.283); g.fill();
+      g.strokeStyle = gray(110); g.lineWidth = 1.5; g.beginPath(); g.arc(32, 52, 7, 0, 6.283); g.stroke();
+      g.fillStyle = gray(150); g.beginPath(); g.arc(32, 52, 2, 0, 6.283); g.fill();
+    }),
+    ledger: bitmap(64, 64, g => {
+      g.fillStyle = gray(235); g.fillRect(21, 50, 22, 4);
+      g.fillStyle = gray(36); g.fillRect(20, 44, 24, 7); g.fillStyle = gray(200); g.fillRect(23, 46, 18, 1);
+      g.fillStyle = gray(36); g.fillRect(20, 53, 24, 3);
+    }),
+  };
+
+  // First-person weapons
+  function muzzleFlash(g, x, y, big) {
+    g.fillStyle = gray(255); g.beginPath();
+    for (let i = 0; i < 20; i++) { const a = Math.PI + (i - 10) * 0.16, r = i % 2 ? big * 0.3 : big; g.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r); }
+    g.closePath(); g.fill();
+    const gr = g.createRadialGradient(x, y, 0, x, y, big * 1.4);
+    gr.addColorStop(0, "rgba(255,255,255,0.7)"); gr.addColorStop(1, "rgba(255,255,255,0)");
+    g.fillStyle = gr; g.beginPath(); g.arc(x, y, big * 1.4, 0, 6.283); g.fill();
+  }
+  function hand(g, x, y, rot, s) {
+    g.save(); g.translate(x, y); g.rotate(rot); g.scale(s, s);
+    g.fillStyle = gray(52); g.fillRect(10, -16, 90, 40);               // coat sleeve
+    g.fillStyle = gray(236); g.fillRect(4, -14, 12, 36);               // shirt cuff
+    g.fillStyle = gray(178); g.beginPath(); g.ellipse(-8, 4, 20, 16, 0, 0, 6.283); g.fill();
+    g.fillStyle = gray(150); g.beginPath(); g.ellipse(-12, 12, 16, 7, 0.1, 0, 6.283); g.fill();
+    g.strokeStyle = gray(120); g.lineWidth = 2;
+    for (let k = 0; k < 3; k++) { g.beginPath(); g.moveTo(-22 + k * 7, -6); g.lineTo(-24 + k * 7, 10); g.stroke(); }
+    g.restore();
+  }
+  function revolverArt(flash) {
+    return bitmap(260, 180, g => {
+      g.save(); g.translate(150, 112); g.rotate(0.38);
+      // grip
+      g.fillStyle = gray(84); g.beginPath(); g.moveTo(18, 4); g.lineTo(44, 40); g.lineTo(30, 52); g.lineTo(6, 14); g.closePath(); g.fill();
+      g.strokeStyle = gray(60); g.lineWidth = 1; for (let k = 0; k < 6; k++) { g.beginPath(); g.moveTo(12 + k * 4, 10 + k * 5); g.lineTo(34 + k * 2, 38 + k); g.stroke(); }
+      // frame and barrel
+      g.fillStyle = gray(92); g.fillRect(-92, -9, 110, 15);
+      g.fillStyle = gray(196); g.fillRect(-92, -9, 110, 3);
+      g.fillStyle = gray(60); g.fillRect(-92, 3, 110, 3);
+      g.fillStyle = gray(70); g.fillRect(-96, -15, 7, 7);
+      // cylinder
+      g.fillStyle = gray(108); g.fillRect(-6, -20, 34, 32);
+      g.fillStyle = gray(60); for (let k = 0; k < 4; k++) g.fillRect(-2 + k * 8, -20, 3, 32);
+      g.fillStyle = gray(190); g.fillRect(-4, -19, 30, 3);
+      // hammer + trigger guard
+      g.fillStyle = gray(80); g.fillRect(26, -22, 8, 9);
+      g.strokeStyle = gray(80); g.lineWidth = 3; g.beginPath(); g.arc(14, 16, 9, 0, Math.PI); g.stroke();
+      if (flash) muzzleFlash(g, -98, -2, 40);
+      g.restore();
+      hand(g, 170, 148, 0.55, 1.2);
+    });
+  }
+  function tommyArt(flash) {
+    return bitmap(340, 200, g => {
+      g.save(); g.translate(190, 120); g.rotate(0.3);
+      // wooden stock running back to the shoulder
+      g.fillStyle = gray(98); g.beginPath(); g.moveTo(60, -12); g.lineTo(160, -4); g.lineTo(160, 30); g.lineTo(60, 12); g.closePath(); g.fill();
+      g.strokeStyle = gray(74); g.lineWidth = 1; for (let k = 0; k < 5; k++) { g.beginPath(); g.moveTo(64, -8 + k * 4); g.lineTo(158, -1 + k * 6); g.stroke(); }
+      // receiver
+      g.fillStyle = gray(88); g.fillRect(-46, -14, 108, 24);
+      g.fillStyle = gray(200); g.fillRect(-46, -14, 108, 3);
+      g.fillStyle = gray(56); g.fillRect(-46, 7, 108, 3);
+      g.fillStyle = gray(140); g.fillRect(30, -18, 10, 5);
+      // finned barrel
+      g.fillStyle = gray(76); g.fillRect(-120, -9, 76, 14);
+      g.fillStyle = gray(150); for (let x = -116; x < -50; x += 6) g.fillRect(x, -11, 3, 18);
+      g.fillStyle = gray(70); g.fillRect(-132, -6, 14, 8);
+      // drum magazine
+      g.fillStyle = gray(66); g.beginPath(); g.arc(4, 30, 30, 0, 6.283); g.fill();
+      g.strokeStyle = gray(150); g.lineWidth = 3; g.beginPath(); g.arc(4, 30, 22, -2.6, -0.6); g.stroke();
+      g.fillStyle = gray(160); g.beginPath(); g.arc(4, 30, 5, 0, 6.283); g.fill();
+      // front grip
+      g.fillStyle = gray(98); g.fillRect(-58, 8, 14, 32);
+      if (flash) muzzleFlash(g, -136, -2, 46);
+      g.restore();
+      hand(g, 136, 132, 1.9, 1.0);
+      hand(g, 244, 150, 0.6, 1.15);
+    });
+  }
+  const GUNART = [[revolverArt(false), revolverArt(true)], [tommyArt(false), tommyArt(true)]];
+
+  // ---------- The reels ----------
+  // # brick  W wallpaper  P wood panel  B bar shelves  T deco tile  E exit door
+  // S start  g goon  G heavy  V the Don  c table  k crate  p piano  l floor lamp  * hanging lamp  o barrel
+  // $ cash  + first aid  a drum magazine  L ledger
+  const LEVELS = [
+    { chapter: "CHAPTER ONE", title: "The Blue Note Club", floor: "checker", ceil: "tin", ambient: 0.4, objective: "ledger",
+      card: ["The Vitale boys keep their books", "behind the bar of the Blue Note.", "Walk in. Take the ledger. Walk out."],
+      map: [
+        "WWWWWWWWBBBBBBBBWWWWWWWW",
+        "W.l....W........W.....lW",
+        "W......W.c....c.W..g...W",
+        "W..$...W...l....W......W",
+        "W..a...W..g..g.......L.W",
+        "WWW.WWWW........W......W",
+        "W..........p....WWWWW.WW",
+        "W.c..c..........W.....lW",
+        "W....l.....g....W..+...W",
+        "W.c..c..........W.g....W",
+        "W.......c..c....W......W",
+        "WWWW.WWWW..WWWWWW......W",
+        "Wl.....W....W.....g....W",
+        "W..g...W.$..W..........E",
+        "W......W....W.....$...lW",
+        "W..............WWWWWWWWW",
+        "W+..S..W...l.W.........W",
+        "WWWWWWWWWWWWWWWWWWWWWWWW",
+      ] },
+    { chapter: "CHAPTER TWO", title: "Pier 9", floor: "concrete", ceil: "beams", ambient: 0.42, objective: "ledger",
+      card: ["The ledger points to a warehouse", "full of Canadian rye and Vitale muscle.", "Their shipping book is in the foreman's office."],
+      map: [
+        "########################",
+        "#S.....#....*k.k.......#",
+        "#......#..g..........G.#",
+        "#..k...#.....k.k...*...#",
+        "#...*..###.######..o...#",
+        "#..a..............o....#",
+        "####.###..k..k..k......#",
+        "#......#.....*........g#",
+        "#..g...#..k..k..k......#",
+        "#..*...#...............#",
+        "#.o....####.#####PPPP.PP",
+        "#.......g...#...P....l.P",
+        "#..$........#.G.P..L...P",
+        "####.####.*.#...P......P",
+        "#.......#...#...PPP.PPPP",
+        "#..+.*..#..g...........#",
+        "#.......#....k.k...$*..#",
+        "#..g....#.............aE",
+        "#.......#....*.........#",
+        "########################",
+      ] },
+    { chapter: "CHAPTER THREE", title: "Hotel Regent, Top Floor", floor: "carpet", ceil: "plaster", ambient: 0.42, objective: "boss",
+      card: ["Don Vitale takes his supper", "in the penthouse at eight o'clock.", "Don't be late."],
+      map: [
+        "TTTTTTTTTTTTTTTTTTTTTTTT",
+        "Tl.......T.....T......lT",
+        "T..S.....T..g..T...G...T",
+        "T........T.....T.......T",
+        "T..+..l..T..l..T.l...a.T",
+        "TTTT.TTTTTT.TTTTTT.TTTTT",
+        "W......................W",
+        "W.l....g.....l.....g..lW",
+        "W......................W",
+        "WWWW.WWWWWW.WWWWWW.WWWWW",
+        "W.......W.....W........W",
+        "W..g....W..$..W....G...W",
+        "W..l..a.W..l..W..l.....W",
+        "W.......W..g..W........W",
+        "WWWW.WWWWWW.WWWWWWW.WWWW",
+        "P......................P",
+        "P..l..c....c.....c...l.P",
+        "P......g......V........P",
+        "P..+..c....c.....c..g..P",
+        "P.l........l.......l...P",
+        "PPPPPPPPPPPPPPPPPPPPPEPP",
+      ] },
+  ];
+  const WALLTEX = { "#": TEX.brick, W: TEX.paper, P: TEX.panel, B: TEX.bar, T: TEX.deco, E: TEX.door };
+  const ETYPE = {
+    g: { hp: 40, speed: 1.5, dmg: [6, 11], cd: [1.3, 2.3], range: 13, art: GOON, aim: 0.5, burst: 1, name: "goon" },
+    G: { hp: 95, speed: 1.15, dmg: [13, 22], cd: [1.7, 2.7], range: 7, art: HEAVY, aim: 0.6, burst: 1, name: "heavy" },
+    V: { hp: 420, speed: 1.05, dmg: [7, 12], cd: [1.0, 1.7], range: 14, art: BOSS, aim: 0.45, burst: 3, name: "boss" },
+  };
+  const WEAP = [
+    { name: "REVOLVER", mag: 6, rate: 0.36, dmg: 34, spread: 1.5, reload: 1.3 },
+    { name: "TOMMY GUN", mag: 50, rate: 0.085, dmg: 15, spread: 9, reload: 2.0 },
+  ];
 
   // ---------- Audio ----------
-  let actx = null;
-  function tone(freq, dur = 0.08, type = "triangle", vol = 0.05, slideTo = 0) {
+  let actx = null, noise = null;
+  function initAudio() {
+    if (actx) return;
+    try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
+    noise = actx.createBuffer(1, actx.sampleRate, actx.sampleRate);
+    const d = noise.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    // Projector clatter: band-passed noise chopped at 24 frames a second
+    const src = actx.createBufferSource(); src.buffer = noise; src.loop = true;
+    const bp = actx.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = 2400; bp.Q.value = 0.8;
+    const g = actx.createGain(); g.gain.value = 0.006;
+    const lfo = actx.createOscillator(); lfo.type = "square"; lfo.frequency.value = 24;
+    const lg = actx.createGain(); lg.gain.value = 0.004; lfo.connect(lg).connect(g.gain);
+    src.connect(bp).connect(g).connect(actx.destination); src.start(); lfo.start();
+  }
+  function bang(cut, decay, vol, thump) {
     if (!actx) return;
-    const o = actx.createOscillator(), g = actx.createGain(), t0 = actx.currentTime;
-    o.type = type; o.frequency.setValueAtTime(freq, t0);
-    if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t0 + dur);
-    g.gain.setValueAtTime(vol, t0);
-    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-    o.connect(g).connect(actx.destination);
-    o.start(t0); o.stop(t0 + dur);
-  }
-  const later = (ms, fn) => setTimeout(fn, ms);
-  let lastRecruitSnd = 0, lastPowSnd = 0;
-
-  // ---------- State ----------
-  let state = "menu";
-  let levelIdx = 0, totalScore = 0, familyName = "Moretti";
-  let level, timeLeft, people, leaders, cops, blocks, floaters, downs, player, cam, heat, stats;
-  const crew = new Map();
-  let flashText = "", flashT = 0;
-  function flash(t, dur = 2.2) { flashText = t; flashT = dur; }
-
-  function makeLeader(team, color, name, x, y, isPlayer) {
-    return { team, color, name, x, y, vx: 0, vy: 0, isPlayer, stun: 0, cash: 150, goal: null, think: 0 };
-  }
-  function makeTough(x, y) {
-    return { x, y, vx: 0, vy: 0, team: 0, convTeam: 0, conv: 0, ang: rand(0, 6.283),
-             ox: rand(-1, 1), oy: rand(-1, 1), cool: 0, hp: 1, dead: false };
-  }
-  function spawnEdgeTough() {
-    const side = (Math.random() * 4) | 0;
-    const x = side === 0 ? 8 : side === 1 ? WORLD_W - 8 : rand(0, WORLD_W);
-    const y = side === 2 ? 8 : side === 3 ? WORLD_H - 8 : rand(0, WORLD_H);
-    return makeTough(x, y);
-  }
-  function addGoons(L, n, spread = 30) {
-    for (let k = 0; k < n; k++) {
-      const p = makeTough(L.x + rand(-spread, spread), L.y + rand(-spread, spread));
-      p.team = L.team; people.push(p);
+    const t = actx.currentTime;
+    const s = actx.createBufferSource(); s.buffer = noise; s.playbackRate.value = rand(0.8, 1.1);
+    const f = actx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = cut;
+    const g = actx.createGain(); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + decay);
+    s.connect(f).connect(g).connect(actx.destination); s.start(t, rand(0, 0.5)); s.stop(t + decay);
+    if (thump) {
+      const o = actx.createOscillator(), og = actx.createGain();
+      o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.15);
+      og.gain.setValueAtTime(thump, t); og.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+      o.connect(og).connect(actx.destination); o.start(t); o.stop(t + 0.2);
     }
   }
-  const blockAt = (x, y) => blocks[clamp((y / BW) | 0, 0, ROWS - 1) * COLS + clamp((x / BW) | 0, 0, COLS - 1)];
+  function tone(freq, dur, type = "sine", vol = 0.05, slide = 0) {
+    if (!actx) return;
+    const t = actx.currentTime, o = actx.createOscillator(), g = actx.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t); if (slide) o.frequency.exponentialRampToValueAtTime(slide, t + dur);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(actx.destination); o.start(t); o.stop(t + dur);
+  }
+  const SND = {
+    rev: () => bang(2600, 0.3, 0.5, 0.5),
+    tommy: () => bang(3200, 0.09, 0.32, 0.25),
+    enemy: d => bang(1500, 0.22, clamp(0.4 - d * 0.02, 0.06, 0.4), 0.15),
+    shotgun: d => bang(1100, 0.35, clamp(0.5 - d * 0.03, 0.08, 0.5), 0.3),
+    pickup: () => { tone(880, 0.08); setTimeout(() => tone(1320, 0.12), 70); },
+    hurt: () => tone(170, 0.22, "sawtooth", 0.06, 80),
+    click: () => tone(1800, 0.03, "square", 0.03),
+    reload: () => { tone(900, 0.04, "square", 0.03); setTimeout(() => tone(600, 0.05, "square", 0.03), 300); },
+    down: () => tone(220, 0.35, "triangle", 0.05, 70),
+  };
 
-  function buildBlocks() {
-    const biz = BIZ.slice().sort(() => Math.random() - 0.5);
-    blocks = [];
-    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
-      const [name, value] = biz[r * COLS + c];
-      const x = c * BW, y = r * BW;
-      const roofs = [];
-      // A ring of rooftops around a central courtyard where the storefront sign sits.
-      const lx = x + INSET, ly = y + INSET, lw = BW - INSET * 2;
-      const n = 3 + ((Math.random() * 3) | 0);
-      for (let k = 0; k < n; k++) {
-        const side = k % 4, len = rand(lw * 0.35, lw * 0.55), depth = rand(70, 110), off = rand(0, lw - len);
-        const shade = 24 + ((Math.random() * 14) | 0);
-        if (side === 0) roofs.push([lx + off, ly, len, depth, shade]);
-        if (side === 1) roofs.push([lx + lw - depth, ly + off, depth, len, shade]);
-        if (side === 2) roofs.push([lx + off, ly + lw - depth, len, depth, shade]);
-        if (side === 3) roofs.push([lx, ly + off, depth, len, shade]);
+  // ---------- World ----------
+  let state = "title", levelIdx = 0, map = [], MW = 0, MH = 0, lvl = null;
+  let objs = [], enemies = [], player = null, msg = { text: "", t: 0 };
+  let light = null, LW = 0, LH = 0, fade = 1, fadeDir = 0, after = null, timer = 0;
+  const stats = { kills: 0, cash: 0, shots: 0, hits: 0, deaths: 0, time: 0 };
+  const LSUB = 4;
+
+  const wallAt = (x, y) => { const xi = x | 0, yi = y | 0; return xi < 0 || yi < 0 || xi >= MW || yi >= MH || map[yi][xi] !== "."; };
+  function los(x0, y0, x1, y1) {
+    const d = Math.hypot(x1 - x0, y1 - y0), n = Math.ceil(d / 0.15);
+    for (let i = 1; i < n; i++) if (wallAt(x0 + (x1 - x0) * i / n, y0 + (y1 - y0) * i / n)) return false;
+    return true;
+  }
+
+  function loadLevel(i) {
+    levelIdx = i; lvl = LEVELS[i];
+    MH = lvl.map.length; MW = lvl.map[0].length;
+    map = lvl.map.map(r => r.split(""));
+    objs = []; enemies = [];
+    const prev = player;
+    player = { x: 2, y: 2, a: 0, hp: 100, weapon: prev && prev.has[1] ? 1 : 0, has: prev ? prev.has.slice() : [true, false],
+               mag: [6, prev ? Math.max(prev.mag[1], 0) : 0], reserve: prev ? prev.reserve : 0,
+               fireCd: 0, reload: 0, recoil: 0, flash: 0, bob: 0, moving: false, hurt: 0, ledger: false };
+    for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) {
+      const ch = map[y][x], cx = x + 0.5, cy = y + 0.5;
+      if ("#WPBTE".includes(ch)) continue;
+      map[y][x] = ".";
+      if (ch === "S") { player.x = cx; player.y = cy; player.a = facingOpen(x, y); }
+      else if (ETYPE[ch]) enemies.push({ x: cx, y: cy, type: ETYPE[ch], hp: ETYPE[ch].hp, state: "idle", t: 0, cd: rand(0.5, 1.5), alert: false, lx: cx, ly: cy, burstLeft: 0, step: 0 });
+      else if (ch === "c") objs.push({ x: cx, y: cy, art: OBJ.table, scale: 0.75, block: true, light: [0.8, 3.6] });
+      else if (ch === "k") objs.push({ x: cx, y: cy, art: OBJ.crate, scale: 0.85, block: true });
+      else if (ch === "p") objs.push({ x: cx, y: cy, art: OBJ.piano, scale: 0.9, block: true });
+      else if (ch === "o") objs.push({ x: cx, y: cy, art: OBJ.barrel, scale: 0.7, block: true });
+      else if (ch === "l") objs.push({ x: cx, y: cy, art: OBJ.lamp, scale: 1.0, block: true, glow: true, light: [1.2, 5.5] });
+      else if (ch === "*") objs.push({ x: cx, y: cy, art: OBJ.hanging, scale: 0.6, hang: true, glow: true, light: [1.25, 6] });
+      else if (ch === "$") objs.push({ x: cx, y: cy, art: OBJ.cash, scale: 0.6, pick: "cash" });
+      else if (ch === "+") objs.push({ x: cx, y: cy, art: OBJ.medkit, scale: 0.6, pick: "med" });
+      else if (ch === "a") objs.push({ x: cx, y: cy, art: OBJ.ammo, scale: 0.6, pick: "ammo" });
+      else if (ch === "L") objs.push({ x: cx, y: cy, art: OBJ.ledger, scale: 0.6, pick: "ledger", bob: true });
+    }
+    if (prev) player.mag[0] = 6;
+    buildLight();
+    timer = 0;
+    say(lvl.objective === "ledger" ? "Find the ledger." : "Find Don Vitale.", 3);
+  }
+  function facingOpen(x, y) {
+    let best = 0, bestN = -1;
+    for (const a of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
+      let n = 0; while (n < 20 && !wallAt(x + 0.5 + Math.cos(a) * (n + 1), y + 0.5 + Math.sin(a) * (n + 1))) n++;
+      if (n > bestN) { bestN = n; best = a; }
+    }
+    return best;
+  }
+  // Light map: lamps throw pools of light, blocked by walls
+  function buildLight() {
+    LW = MW * LSUB; LH = MH * LSUB;
+    light = new Float32Array(LW * LH).fill(lvl.ambient);
+    const lamps = objs.filter(o => o.light);
+    for (let y = 0; y < LH; y++) for (let x = 0; x < LW; x++) {
+      const wx = (x + 0.5) / LSUB, wy = (y + 0.5) / LSUB;
+      if (wallAt(wx, wy)) continue;
+      let v = lvl.ambient;
+      for (const l of lamps) {
+        const d = Math.hypot(l.x - wx, l.y - wy), [I, R] = l.light;
+        if (d >= R) continue;
+        if (!los(l.x, l.y, wx, wy)) continue;
+        const f = 1 - d / R; v += I * f * f;
       }
-      blocks.push({ c, r, x, y, cx: x + BW / 2, cy: y + BW / 2, name, value, owner: 0, claimBy: 0, claim: 0,
-                    roofs, pres: new Map(), pulse: 0 });
+      light[y * LW + x] = Math.min(1.35, v);
     }
   }
-
-  function startLevel(i) {
-    levelIdx = i;
-    level = levelCfg(i);
-    timeLeft = level.time;
-    heat = 0;
-    stats = { claimed: 0, kos: 0, lost: 0, pinched: 0, bribes: 0, earned: 0 };
-    people = []; floaters = []; downs = []; cops = [];
-    buildBlocks();
-    const home = blocks[PLAYER_HOME];
-    player = makeLeader(1, GOLD, "Don " + familyName, home.cx, home.cy + 90, true);
-    home.owner = 1;
-    leaders = [player];
-    for (let r = 0; r < level.rivals; r++) {
-      const fam = RIVALS[r % RIVALS.length], b = blocks[RIVAL_HOMES[r % RIVAL_HOMES.length]];
-      const L = makeLeader(2 + r, fam.color, "Don " + fam.name, b.cx, b.cy + 90, false);
-      b.owner = L.team;
-      leaders.push(L);
-    }
-    for (let k = 0; k < level.toughs; k++) people.push(makeTough(rand(20, WORLD_W - 20), rand(20, WORLD_H - 20)));
-    addGoons(player, 3);
-    for (const L of leaders) if (!L.isPlayer) addGoons(L, 3 + levelIdx * 2);
-    for (let k = 0; k < level.cops; k++) cops.push(makeCop(rand(0, WORLD_W), rand(0, WORLD_H)));
-    buildMap();
-    smoke = [];
-    cam = { x: player.x, y: player.y };
-    state = "play";
-    for (const id of ["bribe", "hire"]) document.getElementById(id).style.display = isTouch ? "block" : "none";
-    flash(level.name.toUpperCase() + ": hold " + level.target + " blocks by dawn", 3);
-  }
+  const lightAt = (x, y) => {
+    const lx = clamp((x * LSUB) | 0, 0, LW - 1), ly = clamp((y * LSUB) | 0, 0, LH - 1);
+    return light[ly * LW + lx];
+  };
+  function say(t, dur = 2.2) { msg = { text: t, t: dur }; }
 
   // ---------- Input ----------
   const keys = new Set();
-  let pointer = null;
+  let firing = false, locked = false, wasLocked = false, dragLook = false;
+  const touch = { move: null, look: null, mx: 0, my: 0 };
   window.addEventListener("keydown", e => {
-    if (e.target.tagName === "INPUT") { if (e.key === "Enter") begin(); return; }
-    const k = e.key.toLowerCase();
-    keys.add(k);
-    if (k === " ") { e.preventDefault(); bribe(); }
-    if (k === "e" && !e.repeat) hire();
-    if (k === "enter" && state !== "play") onContinue();
+    const k = e.key.toLowerCase(); keys.add(k);
+    if (k === " ") { e.preventDefault(); firing = true; }
+    if (k === "1" && player) switchWeapon(0);
+    if (k === "2" && player) switchWeapon(1);
+    if (k === "q" && player) switchWeapon(1 - player.weapon);
+    if (k === "r" && player) startReload();
+    if (k === "enter") advance();
   });
-  window.addEventListener("keyup", e => keys.delete(e.key.toLowerCase()));
-  window.addEventListener("blur", () => keys.clear());
-  cv.addEventListener("pointerdown", e => { pointer = { x: e.clientX, y: e.clientY }; cv.setPointerCapture(e.pointerId); });
-  cv.addEventListener("pointermove", e => { if (pointer) pointer = { x: e.clientX, y: e.clientY }; });
-  const endPointer = () => { pointer = null; };
-  cv.addEventListener("pointerup", endPointer);
-  cv.addEventListener("pointercancel", endPointer);
-  document.getElementById("bribe").addEventListener("pointerdown", e => { e.preventDefault(); bribe(); });
-  document.getElementById("hire").addEventListener("pointerdown", e => { e.preventDefault(); hire(); });
-
-  function float(x, y, text, color, big = false, life = 1) {
-    if (floaters.length > 90) floaters.shift();
-    floaters.push({ x, y, text, color, big, life, max: life });
-  }
-
-  function bribe() {
+  window.addEventListener("keyup", e => { const k = e.key.toLowerCase(); keys.delete(k); if (k === " ") firing = false; });
+  window.addEventListener("blur", () => { keys.clear(); firing = false; });
+  document.addEventListener("pointerlockchange", () => { locked = document.pointerLockElement === cv; if (locked) wasLocked = true; });
+  cv.addEventListener("mousedown", e => {
+    initAudio();
     if (state !== "play") return;
-    if (player.cash < BRIBE_COST) { float(player.x, player.y - 34, "Not enough cash", "#4a4036"); tone(160, 0.12, "square", 0.03); return; }
-    player.cash -= BRIBE_COST; stats.bribes++;
-    let n = 0;
-    for (const c of cops) if (Math.hypot(c.x - player.x, c.y - player.y) < 480) { c.paid = 10; c.busy = 0; n++; }
-    heat = Math.max(0, heat - 35);
-    float(player.x, player.y - 34, n ? `Paid off ${n} cop${n > 1 ? "s" : ""}` : "Greased the precinct", GOLD, true, 1.4);
-    tone(1320, 0.08, "square", 0.04); later(70, () => tone(1760, 0.18, "triangle", 0.05));
+    if (!locked && !isTouch && cv.requestPointerLock) { try { const p = cv.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch (err) {} }
+    if (wasLocked && !locked) return;
+    if (e.button === 0) firing = true;
+    dragLook = true;
+  });
+  window.addEventListener("mouseup", () => { firing = false; dragLook = false; });
+  window.addEventListener("mousemove", e => {
+    if (state !== "play" || !player) return;
+    if (locked || (dragLook && !isTouch)) player.a += e.movementX * 0.0024;
+  });
+  cv.addEventListener("wheel", e => { if (player && state === "play") switchWeapon(1 - player.weapon); });
+  cv.addEventListener("click", () => { initAudio(); if (state !== "play") advance(); });
+  // Touch: left thumb moves, right thumb looks, buttons fire and swap
+  cv.addEventListener("touchstart", e => {
+    initAudio();
+    if (state !== "play") { advance(); return; }
+    for (const t of e.changedTouches) {
+      if (t.clientX < vw / 2 && !touch.move) touch.move = { id: t.identifier, x: t.clientX, y: t.clientY, dx: 0, dy: 0 };
+      else if (!touch.look) touch.look = { id: t.identifier, x: t.clientX };
+    }
+    e.preventDefault();
+  }, { passive: false });
+  cv.addEventListener("touchmove", e => {
+    for (const t of e.changedTouches) {
+      if (touch.move && t.identifier === touch.move.id) { touch.move.dx = clamp((t.clientX - touch.move.x) / 50, -1, 1); touch.move.dy = clamp((t.clientY - touch.move.y) / 50, -1, 1); }
+      if (touch.look && t.identifier === touch.look.id && player) { player.a += (t.clientX - touch.look.x) * 0.006; touch.look.x = t.clientX; }
+    }
+    e.preventDefault();
+  }, { passive: false });
+  cv.addEventListener("touchend", e => {
+    for (const t of e.changedTouches) {
+      if (touch.move && t.identifier === touch.move.id) touch.move = null;
+      if (touch.look && t.identifier === touch.look.id) touch.look = null;
+    }
+  });
+  const fireBtn = document.getElementById("fire"), swapBtn = document.getElementById("swap");
+  fireBtn.addEventListener("touchstart", e => { e.preventDefault(); initAudio(); firing = true; }, { passive: false });
+  fireBtn.addEventListener("touchend", e => { e.preventDefault(); firing = false; }, { passive: false });
+  swapBtn.addEventListener("touchstart", e => { e.preventDefault(); if (player) switchWeapon(1 - player.weapon); }, { passive: false });
+
+  function switchWeapon(i) {
+    if (!player.has[i] || player.weapon === i) return;
+    player.weapon = i; player.reload = 0; player.fireCd = 0.25; SND.click();
   }
-  function hire() {
-    if (state !== "play") return;
-    if (player.cash < HIRE_COST) { float(player.x, player.y - 34, "Not enough cash", "#4a4036"); tone(160, 0.12, "square", 0.03); return; }
-    player.cash -= HIRE_COST;
-    addGoons(player, 4, 40);
-    heat = Math.min(100, heat + 4);
-    float(player.x, player.y - 34, "+4 muscle", GOLD, true, 1.3);
-    tone(392, 0.1); later(90, () => tone(523, 0.14));
+  function startReload() {
+    const p = player, w = WEAP[p.weapon];
+    if (p.reload > 0 || p.mag[p.weapon] >= w.mag) return;
+    if (p.weapon === 1 && p.reserve <= 0) { say("Out of drums."); return; }
+    p.reload = w.reload; SND.reload();
+  }
+  function finishReload() {
+    const p = player, w = WEAP[p.weapon];
+    if (p.weapon === 0) p.mag[0] = 6;
+    else { const n = Math.min(w.mag - p.mag[1], p.reserve); p.mag[1] += n; p.reserve -= n; }
   }
 
-  // ---------- Spatial grid ----------
-  const GRID = 48;
-  let grid = new Map();
-  function buildGrid() {
-    grid = new Map();
-    for (const p of people) {
-      const k = ((p.x / GRID) | 0) + ((p.y / GRID) | 0) * 1000;
-      let cell = grid.get(k);
-      if (!cell) grid.set(k, cell = []);
-      cell.push(p);
-    }
+  // ---------- Simulation ----------
+  function blocked(x, y, r, self) {
+    if (wallAt(x - r, y - r) || wallAt(x + r, y - r) || wallAt(x - r, y + r) || wallAt(x + r, y + r)) return true;
+    for (const o of objs) if (o.block && Math.abs(o.x - x) < r + 0.28 && Math.abs(o.y - y) < r + 0.28) return true;
+    for (const e of enemies) if (e !== self && e.hp > 0 && Math.hypot(e.x - x, e.y - y) < r + 0.25) return true;
+    if (self !== player && Math.hypot(player.x - x, player.y - y) < r + 0.25) return true;
+    return false;
   }
-  function neighbors(x, y, fn) {
-    const cx = (x / GRID) | 0, cy = (y / GRID) | 0;
-    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
-      const cell = grid.get(cx + dx + (cy + dy) * 1000);
-      if (cell) for (const q of cell) fn(q);
-    }
+  function moveBy(o, dx, dy, r) {
+    let hit = false;
+    if (!blocked(o.x + dx, o.y, r, o)) o.x += dx; else hit = true;
+    if (!blocked(o.x, o.y + dy, r, o)) o.y += dy; else hit = true;
+    return hit;
   }
-  function recount() {
-    crew.clear();
-    for (const p of people) if (p.team && !p.dead) crew.set(p.team, (crew.get(p.team) || 0) + 1);
-  }
-  const radiusFor = L => 50 + 6 * Math.sqrt(crew.get(L.team) || 0);
-  const leaderOf = team => leaders.find(l => l.team === team);
-  const teamColor = team => team ? (leaderOf(team) || {}).color || "#777" : "#6d675e";
-  const ownedBy = team => blocks.reduce((n, b) => n + (b.owner === team ? 1 : 0), 0);
-
-  // ---------- Leaders ----------
-  function steerTo(L, gx, gy) {
-    const dx = gx - L.x, dy = gy - L.y, d = Math.hypot(dx, dy);
-    return d > 16 ? [dx / d, dy / d] : [0, 0];
-  }
-  function rivalThink(L) {
-    const mine = crew.get(L.team) || 0, theirs = crew.get(1) || 0;
-    const dp = Math.hypot(player.x - L.x, player.y - L.y);
-    if (mine < 4 && L.cash >= HIRE_COST) { L.cash -= HIRE_COST; addGoons(L, 4); }
-    // Stay put while we're winning a block.
-    const here = blockAt(L.x, L.y);
-    if (here.claimBy === L.team && here.claim > 0.05 && here.owner !== L.team) {
-      L.goal = { x: here.cx + rand(-60, 60), y: here.cy + rand(-60, 60) }; return;
-    }
-    if (mine > theirs * 1.3 + 2 && dp < 520) { L.goal = { x: player.x, y: player.y }; return; }   // go to the mattresses
-    if (theirs > mine * 1.3 + 2 && dp < 320) { L.goal = { x: L.x * 2 - player.x, y: L.y * 2 - player.y }; return; } // scram
-    if (mine < 5) {
-      // Recruit first: head for a bunch of street toughs.
-      let best = null, bestS = -1;
-      for (let k = 0; k < 24; k++) {
-        const p = pick(people);
-        if (!p || p.team) continue;
-        let n = 0; neighbors(p.x, p.y, q => { if (!q.team) n++; });
-        const s = n / (1 + Math.hypot(p.x - L.x, p.y - L.y) / 300);
-        if (s > bestS) { bestS = s; best = p; }
-      }
-      if (best) { L.goal = { x: best.x, y: best.y }; return; }
-    }
-    let best = null, bestS = -Infinity;
-    for (const b of blocks) {
-      if (b.owner === L.team) continue;
-      const defenders = b.pres.get(b.owner) || 0;
-      const s = b.value * (b.owner === 0 ? 1.6 : 1) / (1 + Math.hypot(b.cx - L.x, b.cy - L.y) / 450) - defenders * 2;
-      if (s > bestS) { bestS = s; best = b; }
-    }
-    if (best) L.goal = { x: best.cx + rand(-70, 70), y: best.cy + rand(-70, 70) };
-  }
-  function updateLeader(L, dt) {
-    L.stun = Math.max(0, L.stun - dt);
-    const size = crew.get(L.team) || 0;
-    const speed = (L.isPlayer ? 205 : 150) - Math.min(50, size * 0.3);
-    let dx = 0, dy = 0;
-    if (L.isPlayer) {
-      if (keys.has("arrowleft") || keys.has("a")) dx -= 1;
-      if (keys.has("arrowright") || keys.has("d")) dx += 1;
-      if (keys.has("arrowup") || keys.has("w")) dy -= 1;
-      if (keys.has("arrowdown") || keys.has("s")) dy += 1;
-      if (pointer && !dx && !dy) {
-        const wx = (pointer.x - vw / 2) / zoom + cam.x, wy = (pointer.y - vh / 2) / zoom + cam.y;
-        const ddx = wx - L.x, ddy = wy - L.y, d = Math.hypot(ddx, ddy);
-        if (d > 8) { const k = Math.min(1, d / 60); dx = ddx / d * k; dy = ddy / d * k; }
-      }
-    } else {
-      L.think -= dt;
-      if (L.think <= 0 || !L.goal) { L.think = rand(0.8, 1.6); rivalThink(L); }
-      if (L.goal) [dx, dy] = steerTo(L, L.goal.x, L.goal.y);
-    }
-    const m = Math.hypot(dx, dy);
-    if (m > 1) { dx /= m; dy /= m; }
-    const sp = L.stun > 0 ? speed * 0.2 : speed;
-    L.vx += (dx * sp - L.vx) * Math.min(1, dt * 8);
-    L.vy += (dy * sp - L.vy) * Math.min(1, dt * 8);
-    L.x = clamp(L.x + L.vx * dt, 14, WORLD_W - 14);
-    L.y = clamp(L.y + L.vy * dt, 14, WORLD_H - 14);
-  }
-
-  // ---------- Crews ----------
-  function join(p, team) {
-    p.team = team; p.conv = 0; p.convTeam = 0; p.cool = 0.5; p.hp = 1;
-    if (team === 1) {
-      float(p.x, p.y - 12, "+1", GOLD);
-      const now = performance.now();
-      if (now - lastRecruitSnd > 50) { tone(440 + Math.min(500, (crew.get(1) || 0) * 6), 0.06); lastRecruitSnd = now; }
-    }
-  }
-  function leave(p, msg) {
-    if (p.team === 1 && msg) float(p.x, p.y - 12, msg, "#4a4036");
-    p.team = 0; p.conv = 0; p.convTeam = 0; p.cool = 3;
-  }
-  function knockOut(p, word, color) {
-    color = color === "#777" ? "#a3271c" : color;
-    if (p.dead) return;
-    p.dead = true;
-    downs.push({ x: p.x, y: p.y, color: teamColor(p.team), life: 2.2, rot: rand(-1, 1) });
-    if (p.team === 1) stats.lost++;
-    if (word) float(p.x, p.y - 14, word, color || "#a3271c", true, 0.8);
-  }
-
-  function updatePerson(p, dt) {
-    p.cool = Math.max(0, p.cool - dt);
-    if (!p.team) {
-      // Street toughs: get talked into joining the nearest Don in range.
-      let best = null, bestD = Infinity;
-      for (const L of leaders) {
-        if (L.stun > 0) continue;
-        const d = Math.hypot(L.x - p.x, L.y - p.y);
-        if (d < radiusFor(L) && d < bestD) { bestD = d; best = L; }
-      }
-      if (best && p.cool <= 0) {
-        if (p.convTeam !== best.team) { p.convTeam = best.team; p.conv = 0; }
-        p.conv += dt * 1.5;
-        if (p.conv >= 1) join(p, best.team);
-      } else p.conv = Math.max(0, p.conv - dt);
-    }
-
-    let ax, ay, maxSp;
-    if (p.team) {
-      const L = leaderOf(p.team);
-      const n = crew.get(p.team) || 1;
-      const spread = 16 + Math.sqrt(n) * 8;
-      const tx = L.x + p.ox * spread - L.vx * 0.12, ty = L.y + p.oy * spread - L.vy * 0.12;
-      const dx = tx - p.x, dy = ty - p.y, d = Math.hypot(dx, dy) || 1;
-      maxSp = Math.hypot(L.vx, L.vy) + 60 + Math.min(200, d);
-      ax = (dx / d * maxSp - p.vx) * 4; ay = (dy / d * maxSp - p.vy) * 4;
-      if (d > 540) leave(p, "walked off");
-    } else {
-      p.ang += rand(-1.2, 1.2) * dt;
-      maxSp = 30;
-      ax = (Math.cos(p.ang) * maxSp - p.vx) * 2; ay = (Math.sin(p.ang) * maxSp - p.vy) * 2;
-    }
-    neighbors(p.x, p.y, q => {
-      if (q === p || q.dead) return;
-      const dx = p.x - q.x, dy = p.y - q.y, d2 = dx * dx + dy * dy;
-      if (d2 < 196 && d2 > 0.01) { const d = Math.sqrt(d2); ax += dx / d * (14 - d) * 40; ay += dy / d * (14 - d) * 40; }
-    });
-    for (const L of leaders) {
-      const dx = p.x - L.x, dy = p.y - L.y, d = Math.hypot(dx, dy);
-      if (d < 22 && d > 0.01) { ax += dx / d * 600; ay += dy / d * 600; }
-    }
-    p.vx += ax * dt; p.vy += ay * dt;
-    const sp = Math.hypot(p.vx, p.vy), cap = maxSp * 1.6 + 40;
-    if (sp > cap) { p.vx *= cap / sp; p.vy *= cap / sp; }
-    p.x += p.vx * dt; p.y += p.vy * dt;
-    if (p.x < 6) { p.x = 6; p.ang = 0; } else if (p.x > WORLD_W - 6) { p.x = WORLD_W - 6; p.ang = Math.PI; }
-    if (p.y < 6) { p.y = 6; p.ang = Math.PI / 2; } else if (p.y > WORLD_H - 6) { p.y = WORLD_H - 6; p.ang = -Math.PI / 2; }
-  }
-
-  const POWS = ["POW!", "BAM!", "WHACK!", "OOF!", "SOCK!", "BIFF!"];
-  function brawls(dt) {
-    for (const p of people) {
-      if (!p.team || p.dead) continue;
-      let allies = 0, enemies = 0, touching = 0;
-      neighbors(p.x, p.y, q => {
-        if (!q.team || q.dead) return;
-        const d2 = (q.x - p.x) ** 2 + (q.y - p.y) ** 2;
-        if (d2 > 1600) return;
-        if (q.team === p.team) allies++;
-        else { enemies++; if (d2 < 256) touching = q.team; }
-      });
-      if (!touching) { p.hp = Math.min(1, p.hp + dt * 0.3); continue; }
-      for (const L of leaders) {
-        if (Math.hypot(L.x - p.x, L.y - p.y) < 80) { if (L.team === p.team) allies += 3; else enemies += 3; }
-      }
-      p.hp -= dt * 2 * enemies / (allies + enemies);
-      if (p.hp <= 0) {
-        const involvesPlayer = p.team === 1 || touching === 1;
-        if (touching === 1) stats.kos++;
-        if (involvesPlayer) heat = Math.min(100, heat + 0.8);
-        const now = performance.now();
-        if (involvesPlayer && now - lastPowSnd > 80) { tone(140, 0.12, "square", 0.05, 60); lastPowSnd = now; }
-        knockOut(p, involvesPlayer || Math.random() < 0.3 ? pick(POWS) : "", teamColor(touching));
+  function objectiveDone() { return lvl.objective === "ledger" ? player.ledger : !enemies.some(e => e.type === ETYPE.V && e.hp > 0); }
+  function checkExit() {
+    for (const [dx, dy] of [[0.45, 0], [-0.45, 0], [0, 0.45], [0, -0.45]]) {
+      const x = (player.x + dx) | 0, y = (player.y + dy) | 0;
+      if (lvl.map[y] && lvl.map[y][x] === "E") {
+        if (objectiveDone()) { fadeOut(() => levelIdx + 1 < LEVELS.length ? showCard("chapter", levelIdx + 1) : showCard("end")); return; }
+        if (msg.t <= 0) say(lvl.objective === "ledger" ? "Not without the ledger." : "Not while Don Vitale still breathes.");
       }
     }
   }
 
-  // ---------- Cops ----------
-  function makeCop(x, y) { return { x, y, vx: 0, vy: 0, ang: rand(0, 6.283), paid: 0, busy: 0, chasing: false }; }
-  function updateCop(c, dt) {
-    c.paid = Math.max(0, c.paid - dt);
-    c.busy = Math.max(0, c.busy - dt);
-    let tx = null, ty = null, spd = 60;
-    c.chasing = false;
-    if (c.paid <= 0 && c.busy <= 0) {
-      // Cops go after whoever's making noise; your crew gets more attention as heat rises.
-      // Rival crews get hassled when a cop stumbles on them; yours only once you've drawn some heat.
-      let best = null, bestD = Infinity;
-      const myRange = heat > 15 ? 300 + heat * 3 : 0;
-      for (const p of people) {
-        if (!p.team || p.dead) continue;
-        const d = Math.hypot(p.x - c.x, p.y - c.y);
-        const range = p.team === 1 ? myRange : 200;
-        if (d < range && d * (p.team === 1 ? 1 - heat / 160 : 1) < bestD) { bestD = d * (p.team === 1 ? 1 - heat / 160 : 1); best = p; }
-      }
-      if (heat > 30) {
-        const d = Math.hypot(player.x - c.x, player.y - c.y) * 0.9;
-        if (d < bestD) best = player;
-      }
-      if (best) { tx = best.x; ty = best.y; spd = 105 + heat * 0.6; c.chasing = true; }
+  function fire() {
+    const p = player, w = WEAP[p.weapon];
+    if (p.reload > 0 || p.fireCd > 0) return;
+    if (p.mag[p.weapon] <= 0) { SND.click(); p.fireCd = 0.25; startReload(); return; }
+    p.mag[p.weapon]--; p.fireCd = w.rate; p.recoil = 1; p.flash = 0.06; stats.shots++;
+    p.weapon === 0 ? SND.rev() : SND.tommy();
+    for (const e of enemies) if (e.hp > 0 && Math.hypot(e.x - p.x, e.y - p.y) < 12) e.alert = true;
+    const spread = w.spread * (p.moving ? 1.6 : 1);
+    const col = clamp((W / 2 + rand(-spread, spread)) | 0, 0, W - 1);
+    const t = hitscan(col);
+    if (t) {
+      stats.hits++;
+      t.hp -= w.dmg * rand(0.85, 1.15);
+      t.alert = true; t.lx = p.x; t.ly = p.y;
+      if (t.hp <= 0) {
+        t.state = "dying"; t.t = 0.5; stats.kills++; SND.down();
+        if (Math.random() < 0.5) objs.push({ x: t.x, y: t.y, art: player.has[1] ? OBJ.ammo : OBJ.cash, scale: 0.6, pick: player.has[1] ? "ammo" : "cash" });
+        if (t.type === ETYPE.V) say("Don Vitale is finished. Get to the exit.", 4);
+      } else if (t.state !== "aim" || Math.random() < 0.4) { t.state = "hurt"; t.t = 0.18; }
     }
-    if (tx !== null) {
-      const dx = tx - c.x, dy = ty - c.y, d = Math.hypot(dx, dy) || 1;
-      c.vx += (dx / d * spd - c.vx) * dt * 3; c.vy += (dy / d * spd - c.vy) * dt * 3;
-    } else {
-      c.ang += rand(-1, 1) * dt;
-      const s = c.busy > 0 ? 0 : c.paid > 0 ? 35 : spd;
-      c.vx += (Math.cos(c.ang) * s - c.vx) * dt * 2; c.vy += (Math.sin(c.ang) * s - c.vy) * dt * 2;
+    if (p.mag[p.weapon] === 0) startReload();
+  }
+  let dirX = 1, dirY = 0, planeX = 0, planeY = PLANE;
+  function camera() { dirX = Math.cos(player.a); dirY = Math.sin(player.a); planeX = -dirY * PLANE; planeY = dirX * PLANE; }
+  function project(x, y) {
+    const rx = x - player.x, ry = y - player.y, inv = 1 / (planeX * dirY - dirX * planeY);
+    const tX = inv * (dirY * rx - dirX * ry), tY = inv * (-planeY * rx + planeX * ry);
+    return [tX, tY, (W / 2) * (1 + tX / tY)];
+  }
+  function hitscan(col) {
+    camera();
+    let best = null, bestD = Infinity;
+    for (const e of enemies) {
+      if (e.hp <= 0) continue;
+      const [, tY, sx] = project(e.x, e.y);
+      if (tY < 0.15 || tY > zbuf[col]) continue;
+      const half = (K / tY) * 0.22;
+      if (Math.abs(sx - col) < half && tY < bestD) { bestD = tY; best = e; }
     }
-    c.x += c.vx * dt; c.y += c.vy * dt;
-    if (c.x < 10 || c.x > WORLD_W - 10) { c.ang = Math.PI - c.ang; c.x = clamp(c.x, 10, WORLD_W - 10); }
-    if (c.y < 10 || c.y > WORLD_H - 10) { c.ang = -c.ang; c.y = clamp(c.y, 10, WORLD_H - 10); }
-    if (!c.chasing) return;
-    neighbors(c.x, c.y, q => {
-      if (c.busy > 0 || !q.team || q.dead) return;
-      if (Math.hypot(q.x - c.x, q.y - c.y) < 14) {
-        if (q.team === 1) { stats.pinched++; tone(880, 0.25, "sine", 0.03, 660); }
-        knockOut(q, "PINCHED!", "#2c4fa8");
-        c.busy = 1.2;
-      }
-    });
-    for (const L of leaders) {
-      if (c.busy > 0 || L.stun > 0) continue;
-      if (Math.hypot(L.x - c.x, L.y - c.y) < 20) {
-        const fine = Math.floor(L.cash * 0.3);
-        L.cash -= fine; L.stun = 2.2; c.busy = 3;
-        if (L.isPlayer) {
-          heat = Math.max(0, heat - 25);
-          float(L.x, L.y - 36, `BUSTED! -${money(fine)}`, "#2c4fa8", true, 1.6);
-          tone(700, 0.3, "sawtooth", 0.04, 1000); later(300, () => tone(1000, 0.3, "sawtooth", 0.04, 700));
+    return best;
+  }
+
+  function updateEnemy(e, dt) {
+    const p = player, T = e.type;
+    if (e.state === "dying") { e.t -= dt; if (e.t <= 0) e.state = "dead"; return; }
+    if (e.state === "dead") return;
+    e.cd -= dt;
+    const dx = p.x - e.x, dy = p.y - e.y, d = Math.hypot(dx, dy);
+    const sees = d < 16 && los(e.x, e.y, p.x, p.y);
+    if (sees) { e.alert = true; e.lx = p.x; e.ly = p.y; }
+    e.moving = false;
+    switch (e.state) {
+      case "idle": if (e.alert) e.state = "chase"; break;
+      case "hurt": e.t -= dt; if (e.t <= 0) e.state = "chase"; break;
+      case "chase": {
+        if (sees && d < T.range && e.cd <= 0) { e.state = "aim"; e.t = T.aim; e.burstLeft = T.burst; break; }
+        const tx = sees ? p.x : e.lx, ty = sees ? p.y : e.ly, gd = Math.hypot(tx - e.x, ty - e.y);
+        if (gd > (sees ? 2.6 : 0.4)) {
+          // Slight sideways weave so they don't walk in a straight line
+          e.step += dt;
+          const ux = (tx - e.x) / gd, uy = (ty - e.y) / gd, wv = Math.sin(e.step * 2.2) * 0.45;
+          moveBy(e, (ux - uy * wv) * T.speed * dt, (uy + ux * wv) * T.speed * dt, 0.22);
+          e.moving = true;
         }
+        break;
       }
+      case "aim":
+        e.t -= dt;
+        if (e.t <= 0) { enemyShoot(e, d, sees); e.burstLeft--; e.state = "fire"; e.t = 0.13; }
+        break;
+      case "fire":
+        e.t -= dt;
+        if (e.t <= 0) {
+          if (e.burstLeft > 0 && sees) { enemyShoot(e, d, sees); e.burstLeft--; e.t = 0.16; }
+          else { e.state = "chase"; e.cd = rand(T.cd[0], T.cd[1]); }
+        }
+        break;
     }
   }
-
-  // ---------- Turf ----------
-  function updateTurf(dt) {
-    for (const b of blocks) { b.pres.clear(); b.pulse = Math.max(0, b.pulse - dt); }
-    for (const p of people) if (p.team && !p.dead) { const b = blockAt(p.x, p.y); b.pres.set(p.team, (b.pres.get(p.team) || 0) + 1); }
-    const bossIn = new Map();
-    for (const L of leaders) { const b = blockAt(L.x, L.y); b.pres.set(L.team, (b.pres.get(L.team) || 0) + 3); bossIn.set(L.team, b); }
-    for (const b of blocks) b.pres.set(b.owner, (b.pres.get(b.owner) || 0) + (b.owner ? 4 : 2));
-    for (const b of blocks) {
-      let dom = 0, top = 0, total = 0, tie = false;
-      for (const [team, n] of b.pres) {
-        total += n;
-        if (n > top) { top = n; dom = team; tie = false; } else if (n === top) tie = true;
-      }
-      const canClaim = dom > 0 && !tie && dom !== b.owner && bossIn.get(dom) === b && !leaderOf(dom).stun;
-      if (canClaim) {
-        if (b.claimBy !== dom) { b.claimBy = dom; b.claim = 0; }
-        b.claim += dt * (0.035 + 0.006 * Math.min(40, top)) * (top / total);
-        if (b.claim >= 1) {
-          const prev = b.owner;
-          b.owner = dom; b.claim = 0; b.claimBy = 0; b.pulse = 1.2;
-          if (dom === 1) {
-            stats.claimed++; heat = Math.min(100, heat + 6);
-            flash(`${b.name} pays the ${familyName}s now`);
-            tone(392, 0.12); later(110, () => tone(494, 0.12)); later(220, () => tone(587, 0.25));
-          } else if (prev === 1) {
-            flash(`The ${leaderOf(dom).name.slice(4)}s took ${b.name}!`);
-            tone(220, 0.3, "sawtooth", 0.04, 110);
-          }
-        }
-      } else {
-        b.claim = Math.max(0, b.claim - dt * 0.25);
-        if (b.claim === 0) b.claimBy = 0;
-      }
-      // Protection money
-      if (b.owner) {
-        const L = leaderOf(b.owner);
-        if (L) { L.cash += b.value * dt; if (L.isPlayer) stats.earned += b.value * dt; }
-      }
+  function enemyShoot(e, d, sees) {
+    const T = e.type;
+    T === ETYPE.G ? SND.shotgun(d) : SND.enemy(d);
+    if (!sees) return;
+    let chance = clamp(0.82 - d * 0.045, 0.18, 0.82) * (player.moving ? 0.72 : 1);
+    if (Math.random() > chance) return;
+    let dmg = rand(T.dmg[0], T.dmg[1]);
+    if (T === ETYPE.G) dmg *= clamp(1.3 - d * 0.12, 0.3, 1.3);
+    player.hp -= dmg; player.hurt = 0.3; SND.hurt();
+    if (player.hp <= 0) {
+      player.hp = 0; state = "dying"; stats.deaths++;
+      fadeOut(() => showCard("dead", levelIdx), 1.4);
     }
   }
 
   function update(dt) {
-    timeLeft -= dt;
-    recount();
-    buildGrid();
-    for (const L of leaders) updateLeader(L, dt);
-    for (const p of people) updatePerson(p, dt);
-    brawls(dt);
-    for (const c of cops) updateCop(c, dt);
-    people = people.filter(p => !p.dead);
-    recount();
-    updateTurf(dt);
-    heat = Math.max(0, heat - dt * 1.2);
-    // More heat, more cops.
-    const wantCops = level.cops + Math.floor(heat / 18);
-    if (cops.length < wantCops && Math.random() < dt * 0.8) {
-      const c = makeCop(Math.random() < 0.5 ? 10 : WORLD_W - 10, rand(0, WORLD_H)); cops.push(c);
-      if (heat > 20) float(player.x, player.y - 50, "Sirens...", "#2c4fa8");
-    } else if (cops.length > wantCops && Math.random() < dt * 0.15) {
-      const i = cops.findIndex(c => !c.chasing && Math.hypot(c.x - cam.x, c.y - cam.y) > 700);
-      if (i >= 0) cops.splice(i, 1);
+    const p = player;
+    timer += dt; stats.time += dt;
+    camera();
+    let fw = 0, st = 0, turn = 0;
+    if (keys.has("w") || keys.has("arrowup")) fw += 1;
+    if (keys.has("s") || keys.has("arrowdown")) fw -= 1;
+    if (keys.has("a")) st -= 1;
+    if (keys.has("d")) st += 1;
+    if (keys.has("arrowleft")) turn -= 1;
+    if (keys.has("arrowright")) turn += 1;
+    if (touch.move) { fw -= touch.move.dy; st += touch.move.dx; }
+    p.a += turn * 2.4 * dt;
+    const m = Math.hypot(fw, st), speed = keys.has("shift") ? 4.2 : 3.2;
+    if (m > 0.05) {
+      const k = Math.min(1, m) / m * speed * dt;
+      moveBy(p, (dirX * fw - dirY * st) * k, (dirY * fw + dirX * st) * k, 0.22);
+      p.bob += dt * 9; p.moving = true;
+      checkExit();
+    } else p.moving = false;
+    p.fireCd = Math.max(0, p.fireCd - dt);
+    p.flash = Math.max(0, p.flash - dt);
+    p.recoil = Math.max(0, p.recoil - dt * 7);
+    p.hurt = Math.max(0, p.hurt - dt);
+    if (p.reload > 0) { p.reload -= dt; if (p.reload <= 0) { p.reload = 0; finishReload(); } }
+    if (firing && state === "play") fire();
+    for (const e of enemies) updateEnemy(e, dt);
+    // Pickups
+    for (let i = objs.length - 1; i >= 0; i--) {
+      const o = objs[i];
+      if (!o.pick || Math.hypot(o.x - p.x, o.y - p.y) > 0.55) continue;
+      if (o.pick === "med") { if (p.hp >= 100) continue; p.hp = Math.min(100, p.hp + 35); say("Patched up."); }
+      else if (o.pick === "cash") { const v = Math.round(rand(1, 5)) * 100; stats.cash += v; say(`+$${v}`); }
+      else if (o.pick === "ammo") {
+        if (!p.has[1]) { p.has[1] = true; p.weapon = 1; p.mag[1] = 50; say("A Tommy gun. Now we're talking.  [1/2 or Q to swap]", 3.5); }
+        else { p.reserve += 50; say("+50 rounds"); }
+      }
+      else if (o.pick === "ledger") {
+        p.ledger = true; say("Got the ledger. Now find the EXIT.", 3.5);
+        for (const e of enemies) e.alert = true;
+      }
+      objs.splice(i, 1); SND.pickup();
     }
-    let street = 0; for (const p of people) if (!p.team) street++;
-    if (street < level.toughs * 0.45 && Math.random() < dt * 6) people.push(spawnEdgeTough());
-    for (const f of floaters) { f.life -= dt; f.y -= dt * 28; }
-    floaters = floaters.filter(f => f.life > 0);
-    for (const d of downs) d.life -= dt;
-    downs = downs.filter(d => d.life > 0);
-    flashT = Math.max(0, flashT - dt);
-    cam.x += (player.x - cam.x) * Math.min(1, dt * 6);
-    cam.y += (player.y - cam.y) * Math.min(1, dt * 6);
-
-    const mine = ownedBy(1);
-    if (mine >= level.target) return finish("win");
-    for (const L of leaders) if (!L.isPlayer && ownedBy(L.team) >= level.target) return finish("rival", L);
-    if (timeLeft <= 0) return finish("dawn");
+    if (msg.t > 0) msg.t -= dt;
   }
 
-  // ---------- End screens ----------
-  const resultEl = document.getElementById("result");
-  const resultCard = document.getElementById("resultCard");
-  let pendingAction = null;
-  const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  function finish(kind, rival) {
-    state = "over";
-    for (const id of ["bribe", "hire"]) document.getElementById(id).style.display = "none";
-    const mine = ownedBy(1), fam = esc(familyName), place = esc(level.name);
-    const date = new Date(1931, 2 + levelIdx, 10 + levelIdx * 3).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
-    let headline, sub, story, btn;
-    if (kind === "win") {
-      const pts = Math.round(mine * 500 + timeLeft * 20 + player.cash) * (levelIdx + 1);
-      totalScore += pts;
-      headline = `${fam}s Take ${place}`;
-      sub = `${mine} blocks change hands overnight; police "baffled"`;
-      story = `Residents of ${place} woke to find new management at ${mine} local businesses. Witnesses describe a well-dressed man and a crowd of "very persuasive associates."
-        The ${fam} organization reportedly collected ${money(stats.earned)} in "neighborhood contributions," knocked ${stats.kos} rival associates
-        out cold and made ${stats.bribes} "donations" to the precinct widows' fund. The commissioner declined to comment.
-        <br><br><b>Score:</b> +${pts.toLocaleString()} &middot; Total ${totalScore.toLocaleString()}`;
-      btn = "NEXT: " + esc(levelCfg(levelIdx + 1).name.toUpperCase());
-      pendingAction = () => startLevel(levelIdx + 1);
-      tone(392, 0.15); later(150, () => tone(494, 0.15)); later(300, () => tone(587, 0.15)); later(450, () => tone(784, 0.4));
-    } else {
-      const who = kind === "rival" ? esc(rival.name.slice(4)) : null;
-      headline = who ? `${who} Family Runs ${place}` : `Dawn Breaks on ${place}`;
-      sub = who ? `${fam} outfit left out in the cold` : `${fam} bid for power falls short at ${mine} of ${level.target} blocks`;
-      story = `${who ? `With ${ownedBy(rival.team)} blocks under their thumb, the ${who}s are the new power in ${place}.` : `By sunrise the ${fam} family held just ${mine} blocks.`}
-        Sources say ${stats.lost} ${fam} associates were knocked out in street brawls and ${stats.pinched} were pinched by the police.
-        Local businesses are expected to keep paying whoever turns up first.
-        <br><br><b>Final score:</b> ${totalScore.toLocaleString()}`;
-      btn = "TRY AGAIN";
-      pendingAction = () => { totalScore = 0; startLevel(levelIdx); };
-      tone(330, 0.25, "sawtooth", 0.04, 165); later(260, () => tone(220, 0.5, "sawtooth", 0.04, 110));
-    }
-    resultCard.innerHTML = `
-      <div class="masthead">THE DAILY MOBBER</div>
-      <div class="dateline"><span>${date}</span><span>EXTRA! EXTRA!</span><span>Two Cents</span></div>
-      <div class="headline">${headline}</div>
-      <p class="subhead">${sub}</p>
-      <div class="story">${story}</div>
-      <button id="next">${btn}</button>`;
-    resultEl.classList.remove("hidden");
-    document.getElementById("next").onclick = onContinue;
-  }
-  function onContinue() {
-    if (state === "menu") return begin();
-    if (!pendingAction) return;
-    resultEl.classList.add("hidden");
-    const a = pendingAction; pendingAction = null; a();
-  }
-  function begin() {
-    if (state !== "menu") return;
-    familyName = document.getElementById("fam").value.trim().replace(/^the\s+/i, "").replace(/\s+family$/i, "") || "Moretti";
-    try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
-    document.getElementById("menu").classList.add("hidden");
-    state = "loading";
-    Promise.race([fontsReady, new Promise(r => setTimeout(r, 1500))]).then(() => startLevel(0));
-  }
-  document.getElementById("start").onclick = begin;
-  const fontsReady = document.fonts ? Promise.all(["16px 'Special Elite'", "16px Limelight", "16px 'Permanent Marker'",
-    "italic 700 16px 'Playfair Display'", "900 16px 'Playfair Display'"].map(f => document.fonts.load(f))).catch(() => {}) : Promise.resolve();
-
-  // ---------- Rendering: the Don's map table ----------
-  const INK = "#2b2620", PAPER = "#e9dcc0", CARD = "#f4ecd8", RED_INK = "#a3271c", GREEN_INK = "#2f5a2a", COP_BLUE = "#2c4fa8";
-  const MARKER = "'Permanent Marker', 'Comic Sans MS', cursive";
-  const SERIF = "'Playfair Display', Georgia, serif";
-  const HATCH_ANGLE = [0, 0.785, -0.785, 0.3, -0.3, 1.25, -1.25];
-  const HSTREETS = ["Canal Street", "Grand Street", "Hester Street"];
-  const VSTREETS = ["Mulberry St.", "Mott St.", "Elm St.", "Baxter St.", "Bowery"];
-
-  function rr(x, y, w, h, r) {
-    ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
-    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
-  }
-  function hexA(hex, a) {
-    const n = parseInt(hex.slice(1), 16);
-    return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`;
-  }
-  function shade(hex, k) {
-    const n = parseInt(hex.slice(1), 16);
-    const f = v => Math.round(k < 0 ? v * (1 + k) : v + (255 - v) * k);
-    return `rgb(${f(n >> 16)},${f((n >> 8) & 255)},${f(n & 255)})`;
-  }
-  function srand(seed) { let s = (seed >>> 0) || 1; return () => (s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296; }
-  const onScreen = (x, y, m) => Math.abs(x - cam.x) < vw / 2 / zoom + m && Math.abs(y - cam.y) < vh / 2 / zoom + m;
-
-  // --- The desk ---
-  let woodPat = null;
-  function woodPattern() {
-    if (woodPat) return woodPat;
-    const c = document.createElement("canvas"); c.width = 512; c.height = 512;
-    const g = c.getContext("2d"), R = srand(7);
-    g.fillStyle = "#3b2414"; g.fillRect(0, 0, 512, 512);
-    for (let i = 0; i < 170; i++) {
-      const y0 = R() * 512, amp = 2 + R() * 7, k = 1 + ((R() * 3) | 0), ph = R() * 6.283;
-      g.strokeStyle = R() < 0.55 ? `rgba(18,9,3,${0.12 + R() * 0.25})` : `rgba(125,75,38,${0.07 + R() * 0.14})`;
-      g.lineWidth = 0.6 + R() * 2.4;
-      for (const off of [-512, 0, 512]) {
-        g.beginPath();
-        for (let x = 0; x <= 512; x += 8) {
-          const y = y0 + off + Math.sin(6.283 * k * x / 512 + ph) * amp;
-          x ? g.lineTo(x, y) : g.moveTo(x, y);
-        }
-        g.stroke();
+  // ---------- Rendering ----------
+  function renderWorld(t) {
+    camera();
+    const px = player.x, py = player.y, fl = FLOORS[lvl.floor].L, ce = CEILS[lvl.ceil].L;
+    // Floor and ceiling
+    for (let y = HALF + 1; y < H; y++) {
+      const rowDist = (0.5 * K) / (y - HALF);
+      const fog = Math.exp(-rowDist * 0.05);
+      let fx = px + rowDist * (dirX - planeX), fy = py + rowDist * (dirY - planeY);
+      const sx = rowDist * 2 * planeX / W, sy = rowDist * 2 * planeY / W;
+      const rf = y * W, rc = (H - 1 - y) * W;
+      for (let x = 0; x < W; x++) {
+        const ti = ((((fy * 64) | 0) & 63) << 6) | (((fx * 64) | 0) & 63);
+        const li = light[clamp((fy * LSUB) | 0, 0, LH - 1) * LW + clamp((fx * LSUB) | 0, 0, LW - 1)] * fog;
+        luma[rf + x] = fl[ti] * li;
+        luma[rc + x] = ce[ti] * li * 0.75;
+        fx += sx; fy += sy;
       }
     }
-    for (let y = 0; y < 512; y += 128) { g.fillStyle = "rgba(10,5,2,0.55)"; g.fillRect(0, y, 512, 2); g.fillStyle = "rgba(140,90,50,0.12)"; g.fillRect(0, y + 2, 512, 1); }
-    woodPat = ctx.createPattern(c, "repeat");
-    return woodPat;
-  }
-
-  // --- The map (pre-rendered once per night) ---
-  let mapCv = null;
-  function wobblyLine(g, x0, y0, x1, y1, R) {
-    const len = Math.hypot(x1 - x0, y1 - y0) || 1, n = Math.max(2, Math.ceil(len / 26));
-    const nx = -(y1 - y0) / len, ny = (x1 - x0) / len;
-    g.moveTo(x0, y0);
-    for (let i = 1; i <= n; i++) {
-      const t = i / n, j = i === n ? 0 : (R() - 0.5) * 2.2;
-      g.lineTo(x0 + (x1 - x0) * t + nx * j, y0 + (y1 - y0) * t + ny * j);
+    for (let x = 0; x < W; x++) luma[HALF * W + x] = 0;
+    // Walls
+    for (let x = 0; x < W; x++) {
+      const camX = 2 * x / W - 1, rdx = dirX + planeX * camX, rdy = dirY + planeY * camX;
+      let mx = px | 0, my = py | 0;
+      const ddx = Math.abs(1 / rdx), ddy = Math.abs(1 / rdy);
+      let stepX, stepY, sdx, sdy, side = 0;
+      if (rdx < 0) { stepX = -1; sdx = (px - mx) * ddx; } else { stepX = 1; sdx = (mx + 1 - px) * ddx; }
+      if (rdy < 0) { stepY = -1; sdy = (py - my) * ddy; } else { stepY = 1; sdy = (my + 1 - py) * ddy; }
+      let c = ".";
+      for (let n = 0; n < 64; n++) {
+        if (sdx < sdy) { sdx += ddx; mx += stepX; side = 0; } else { sdy += ddy; my += stepY; side = 1; }
+        c = (mx < 0 || my < 0 || mx >= MW || my >= MH) ? "#" : map[my][mx];
+        if (c !== ".") break;
+      }
+      const perp = Math.max(0.01, side === 0 ? sdx - ddx : sdy - ddy);
+      zbuf[x] = perp;
+      const lineH = K / perp, y0 = HALF - lineH / 2;
+      let wallX = side === 0 ? py + perp * rdy : px + perp * rdx;
+      wallX -= Math.floor(wallX);
+      let tx = (wallX * 64) | 0;
+      if ((side === 0 && rdx > 0) || (side === 1 && rdy < 0)) tx = 63 - tx;
+      const tex = (WALLTEX[c] || TEX.brick).L;
+      const lit = lightAt(px + rdx * (perp - 0.06), py + rdy * (perp - 0.06)) * Math.exp(-perp * 0.05) * (side ? 0.8 : 1);
+      const ys = Math.max(0, y0 | 0), ye = Math.min(H, Math.ceil(y0 + lineH));
+      const step = 64 / lineH; let ty = (ys - y0) * step;
+      for (let y = ys; y < ye; y++) { luma[y * W + x] = tex[(((ty | 0) & 63) << 6) | tx] * lit; ty += step; }
     }
-  }
-  function sketchRect(g, x, y, w, h, R, color, lw) {
-    const o = () => 2 + R() * 5; // pen overshoots the corners, like a hand-drawn plan
-    g.strokeStyle = color; g.lineWidth = lw; g.lineCap = "round"; g.beginPath();
-    wobblyLine(g, x - o(), y, x + w + o(), y, R);
-    wobblyLine(g, x + w, y - o(), x + w, y + h + o(), R);
-    wobblyLine(g, x + w + o(), y + h, x - o(), y + h, R);
-    wobblyLine(g, x, y + h + o(), x, y - o(), R);
-    g.stroke();
-  }
-  function hatchG(g, x, y, w, h, sp, color, lw) {
-    g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip();
-    g.strokeStyle = color; g.lineWidth = lw; g.beginPath();
-    for (let k = -h; k < w; k += sp) { g.moveTo(x + k, y + h); g.lineTo(x + k + h, y); }
-    g.stroke(); g.restore();
-  }
-  function buildMap() {
-    const c = document.createElement("canvas"); c.width = WORLD_W; c.height = WORLD_H;
-    const g = c.getContext("2d"), R = srand(levelIdx * 97 + 13);
-    g.fillStyle = PAPER; g.fillRect(0, 0, WORLD_W, WORLD_H);
-    for (let i = 0; i < 28; i++) {
-      const x = R() * WORLD_W, y = R() * WORLD_H, r = 80 + R() * 280;
-      const gr = g.createRadialGradient(x, y, 0, x, y, r);
-      gr.addColorStop(0, `rgba(150,105,55,${0.04 + R() * 0.07})`); gr.addColorStop(1, "rgba(150,105,55,0)");
-      g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2);
+    // Sprites, far to near
+    const list = [];
+    for (const o of objs) list.push({ x: o.x, y: o.y, art: o.art, scale: o.scale, hang: o.hang, glow: o.glow, bob: o.bob ? Math.sin(t * 3) * 0.03 : 0 });
+    for (const e of enemies) {
+      const A = e.type.art;
+      let art = A.idle;
+      if (e.state === "aim") art = A.aim; else if (e.state === "fire") art = e.t > 0.07 ? A.fire : A.aim;
+      else if (e.state === "hurt") art = A.hurt; else if (e.state === "dying") art = e.t > 0.25 ? A.hurt : A.fall;
+      else if (e.state === "dead") art = A.dead;
+      const sc = e.type === ETYPE.V ? 1.05 : e.type === ETYPE.G ? 1.0 : 0.95;
+      list.push({ x: e.x, y: e.y, art, scale: sc, bob: e.moving ? Math.abs(Math.sin(e.step * 9)) * 0.02 : 0, muzzle: e.state === "fire" && e.t > 0.07 });
     }
-    for (let i = 0; i < 9000; i++) {
-      g.fillStyle = R() < 0.5 ? "rgba(70,45,20,0.10)" : "rgba(255,255,255,0.14)";
-      g.fillRect(R() * WORLD_W, R() * WORLD_H, 1 + R() * 1.6, 1 + R() * 1.6);
-    }
-    const edge = (x0, y0, x1, y1) => { const gr = g.createLinearGradient(x0, y0, x1, y1);
-      gr.addColorStop(0, "rgba(105,65,25,0.4)"); gr.addColorStop(1, "rgba(105,65,25,0)"); return gr; };
-    g.fillStyle = edge(0, 0, 100, 0); g.fillRect(0, 0, 100, WORLD_H);
-    g.fillStyle = edge(WORLD_W, 0, WORLD_W - 100, 0); g.fillRect(WORLD_W - 100, 0, 100, WORLD_H);
-    g.fillStyle = edge(0, 0, 0, 100); g.fillRect(0, 0, WORLD_W, 100);
-    g.fillStyle = edge(0, WORLD_H, 0, WORLD_H - 100); g.fillRect(0, WORLD_H - 100, WORLD_W, 100);
-    // Fold creases
-    const fold = (x0, y0, x1, y1, vertical) => {
-      const gr = g.createLinearGradient(x0, y0, x1, y1);
-      gr.addColorStop(0, "rgba(255,255,255,0)"); gr.addColorStop(0.45, "rgba(255,255,255,0.35)");
-      gr.addColorStop(0.55, "rgba(90,55,20,0.22)"); gr.addColorStop(1, "rgba(90,55,20,0)");
-      g.fillStyle = gr;
-      vertical ? g.fillRect(x0, 0, x1 - x0, WORLD_H) : g.fillRect(0, y0, WORLD_W, y1 - y0);
-    };
-    for (const fx of [WORLD_W / 3, WORLD_W * 2 / 3]) fold(fx - 14, 0, fx + 14, 0, true);
-    fold(0, WORLD_H / 2 - 14, 0, WORLD_H / 2 + 14, false);
-    // Blocks and buildings in ink
-    for (const b of blocks) {
-      const lx = b.x + INSET, ly = b.y + INSET, lw = BW - INSET * 2;
-      for (const [x, y, w, h] of b.roofs) hatchG(g, x, y, w, h, 7, "rgba(43,38,32,0.22)", 0.9);
-      for (const [x, y, w, h] of b.roofs) sketchRect(g, x, y, w, h, R, "rgba(43,38,32,0.65)", 1.1);
-      sketchRect(g, lx, ly, lw, lw, R, "rgba(43,38,32,0.9)", 2);
-      // Per-block pencil jitter, stamp and tag placement
-      b.j1 = Float32Array.from({ length: 80 }, () => (R() - 0.5) * 4);
-      b.j2 = Float32Array.from({ length: 80 }, () => (R() - 0.5) * 4);
-      b.tagRot = (R() - 0.5) * 0.1;
-      b.stampRot = (R() - 0.5) * 0.5;
-      b.stampX = b.cx + 70 + R() * 30; b.stampY = b.cy + 118 + R() * 22;
-    }
-    // Street names
-    g.fillStyle = "rgba(43,38,32,0.6)"; g.font = `italic 700 15px ${SERIF}`; g.textAlign = "center"; g.textBaseline = "middle";
-    for (let r = 1; r < ROWS; r++) for (let c = (r % 2); c < COLS; c += 2) g.fillText(HSTREETS[(r - 1) % HSTREETS.length], c * BW + BW / 2, r * BW);
-    for (let c = 1; c < COLS; c++) for (let r = (c % 2); r < ROWS; r += 2) {
-      g.save(); g.translate(c * BW, r * BW + BW / 2); g.rotate(-Math.PI / 2); g.fillText(VSTREETS[(c - 1) % VSTREETS.length], 0, 0); g.restore();
-    }
-    // Coffee rings
-    for (let i = 0; i < 2; i++) {
-      const x = 300 + R() * (WORLD_W - 600), y = 200 + R() * (WORLD_H - 400), r = 52 + R() * 18;
-      g.strokeStyle = "rgba(120,72,28,0.15)"; g.lineWidth = 8; g.beginPath(); g.arc(x, y, r, 0.4, 5.9); g.stroke();
-      g.strokeStyle = "rgba(110,62,22,0.22)"; g.lineWidth = 2; g.beginPath(); g.arc(x + 2, y + 1, r + 4, 0, 6.283); g.stroke();
-    }
-    // Compass rose
-    const kx = WORLD_W - 90, ky = WORLD_H - 92;
-    g.strokeStyle = INK; g.lineWidth = 1.5; g.beginPath(); g.arc(kx, ky, 40, 0, 6.283); g.stroke();
-    g.beginPath(); g.arc(kx, ky, 34, 0, 6.283); g.stroke();
-    for (let i = 0; i < 4; i++) {
-      const a = i * Math.PI / 2 - Math.PI / 2;
-      g.fillStyle = i === 0 ? RED_INK : INK;
-      g.beginPath(); g.moveTo(kx + Math.cos(a) * 46, ky + Math.sin(a) * 46);
-      g.lineTo(kx + Math.cos(a + 1.3) * 8, ky + Math.sin(a + 1.3) * 8); g.lineTo(kx, ky);
-      g.lineTo(kx + Math.cos(a - 1.3) * 8, ky + Math.sin(a - 1.3) * 8); g.closePath(); g.fill();
-    }
-    g.fillStyle = INK; g.font = `900 16px ${SERIF}`; g.fillText("N", kx, ky - 58);
-    // Title cartouche
-    const tx = 50, ty = WORLD_H - 118, tw = 440, th = 76;
-    g.fillStyle = "rgba(244,236,216,0.7)"; g.fillRect(tx, ty, tw, th);
-    g.strokeStyle = INK; g.lineWidth = 2.5; g.strokeRect(tx, ty, tw, th); g.lineWidth = 1; g.strokeRect(tx + 5, ty + 5, tw - 10, th - 10);
-    g.fillStyle = INK; g.textAlign = "center";
-    g.font = `900 22px ${SERIF}`; g.fillText(`PLAN OF ${level.name.toUpperCase()}`, tx + tw / 2, ty + 30);
-    g.font = `italic 700 13px ${SERIF}`; g.fillText(`Drawn for the ${familyName} family · Scale: one block, one fortune`, tx + tw / 2, ty + 54);
-    mapCv = c;
+    for (const s of list) s.d = (s.x - px) ** 2 + (s.y - py) ** 2;
+    list.sort((a, b) => b.d - a.d);
+    for (const s of list) drawSprite(s);
+    // The gun in your hand
+    drawGun(t);
   }
-
-  // --- Desk props around the map ---
-  function drawProps(t) {
-    // Ashtray with a resting cigar
-    const ax = -150, ay = 340;
-    if (onScreen(ax, ay, 120)) {
-      ctx.fillStyle = "rgba(0,0,0,0.4)"; ctx.beginPath(); ctx.arc(ax + 8, ay + 12, 62, 0, 6.283); ctx.fill();
-      const g = ctx.createRadialGradient(ax - 20, ay - 20, 5, ax, ay, 62);
-      g.addColorStop(0, "rgba(200,215,220,0.55)"); g.addColorStop(1, "rgba(90,110,120,0.5)");
-      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(ax, ay, 60, 0, 6.283); ctx.fill();
-      ctx.fillStyle = "rgba(40,40,40,0.7)"; ctx.beginPath(); ctx.arc(ax, ay, 38, 0, 6.283); ctx.fill();
-      ctx.save(); ctx.translate(ax + 20, ay - 6); ctx.rotate(-0.5);
-      ctx.fillStyle = "#6b4426"; rr(-8, -5, 70, 10, 5); ctx.fill();
-      ctx.fillStyle = "#c9b48a"; ctx.fillRect(10, -5, 9, 10);
-      ctx.fillStyle = `rgba(255,${110 + ((Math.sin(t * 3) * 50) | 0)},40,0.9)`; ctx.beginPath(); ctx.arc(-8, 0, 4.5, 0, 6.283); ctx.fill();
-      ctx.restore();
-      if (Math.random() < 0.15) smoke.push({ x: ax + 13, y: ay + 6, vx: rand(-4, 8), vy: rand(-18, -8), r: 3, life: 3, max: 3 });
-    }
-    // Stacks of poker chips
-    const chips = [[WORLD_W + 130, 300, "#a3271c"], [WORLD_W + 190, 360, "#1e1a16"], [WORLD_W + 120, 400, "#2c4fa8"]];
-    for (const [x, y, col] of chips) {
-      if (!onScreen(x, y, 80)) continue;
-      ctx.fillStyle = "rgba(0,0,0,0.45)"; ctx.beginPath(); ctx.arc(x + 8, y + 10, 30, 0, 6.283); ctx.fill();
-      ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, y, 30, 0, 6.283); ctx.fill();
-      ctx.strokeStyle = "#f4ecd8"; ctx.lineWidth = 6; ctx.setLineDash([9, 9]); ctx.beginPath(); ctx.arc(x, y, 26, 0, 6.283); ctx.stroke(); ctx.setLineDash([]);
-      ctx.strokeStyle = "rgba(244,236,216,0.6)"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x, y, 17, 0, 6.283); ctx.stroke();
-    }
-    // Fountain pen
-    const px = WORLD_W + 140, py = WORLD_H - 360;
-    if (onScreen(px, py, 200)) {
-      ctx.save(); ctx.translate(px, py); ctx.rotate(1.1);
-      ctx.fillStyle = "rgba(0,0,0,0.4)"; rr(-110 + 6, -9 + 8, 220, 18, 9); ctx.fill();
-      ctx.fillStyle = "#14110e"; rr(-110, -9, 220, 18, 9); ctx.fill();
-      ctx.fillStyle = "#c9a24a"; ctx.fillRect(10, -9, 8, 18); ctx.fillRect(-80, -10, 70, 3);
-      ctx.fillStyle = "#c9a24a"; ctx.beginPath(); ctx.moveTo(110, -6); ctx.lineTo(140, 0); ctx.lineTo(110, 6); ctx.fill();
-      ctx.restore();
-    }
-    // A glass of something amber
-    const gx = -170, gy = WORLD_H - 260;
-    if (onScreen(gx, gy, 100)) {
-      ctx.fillStyle = "rgba(0,0,0,0.4)"; ctx.beginPath(); ctx.arc(gx + 8, gy + 12, 46, 0, 6.283); ctx.fill();
-      ctx.fillStyle = "rgba(220,230,235,0.25)"; ctx.beginPath(); ctx.arc(gx, gy, 46, 0, 6.283); ctx.fill();
-      const g = ctx.createRadialGradient(gx - 10, gy - 10, 4, gx, gy, 38);
-      g.addColorStop(0, "rgba(235,160,60,0.85)"); g.addColorStop(1, "rgba(150,75,20,0.85)");
-      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(gx, gy, 38, 0, 6.283); ctx.fill();
-      ctx.fillStyle = "rgba(255,255,255,0.5)"; rr(gx - 14, gy - 22, 18, 16, 3); ctx.fill();
-      ctx.strokeStyle = "rgba(255,255,255,0.35)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(gx, gy, 45, 3.6, 4.8); ctx.stroke();
-    }
-  }
-
-  // --- Colored-pencil turf hatching ---
-  function drawHatch(b, team, frac, alpha) {
-    const lx = b.x + INSET, ly = b.y + INSET, lw = BW - INSET * 2;
-    const R = 250, sp = 7, n = Math.min(80, Math.floor(2 * R / sp)), m = Math.floor(n * frac);
-    if (m <= 0) return;
-    ctx.save(); ctx.beginPath(); ctx.rect(lx + 2, ly + 2, lw - 4, lw - 4); ctx.clip();
-    ctx.translate(b.cx, b.cy); ctx.rotate(HATCH_ANGLE[team % HATCH_ANGLE.length]);
-    ctx.globalAlpha = alpha; ctx.strokeStyle = teamColor(team); ctx.lineWidth = 2.2; ctx.lineCap = "round";
-    ctx.beginPath();
-    for (let i = 0; i < m; i++) { const x = -R + i * sp; ctx.moveTo(x + b.j1[i], -R); ctx.lineTo(x + b.j2[i], R); }
-    ctx.stroke();
-    ctx.restore();
-  }
-  function drawStamp(x, y, rot, text, color, scale, alpha) {
-    ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.scale(scale, scale); ctx.globalAlpha = alpha;
-    ctx.font = `22px ${FONT}`;
-    const w = ctx.measureText(text).width + 28, h = 38;
-    ctx.strokeStyle = color; ctx.lineWidth = 3; rr(-w / 2, -h / 2, w, h, 5); ctx.stroke();
-    ctx.lineWidth = 1.2; rr(-w / 2 + 5, -h / 2 + 5, w - 10, h - 10, 3); ctx.stroke();
-    ctx.fillStyle = color; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(text, 0, 1);
-    const R = srand(text.length * 31 + (x | 0));
-    ctx.fillStyle = PAPER; ctx.globalAlpha = alpha * 0.75;
-    for (let i = 0; i < 30; i++) ctx.fillRect(-w / 2 + R() * w, -h / 2 + R() * h, 1 + R() * 2.5, 1 + R() * 2);
-    ctx.restore();
-  }
-  const famLabel = team => team === 1 ? familyName : leaderOf(team).name.slice(4);
-  function drawTag(b) {
-    ctx.save(); ctx.translate(b.cx, b.cy - 74); ctx.rotate(b.tagRot);
-    ctx.font = `14px ${FONT}`;
-    const w = Math.max(124, ctx.measureText(b.name).width + 28), h = 42;
-    ctx.fillStyle = "rgba(40,20,0,0.25)"; ctx.fillRect(-w / 2 + 3, -h / 2 + 4, w, h);
-    ctx.fillStyle = CARD; ctx.fillRect(-w / 2, -h / 2, w, h);
-    ctx.fillStyle = INK; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(b.name, 0, -7);
-    ctx.font = `12px ${FONT}`; ctx.fillStyle = RED_INK; ctx.fillText(`$${b.value} a second`, 0, 10);
-    ctx.fillStyle = "rgba(226,208,160,0.82)";
-    for (const s of [-1, 1]) { ctx.save(); ctx.translate(s * (w / 2 - 6), -h / 2 + 2); ctx.rotate(s * 0.6); ctx.fillRect(-14, -6, 28, 12); ctx.restore(); }
-    ctx.restore();
-  }
-
-  function drawCity() {
-    const hw = vw / 2 / zoom + 40, hh = vh / 2 / zoom + 40;
-    ctx.fillStyle = woodPattern(); ctx.fillRect(cam.x - hw, cam.y - hh, hw * 2, hh * 2);
-    ctx.save(); ctx.shadowColor = "rgba(0,0,0,0.65)"; ctx.shadowBlur = 40; ctx.shadowOffsetX = 14; ctx.shadowOffsetY = 18;
-    ctx.fillStyle = PAPER; ctx.fillRect(0, 0, WORLD_W, WORLD_H); ctx.restore();
-    ctx.drawImage(mapCv, 0, 0);
-    for (const b of blocks) {
-      if (!onScreen(b.cx, b.cy, 260)) continue;
-      if (b.owner) drawHatch(b, b.owner, 1, 0.5);
-      if (b.claimBy && b.claim > 0.005) drawHatch(b, b.claimBy, b.claim, 0.8);
-    }
-  }
-  function drawSigns() {
-    for (const b of blocks) {
-      if (!onScreen(b.cx, b.cy, 260)) continue;
-      if (b.owner) drawStamp(b.stampX, b.stampY, b.stampRot, famLabel(b.owner).toUpperCase(), shade(teamColor(b.owner), -0.15), 1 + b.pulse * 0.7, 0.85 - b.pulse * 0.2);
-      drawTag(b);
-    }
-  }
-
-  // --- Game pieces (cached sprites) ---
-  const spriteCache = new Map();
-  const SPR = 3;
-  function pawn(g, r, base, top) {
-    g.fillStyle = "rgba(25,12,0,0.38)"; g.beginPath(); g.arc(2.5, 3.5, r + 0.6, 0, 6.283); g.fill(); // lamp is up and to the left
-    g.fillStyle = base; g.beginPath(); g.arc(0, 0, r, 0, 6.283); g.fill();
-    g.strokeStyle = "rgba(0,0,0,0.4)"; g.lineWidth = 1; g.stroke();
-    const hr = r * 0.62;
-    g.fillStyle = top; g.beginPath(); g.arc(-0.6, -0.6, hr, 0, 6.283); g.fill();
-    g.strokeStyle = "rgba(0,0,0,0.25)"; g.stroke();
-    const gr = g.createRadialGradient(-hr * 0.6, -hr * 0.7, 0, -hr * 0.3, -hr * 0.3, hr * 1.3);
-    gr.addColorStop(0, "rgba(255,255,255,0.65)"); gr.addColorStop(1, "rgba(255,255,255,0)");
-    g.fillStyle = gr; g.beginPath(); g.arc(-0.6, -0.6, hr, 0, 6.283); g.fill();
-  }
-  function sprite(kind, color) {
-    const key = kind + color;
-    let s = spriteCache.get(key);
-    if (s) return s;
-    const size = kind === "don" ? 40 : 28;
-    const c = document.createElement("canvas"); c.width = c.height = size * SPR;
-    const g = c.getContext("2d"); g.scale(SPR, SPR); g.translate(size / 2, size / 2);
-    if (kind === "goon") pawn(g, 7.2, shade(color, -0.3), color);
-    else if (kind === "tough") {
-      pawn(g, 6.6, "#b18f62", "#d8bf95");
-      g.strokeStyle = "rgba(110,75,40,0.35)"; g.lineWidth = 0.6; g.beginPath(); g.arc(-0.6, -0.6, 2.2, 0.3, 2.8); g.stroke();
-    } else if (kind === "cop") {
-      pawn(g, 7.8, "#1c3164", "#3a62b4");
-      g.fillStyle = "#e8c35a"; g.beginPath();
-      for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 1.2 : 2.8; g.lineTo(-0.6 + Math.cos(a) * r, -0.6 + Math.sin(a) * r); }
-      g.closePath(); g.fill();
-    } else if (kind === "don") {
-      g.fillStyle = "rgba(25,12,0,0.4)"; g.beginPath(); g.arc(3, 4.5, 14, 0, 6.283); g.fill();
-      g.fillStyle = "#c9a24a"; g.beginPath(); g.arc(0, 0, 13.5, 0, 6.283); g.fill();          // brass base ring
-      g.strokeStyle = "rgba(0,0,0,0.45)"; g.lineWidth = 1; g.stroke();
-      g.fillStyle = shade(color, -0.25); g.beginPath(); g.arc(0, 0, 11.2, 0, 6.283); g.fill();
-      g.fillStyle = "#1b1815"; g.beginPath(); g.ellipse(-0.5, -0.5, 9.5, 8.6, 0, 0, 6.283); g.fill(); // fedora brim
-      g.strokeStyle = color; g.lineWidth = 2.2; g.beginPath(); g.arc(-0.5, -0.5, 5.9, 0, 6.283); g.stroke(); // hat band
-      g.fillStyle = "#2f2a24"; g.beginPath(); g.arc(-0.5, -0.5, 4.8, 0, 6.283); g.fill();          // crown
-      g.strokeStyle = "rgba(0,0,0,0.6)"; g.lineWidth = 1; g.beginPath(); g.moveTo(-0.5, -4.5); g.lineTo(-0.5, 3.5); g.stroke(); // crease
-      const gr = g.createRadialGradient(-4, -5, 0, -2, -2, 9);
-      gr.addColorStop(0, "rgba(255,255,255,0.4)"); gr.addColorStop(1, "rgba(255,255,255,0)");
-      g.fillStyle = gr; g.beginPath(); g.arc(-0.5, -0.5, 9.5, 0, 6.283); g.fill();
-    } else if (kind === "down") {
-      // A pawn knocked over on its side
-      g.fillStyle = "rgba(25,12,0,0.35)"; g.beginPath(); g.ellipse(2, 4, 11, 5, 0, 0, 6.283); g.fill();
-      g.fillStyle = shade(color, -0.3); g.beginPath(); g.moveTo(-10, -5); g.lineTo(3, -2.5); g.lineTo(3, 2.5); g.lineTo(-10, 5); g.closePath(); g.fill();
-      g.fillStyle = shade(color, -0.45); g.beginPath(); g.ellipse(-10, 0, 2, 5, 0, 0, 6.283); g.fill();
-      g.fillStyle = color; g.beginPath(); g.arc(6, 0, 4.6, 0, 6.283); g.fill();
-      g.fillStyle = "rgba(255,255,255,0.45)"; g.beginPath(); g.arc(5, -1.8, 1.8, 0, 6.283); g.fill();
-    }
-    s = { c, size };
-    spriteCache.set(key, s);
-    return s;
-  }
-  function drawSprite(kind, color, x, y, rot = 0, alpha = 1) {
-    const s = sprite(kind, color);
-    if (rot || alpha < 1) {
-      ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x, y); ctx.rotate(rot);
-      ctx.drawImage(s.c, -s.size / 2, -s.size / 2, s.size, s.size); ctx.restore();
-    } else ctx.drawImage(s.c, x - s.size / 2, y - s.size / 2, s.size, s.size);
-  }
-
-  function drawRadius(L) {
-    ctx.save();
-    ctx.strokeStyle = L.isPlayer ? "rgba(43,38,32,0.6)" : hexA(L.color, 0.5);
-    ctx.lineWidth = 1.3; ctx.setLineDash([2, 6]);
-    ctx.beginPath(); ctx.arc(L.x, L.y, radiusFor(L), 0, 6.283); ctx.stroke();
-    ctx.restore();
-  }
-  function drawGoon(p) {
-    if (!onScreen(p.x, p.y, 20)) return;
-    if (p.team) {
-      drawSprite("goon", teamColor(p.team), p.x, p.y);
-      if (p.hp < 0.95) { ctx.fillStyle = RED_INK; ctx.fillRect(p.x - 6, p.y - 12, 12 * Math.max(0, p.hp), 2); }
-    } else {
-      drawSprite("tough", "", p.x, p.y);
-      if (p.conv > 0.02 && p.convTeam) {
-        ctx.strokeStyle = teamColor(p.convTeam); ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.arc(p.x, p.y, 10.5, -Math.PI / 2, -Math.PI / 2 + p.conv * 6.283); ctx.stroke();
+  function drawSprite(s) {
+    const [, tY, sx] = project(s.x, s.y);
+    if (tY < 0.12) return;
+    const bm = s.art, size = (K / tY) * s.scale;
+    const floorY = HALF + (K * 0.5) / tY;
+    const top = (s.hang ? HALF - (K * 0.5) / tY : floorY - size) - s.bob * (K / tY);
+    const wpx = size * bm.w / bm.h, left = sx - wpx / 2;
+    const x0 = Math.max(0, left | 0), x1 = Math.min(W, (left + wpx) | 0);
+    let lit = lightAt(s.x, s.y) * Math.exp(-tY * 0.05);
+    if (s.glow) lit = Math.max(lit, 1.05);
+    if (s.muzzle) lit = Math.max(lit, 0.9);
+    const y0 = Math.max(0, top | 0), y1 = Math.min(H, (top + size) | 0), stepY = bm.h / size;
+    for (let x = x0; x < x1; x++) {
+      if (tY >= zbuf[x]) continue;
+      const tx = ((x - left) / wpx * bm.w) | 0;
+      let ty = (y0 - top) * stepY;
+      for (let y = y0; y < y1; y++) {
+        const i = (ty | 0) * bm.w + tx;
+        if (bm.A[i] > 110) luma[y * W + x] = bm.L[i] * (bm.L[i] > 245 ? 1.1 : lit);
+        ty += stepY;
       }
     }
   }
-  function label(text, x, y, color, font) {
-    ctx.font = font; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
-    ctx.lineJoin = "round"; ctx.lineWidth = 4; ctx.strokeStyle = "rgba(244,236,216,0.85)"; ctx.strokeText(text, x, y);
-    ctx.fillStyle = color; ctx.fillText(text, x, y);
-  }
-  const cigarTip = L => {
-    const a = Math.hypot(L.vx, L.vy) > 20 ? Math.atan2(L.vy, L.vx) : 0.5;
-    return [a, L.x + Math.cos(a) * 21 - Math.sin(a) * 4, L.y + Math.sin(a) * 21 + Math.cos(a) * 4];
-  };
-  function drawDon(L, t) {
-    if (!onScreen(L.x, L.y, 40)) return;
-    const [a] = cigarTip(L);
-    const alpha = L.stun > 0 ? 0.55 + 0.35 * Math.sin(t * 25) : 1;
-    ctx.save(); ctx.globalAlpha = alpha; ctx.translate(L.x, L.y); ctx.rotate(a);
-    ctx.fillStyle = "#6b4426"; rr(9, 2, 11, 4, 2); ctx.fill();
-    ctx.fillStyle = `rgba(255,${120 + ((Math.sin(t * 6) * 60) | 0)},40,0.95)`; ctx.beginPath(); ctx.arc(20.5, 4, 2, 0, 6.283); ctx.fill();
-    ctx.restore();
-    drawSprite("don", L.color, L.x, L.y, 0, alpha);
-    label(`${L.name} (${crew.get(L.team) || 0})`, L.x, L.y - 21, L.isPlayer ? INK : shade(L.color, -0.3), `13px ${FONT}`);
-    if (L.stun > 0) label("✶ ✶ ✶", L.x, L.y - 36, RED_INK, `12px ${FONT}`);
-  }
-  function drawCop(c, t) {
-    if (!onScreen(c.x, c.y, 30)) return;
-    drawSprite("cop", "", c.x, c.y);
-    if (c.paid > 0) label("$", c.x, c.y - 12, GREEN_INK, `16px ${MARKER}`);
-    else if (c.busy > 0) label("✎", c.x, c.y - 12, INK, `13px ${FONT}`);
-    else if (c.chasing) {
-      ctx.fillStyle = Math.sin(t * 16) > 0 ? "#e02a2a" : "#2a5ae0";
-      ctx.beginPath(); ctx.arc(c.x, c.y - 13, 3, 0, 6.283); ctx.fill();
-    }
-  }
-  function drawDowns() {
-    for (const d of downs) drawSprite("down", d.color, d.x, d.y, d.rot * 3, clamp(d.life / 2.2, 0, 1));
-  }
-
-  // --- Cigar smoke ---
-  let smoke = [];
-  function updateSmoke(dt) {
-    for (const L of leaders) {
-      if (Math.random() < dt * (L.isPlayer ? 7 : 4)) {
-        const [, x, y] = cigarTip(L);
-        smoke.push({ x, y, vx: rand(-5, 9), vy: rand(-18, -8), r: 2.5, life: 2.4, max: 2.4 });
+  function drawGun(t) {
+    const p = player, art = GUNART[p.weapon][p.flash > 0 ? 1 : 0];
+    const bobX = p.moving ? Math.cos(p.bob) * 6 : 0, bobY = p.moving ? Math.abs(Math.sin(p.bob)) * 6 : Math.sin(t * 1.5) * 1.5;
+    const reloadDrop = p.reload > 0 ? Math.sin(Math.min(1, p.reload / WEAP[p.weapon].reload) * Math.PI) * 70 : 0;
+    const ox = (p.weapon === 0 ? W / 2 + 10 : W / 2 - 40) + bobX + p.recoil * 6;
+    const oy = H - art.h - 4 + bobY + p.recoil * 10 + reloadDrop;
+    const lit = Math.min(1.05, lightAt(p.x, p.y) * 0.5 + 0.6) + (p.flash > 0 ? 0.3 : 0);
+    for (let y = 0; y < art.h; y++) {
+      const sy = (oy + y) | 0; if (sy < 0 || sy >= H) continue;
+      for (let x = 0; x < art.w; x++) {
+        const sx = (ox + x) | 0; if (sx < 0 || sx >= W) continue;
+        const i = y * art.w + x;
+        if (art.A[i] > 110) luma[sy * W + sx] = art.L[i] * (art.L[i] > 245 ? 1.1 : lit);
       }
     }
-    for (const s of smoke) { s.x += s.vx * dt; s.y += s.vy * dt; s.r += dt * 8; s.life -= dt; }
-    smoke = smoke.filter(s => s.life > 0);
-    if (smoke.length > 220) smoke.splice(0, smoke.length - 220);
   }
-  function drawSmoke() {
-    for (const s of smoke) {
-      ctx.fillStyle = `rgba(238,234,226,${(s.life / s.max) * 0.16})`;
-      ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 6.283); ctx.fill();
+  function develop(bright) {
+    const ox = (Math.random() * 256) | 0, oy = (Math.random() * 256) | 0;
+    for (let y = 0; y < H; y++) {
+      const gy = ((y + oy) & 255) << 8, row = y * W;
+      for (let x = 0; x < W; x++) {
+        const i = row + x;
+        let v = luma[i] * VIG[i] * bright + GRAIN[gy | ((x + ox) & 255)];
+        out[i] = LUT[v < 0 ? 0 : v > 255 ? 255 : v | 0];
+      }
     }
-  }
-
-  // --- The desk lamp ---
-  const wisps = Array.from({ length: 5 }, () => ({ x: Math.random() * 1.4 - 0.2, y: Math.random(), r: rand(0.15, 0.3), s: rand(0.004, 0.012), ph: Math.random() * 6 }));
-  function drawLamp(dt, t) {
-    for (const w of wisps) {
-      w.x += w.s * dt; if (w.x > 1.3) w.x = -0.3;
-      const x = w.x * vw, y = (w.y + Math.sin(t * 0.2 + w.ph) * 0.05) * vh, r = w.r * Math.max(vw, vh);
-      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-      g.addColorStop(0, "rgba(230,225,215,0.06)"); g.addColorStop(1, "rgba(230,225,215,0)");
-      ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2);
-    }
-    const cx = vw * 0.46, cy = vh * 0.42, flick = 1 + Math.sin(t * 13) * 0.004 + Math.sin(t * 2.1) * 0.006;
-    const g = ctx.createRadialGradient(cx, cy, Math.min(vw, vh) * 0.22 * flick, cx, cy, Math.max(vw, vh) * 0.82);
-    g.addColorStop(0, "rgba(255,190,110,0.05)"); g.addColorStop(0.5, "rgba(20,10,2,0.22)"); g.addColorStop(1, "rgba(5,2,0,0.78)");
-    ctx.fillStyle = g; ctx.fillRect(0, 0, vw, vh);
+    bctx.putImageData(img, 0, 0);
   }
 
-  // --- HUD: index cards taped to the desk ---
-  function card(x, y, w, h, rot, ruled, fn) {
-    ctx.save(); ctx.translate(x + w / 2, y + h / 2); ctx.rotate(rot); ctx.translate(-w / 2, -h / 2);
-    ctx.fillStyle = "rgba(0,0,0,0.4)"; ctx.fillRect(3, 5, w, h);
-    ctx.fillStyle = CARD; ctx.fillRect(0, 0, w, h);
-    if (ruled) {
-      ctx.strokeStyle = "rgba(70,110,170,0.25)"; ctx.lineWidth = 1; ctx.beginPath();
-      for (let yy = 26; yy < h; yy += 15) { ctx.moveTo(0, yy); ctx.lineTo(w, yy); }
-      ctx.stroke();
-      ctx.strokeStyle = "rgba(190,60,50,0.35)"; ctx.beginPath(); ctx.moveTo(20, 0); ctx.lineTo(20, h); ctx.stroke();
+  // Projector artifacts on top of the frame
+  const scratches = [];
+  function projector(intensity = 1) {
+    if (Math.random() < 0.06 * intensity) scratches.push({ x: Math.random(), life: rand(0.1, 0.6), w: rand(0.5, 1.5), dark: Math.random() < 0.5 });
+    ctx.save(); ctx.beginPath(); ctx.rect(film.x, film.y, film.w, film.h); ctx.clip();
+    for (let i = scratches.length - 1; i >= 0; i--) {
+      const s = scratches[i]; s.life -= 1 / 60; s.x += rand(-0.002, 0.002);
+      if (s.life <= 0) { scratches.splice(i, 1); continue; }
+      ctx.fillStyle = s.dark ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.22)";
+      ctx.fillRect(film.x + s.x * film.w, film.y, s.w, film.h);
     }
-    ctx.fillStyle = "rgba(226,208,160,0.85)"; ctx.save(); ctx.translate(w / 2, 0); ctx.rotate(-0.05); ctx.fillRect(-26, -7, 52, 14); ctx.restore();
-    ctx.textBaseline = "alphabetic";
-    fn(w, h);
+    const n = Math.random() < 0.3 * intensity ? (Math.random() * 3) | 0 : 0;
+    for (let i = 0; i < n; i++) {
+      const x = film.x + Math.random() * film.w, y = film.y + Math.random() * film.h;
+      ctx.strokeStyle = Math.random() < 0.6 ? "rgba(0,0,0,0.6)" : "rgba(255,255,255,0.5)"; ctx.lineWidth = rand(0.8, 2);
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + rand(-12, 12), y + rand(-12, 12), x + rand(-18, 18), y + rand(-18, 18)); ctx.stroke();
+    }
     ctx.restore();
   }
-  function text(s, x, y, color, font, align = "left") { ctx.font = font; ctx.fillStyle = color; ctx.textAlign = align; ctx.fillText(s, x, y); }
 
   function drawHUD() {
-    const mine = ownedBy(1), narrow = vw < 760;
-    // Turf card
-    const tw = Math.min(430, vw - 32), tx = narrow ? 16 : (vw - tw) / 2, ty = 16;
-    card(tx, ty, tw, 66, -0.008, true, (w) => {
-      text(`NIGHT ${levelIdx + 1} · ${level.name.toUpperCase()}`, 28, 20, INK, `12px ${FONT}`);
-      const tl = Math.max(0, timeLeft), mm = Math.floor(tl / 60), ss = Math.floor(tl % 60);
-      text(`Dawn in ${mm}:${String(ss).padStart(2, "0")}`, w - 12, 20,
-        tl < 15 && Math.floor(tl * 4) % 2 ? RED_INK : INK, `15px ${FONT}`, "right");
-      text("TURF", 28, 51, INK, `12px ${FONT}`);
-      const n = level.target, gap = Math.min(24, (w - 120) / n), bx = 72;
-      for (let i = 0; i < n; i++) {
-        const x = bx + i * gap, y = 38;
-        ctx.strokeStyle = INK; ctx.lineWidth = 1.2; ctx.strokeRect(x, y, gap - 7, gap - 7 > 16 ? 16 : gap - 7);
-        if (i < mine) {
-          ctx.strokeStyle = shade(GOLD, -0.2); ctx.lineWidth = 2.6; ctx.lineCap = "round"; ctx.beginPath();
-          ctx.moveTo(x + 2, y + 7); ctx.lineTo(x + (gap - 7) * 0.4, y + 14); ctx.lineTo(x + gap - 4, y - 4); ctx.stroke();
-        }
-      }
-      text(`${mine}/${n}`, w - 12, 51, INK, `14px ${FONT}`, "right");
-    });
-
-    // Ledger card: cash + heat
-    const cx = 16, cy = narrow ? 94 : 16, cw = 210;
-    card(cx, cy, cw, 82, 0.012, false, (w) => {
-      const income = blocks.reduce((s, b) => s + (b.owner === 1 ? b.value : 0), 0);
-      text(money(player.cash), 14, 36, GREEN_INK, `28px ${DECO}`);
-      text(`+$${income}/s`, w - 12, 34, INK, `12px ${FONT}`, "right");
-      text("HEAT", 14, 62, INK, `12px ${FONT}`);
-      const hx = 56, hw = w - 70, hy = 52;
-      ctx.save(); ctx.beginPath(); ctx.rect(hx, hy, hw * heat / 100, 11); ctx.clip();
-      ctx.strokeStyle = RED_INK; ctx.lineWidth = 2; ctx.beginPath();
-      for (let k = -12; k < hw; k += 4) { ctx.moveTo(hx + k, hy + 11); ctx.lineTo(hx + k + 11, hy); }
-      ctx.stroke(); ctx.restore();
-      ctx.strokeStyle = INK; ctx.lineWidth = 1.2; ctx.strokeRect(hx, hy, hw, 11);
-      text(heat > 70 ? "MOST WANTED" : heat > 40 ? "WANTED" : heat > 15 ? "WATCHED" : "QUIET", w - 12, 77,
-        heat > 40 ? RED_INK : "rgba(43,38,32,0.6)", `10px ${FONT}`, "right");
-    });
-
-    // The families
-    if (leaders.length > 1 && !narrow) {
-      const lw = 220, lx = vw - lw - 18, ly = 16, lh = 30 + leaders.length * 19;
-      card(lx, ly, lw, lh, 0.01, false, (w) => {
-        text("THE FAMILIES", 12, 20, INK, `12px ${FONT}`);
-        text("BLOCKS · CREW", w - 12, 20, "rgba(43,38,32,0.6)", `10px ${FONT}`, "right");
-        const board = leaders.map(L => ({ L, b: ownedBy(L.team), n: crew.get(L.team) || 0 })).sort((a, b) => b.b - a.b || b.n - a.n);
-        board.forEach((e, i) => {
-          const yy = 40 + i * 19;
-          ctx.save(); ctx.beginPath(); ctx.rect(12, yy - 10, 12, 12); ctx.clip();
-          ctx.translate(18, yy - 4); ctx.rotate(HATCH_ANGLE[e.L.team % HATCH_ANGLE.length]);
-          ctx.strokeStyle = e.L.color; ctx.lineWidth = 2; ctx.beginPath();
-          for (let k = -12; k <= 12; k += 3.5) { ctx.moveTo(k, -12); ctx.lineTo(k, 12); }
-          ctx.stroke(); ctx.restore();
-          text(e.L.isPlayer ? familyName + " (you)" : e.L.name.slice(4), 30, yy, INK, `${e.L.isPlayer ? "bold " : ""}13px ${FONT}`);
-          text(`${e.b} · ${e.n}`, w - 12, yy, INK, `13px ${FONT}`, "right");
-        });
-      });
-    }
-
-    // Pocket map
-    const mw = narrow ? 132 : 188, mh = mw * WORLD_H / WORLD_W, mx = vw - mw - 20, my = vh - mh - 20;
-    card(mx - 6, my - 6, mw + 12, mh + 12, -0.015, false, () => {
-      const sx = mw / WORLD_W, sy = mh / WORLD_H;
-      ctx.translate(6, 6);
-      for (const b of blocks) {
-        const x = (b.x + INSET) * sx, y = (b.y + INSET) * sy, s = (BW - INSET * 2) * sx;
-        ctx.fillStyle = b.owner ? hexA(teamColor(b.owner), 0.55) : "rgba(43,38,32,0.06)"; ctx.fillRect(x, y, s, s);
-        ctx.strokeStyle = "rgba(43,38,32,0.5)"; ctx.lineWidth = 0.8; ctx.strokeRect(x, y, s, s);
-        if (b.claim > 0.01 && b.claimBy) { ctx.fillStyle = teamColor(b.claimBy); ctx.fillRect(x, y + s - 3, s * b.claim, 3); }
-      }
-      for (const c of cops) { ctx.fillStyle = COP_BLUE; ctx.fillRect(c.x * sx - 1.5, c.y * sy - 1.5, 3, 3); }
-      for (const L of leaders) {
-        ctx.fillStyle = L.color; ctx.beginPath(); ctx.arc(L.x * sx, L.y * sy, L.isPlayer ? 4 : 3, 0, 6.283); ctx.fill();
-        if (L.isPlayer) { ctx.strokeStyle = INK; ctx.lineWidth = 1.2; ctx.stroke(); }
-      }
-      ctx.strokeStyle = "rgba(43,38,32,0.55)"; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
-      ctx.strokeRect((cam.x - vw / 2 / zoom) * sx, (cam.y - vh / 2 / zoom) * sy, vw / zoom * sx, vh / zoom * sy);
-      ctx.setLineDash([]);
-    });
-
-    // Orders
-    if (!isTouch) {
-      card(18, vh - 66, 262, 48, -0.01, false, () => {
-        text(`[SPACE] Bribe the cops   $${BRIBE_COST}`, 12, 20, player.cash >= BRIBE_COST ? INK : "rgba(43,38,32,0.35)", `13px ${FONT}`);
-        text(`[E] Hire 4 goons         $${HIRE_COST}`, 12, 38, player.cash >= HIRE_COST ? INK : "rgba(43,38,32,0.35)", `13px ${FONT}`);
-      });
-    } else {
-      document.getElementById("bribe").classList.toggle("off", player.cash < BRIBE_COST);
-      document.getElementById("hire").classList.toggle("off", player.cash < HIRE_COST);
-    }
-
-    // What's happening on this block
-    const here = blockAt(player.x, player.y);
-    if (here.owner !== 1) {
-      const myPres = here.pres.get(1) || 0;
-      let top = 0; for (const [tm, n] of here.pres) if (tm !== 1) top = Math.max(top, n);
-      const msg = myPres > top ? `Taking over ${here.name}...` : `Outnumbered at ${here.name}: ${myPres} vs ${top}`;
-      ctx.font = `14px ${FONT}`;
-      const w = ctx.measureText(msg).width + 30;
-      const y = narrow ? cy + 96 : vh - (isTouch ? 140 : 62);
-      card(vw / 2 - w / 2, y, w, 28, 0.006, false, () => text(msg, w / 2, 19, myPres > top ? INK : RED_INK, `14px ${FONT}`, "center"));
-    }
-
-    if (flashT > 0) {
-      ctx.globalAlpha = Math.min(1, flashT);
-      ctx.font = `${narrow ? 18 : 24}px ${MARKER}`;
-      const w = Math.min(vw - 24, ctx.measureText(flashText).width + 40);
-      card(vw / 2 - w / 2, vh * 0.24, w, narrow ? 40 : 48, -0.02, false, (cw, ch) =>
-        text(flashText, cw / 2, ch / 2 + (narrow ? 7 : 9), RED_INK, `${narrow ? 18 : 24}px ${MARKER}`, "center"));
+    const p = player, f = film, s = f.s;
+    const fs = n => Math.max(10, n * s);
+    // Crosshair
+    const cx = f.x + f.w / 2, cy = f.y + f.h / 2, g = 4 + p.recoil * 6;
+    ctx.strokeStyle = "rgba(236,230,218,0.8)"; ctx.lineWidth = 1.5; ctx.beginPath();
+    ctx.moveTo(cx - g - 6, cy); ctx.lineTo(cx - g, cy); ctx.moveTo(cx + g, cy); ctx.lineTo(cx + g + 6, cy);
+    ctx.moveTo(cx, cy - g - 6); ctx.lineTo(cx, cy - g); ctx.moveTo(cx, cy + g); ctx.lineTo(cx, cy + g + 6); ctx.stroke();
+    // Bottom band, framed like an intertitle
+    const bh = 34 * s, by = f.y + f.h - bh;
+    const grd = ctx.createLinearGradient(0, by - 10 * s, 0, f.y + f.h);
+    grd.addColorStop(0, "rgba(0,0,0,0)"); grd.addColorStop(0.35, "rgba(0,0,0,0.75)"); grd.addColorStop(1, "rgba(0,0,0,0.9)");
+    ctx.fillStyle = grd; ctx.fillRect(f.x, by - 10 * s, f.w, bh + 10 * s);
+    ctx.strokeStyle = "rgba(236,230,218,0.55)"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(f.x + 14 * s, by + 2); ctx.lineTo(f.x + f.w - 14 * s, by + 2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(f.x + 14 * s, by + 5); ctx.lineTo(f.x + f.w - 14 * s, by + 5); ctx.stroke();
+    ctx.textBaseline = "alphabetic";
+    const base = by + bh - 9 * s;
+    ctx.fillStyle = CREAM; ctx.textAlign = "left";
+    ctx.font = `${fs(9)}px ${TYPE}`; ctx.fillText("HEALTH", f.x + 18 * s, base - 13 * s);
+    ctx.font = `${fs(17)}px ${DECO}`; ctx.fillStyle = p.hp < 30 && Math.floor(timer * 4) % 2 ? "#ffffff" : CREAM;
+    ctx.fillText(String(Math.ceil(p.hp)), f.x + 18 * s, base);
+    ctx.fillStyle = CREAM; ctx.font = `${fs(9)}px ${TYPE}`; ctx.fillText("CASH", f.x + 78 * s, base - 13 * s);
+    ctx.font = `${fs(14)}px ${DECO}`; ctx.fillText("$" + stats.cash.toLocaleString(), f.x + 78 * s, base);
+    ctx.textAlign = "center"; ctx.font = `${fs(10)}px ${TYPE}`;
+    const left = enemies.filter(e => e.hp > 0).length;
+    const obj = lvl.objective === "ledger" ? (p.ledger ? "LEDGER IN HAND — FIND THE EXIT" : "FIND THE LEDGER")
+      : (objectiveDone() ? "THE DON IS DOWN — FIND THE EXIT" : "FIND DON VITALE");
+    ctx.fillText(obj, f.x + f.w / 2, base - 12 * s);
+    ctx.font = `italic 700 ${fs(10)}px ${SERIF}`; ctx.fillText(`${left} of the Vitale outfit remain`, f.x + f.w / 2, base);
+    ctx.textAlign = "right"; ctx.font = `${fs(9)}px ${TYPE}`;
+    ctx.fillText(WEAP[p.weapon].name + (p.has[1] && p.has[0] ? "   [Q]" : ""), f.x + f.w - 18 * s, base - 13 * s);
+    ctx.font = `${fs(17)}px ${DECO}`;
+    const ammo = p.reload > 0 ? "RELOADING" : p.weapon === 0 ? `${p.mag[0]} / ∞` : `${p.mag[1]} / ${p.reserve}`;
+    ctx.fillText(ammo, f.x + f.w - 18 * s, base);
+    if (msg.t > 0) {
+      ctx.globalAlpha = Math.min(1, msg.t * 2); ctx.textAlign = "center"; ctx.font = `${fs(12)}px ${TYPE}`;
+      ctx.fillStyle = "rgba(0,0,0,0.7)"; ctx.fillText(msg.text, f.x + f.w / 2 + 1, f.y + 30 * s + 1);
+      ctx.fillStyle = CREAM; ctx.fillText(msg.text, f.x + f.w / 2, f.y + 30 * s);
       ctx.globalAlpha = 1;
     }
-  }
-
-  // Menu backdrop: the desk with a few pieces scattered on it
-  const scattered = Array.from({ length: 14 }, (_, i) => ({ x: Math.random(), y: Math.random(), k: i % 4, rot: rand(0, 6.283) }));
-  function drawMenuDesk() {
-    ctx.fillStyle = woodPattern(); ctx.fillRect(0, 0, vw, vh);
-    const cols = [GOLD, RIVALS[0].color, RIVALS[1].color, RIVALS[3].color];
-    for (const s of scattered) {
-      const x = s.x * vw, y = s.y * vh;
-      if (s.k === 0) drawSprite("tough", "", x, y);
-      else if (s.k === 1) drawSprite("down", cols[(x | 0) % 4], x, y, s.rot);
-      else if (s.k === 2) drawSprite("cop", "", x, y);
-      else drawSprite("goon", cols[(y | 0) % 4], x, y);
+    if (wasLocked && !locked && !isTouch) {
+      ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(f.x, f.y, f.w, f.h);
+      ctx.fillStyle = CREAM; ctx.textAlign = "center"; ctx.font = `${fs(22)}px ${DECO}`; ctx.fillText("INTERMISSION", f.x + f.w / 2, f.y + f.h / 2);
+      ctx.font = `${fs(11)}px ${TYPE}`; ctx.fillText("click to resume the picture", f.x + f.w / 2, f.y + f.h / 2 + 22 * s);
     }
   }
 
+  // ---------- Title cards ----------
+  let card = null;
+  function showCard(kind, idx) {
+    card = { kind, idx }; state = "card"; fade = 0; fadeDir = 1; after = null;
+    if (document.pointerLockElement) document.exitPointerLock();
+    wasLocked = false; firing = false;
+    fireBtn.style.display = swapBtn.style.display = "none";
+  }
+  function advance() {
+    if (state === "title") { showCard("chapter", 0); return; }
+    if (state !== "card" || fade < 0.6) return;
+    const c = card;
+    if (c.kind === "chapter") startLevel(c.idx);
+    else if (c.kind === "dead") { player.hp = 100; startLevel(c.idx, true); }
+    else if (c.kind === "end") { Object.assign(stats, { kills: 0, cash: 0, shots: 0, hits: 0, deaths: 0, time: 0 }); player = null; showCard("chapter", 0); }
+  }
+  function startLevel(i, retry) {
+    if (!retry && i === 0) player = null;
+    if (retry) { player.ledger = false; }
+    loadLevel(i);
+    state = "play"; fade = 0; fadeDir = 1;
+    if (!isTouch && cv.requestPointerLock) { try { const p = cv.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch (e) {} }
+    if (isTouch) { fireBtn.style.display = "block"; swapBtn.style.display = "block"; }
+  }
+  function fadeOut(fn, dur = 0.8) { fadeDir = -1 / dur; after = fn; }
+
+  function corner(x, y, sx, sy, s) {
+    ctx.save(); ctx.translate(x, y); ctx.scale(sx, sy);
+    ctx.strokeStyle = CREAM; ctx.lineWidth = 1.2;
+    for (let i = 0; i < 5; i++) { const a = i * Math.PI / 8; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(a) * 26 * s, Math.sin(a) * 26 * s); ctx.stroke(); }
+    ctx.beginPath(); ctx.arc(0, 0, 14 * s, 0, Math.PI / 2); ctx.stroke();
+    ctx.restore();
+  }
+  function drawCard(t) {
+    const f = film, s = f.s;
+    ctx.fillStyle = "#0b0a09"; ctx.fillRect(f.x, f.y, f.w, f.h);
+    const m = 22 * s;
+    ctx.strokeStyle = CREAM; ctx.lineWidth = 2; ctx.strokeRect(f.x + m, f.y + m, f.w - m * 2, f.h - m * 2);
+    ctx.lineWidth = 0.8; ctx.strokeRect(f.x + m + 6 * s, f.y + m + 6 * s, f.w - m * 2 - 12 * s, f.h - m * 2 - 12 * s);
+    corner(f.x + m + 6 * s, f.y + m + 6 * s, 1, 1, s); corner(f.x + f.w - m - 6 * s, f.y + m + 6 * s, -1, 1, s);
+    corner(f.x + m + 6 * s, f.y + f.h - m - 6 * s, 1, -1, s); corner(f.x + f.w - m - 6 * s, f.y + f.h - m - 6 * s, -1, -1, s);
+    const cx = f.x + f.w / 2, Y = v => f.y + v * s;
+    const line = (txt, y, font, a = 1) => { ctx.globalAlpha = a; ctx.font = font; ctx.fillStyle = CREAM; ctx.textAlign = "center"; ctx.fillText(txt, cx, Y(y)); ctx.globalAlpha = 1; };
+    const blink = 0.45 + 0.4 * Math.sin(t * 3);
+    if (state === "title") {
+      line("A MOBBER PICTURE", 92, `${11 * s}px ${TYPE}`, 0.8);
+      line("MOBBER", 150, `${58 * s}px ${DECO}`);
+      line("~ a gangland picture in three reels ~", 180, `italic 700 ${13 * s}px ${SERIF}`);
+      line("WASD move · mouse aim · click fire · R reload · Q swap guns", 232, `${9 * s}px ${TYPE}`, 0.75);
+      line(isTouch ? "left thumb moves · right thumb looks · FIRE to shoot" : "Esc to pause · Shift to run", 248, `${9 * s}px ${TYPE}`, 0.6);
+      line(isTouch ? "— tap to roll film —" : "— click to roll film —", 296, `${12 * s}px ${TYPE}`, blink);
+    } else if (card.kind === "chapter") {
+      const L = LEVELS[card.idx];
+      line(L.chapter, 92, `${14 * s}px ${DECO}`, 0.85);
+      line(L.title, 140, `italic 700 ${30 * s}px ${SERIF}`);
+      L.card.forEach((c, i) => line(c, 186 + i * 20, `${12 * s}px ${TYPE}`, 0.9));
+      line(isTouch ? "— tap to continue —" : "— click to continue —", 296, `${11 * s}px ${TYPE}`, blink);
+    } else if (card.kind === "dead") {
+      line("CUT!", 130, `${46 * s}px ${DECO}`);
+      line(`They got you at ${LEVELS[card.idx].title}.`, 172, `italic 700 ${16 * s}px ${SERIF}`);
+      line("The picture rewinds to the start of the reel.", 200, `${11 * s}px ${TYPE}`, 0.8);
+      line(isTouch ? "— tap to roll it again —" : "— click to roll it again —", 296, `${11 * s}px ${TYPE}`, blink);
+    } else if (card.kind === "end") {
+      const acc = stats.shots ? Math.round(stats.hits / stats.shots * 100) : 0, mm = Math.floor(stats.time / 60), ss = Math.floor(stats.time % 60);
+      line("THE END", 108, `${46 * s}px ${DECO}`);
+      line("By morning the city had a new boss.", 146, `italic 700 ${16 * s}px ${SERIF}`);
+      line(`${stats.kills} Vitale men down · $${stats.cash.toLocaleString()} collected · ${acc}% of shots on target`, 192, `${11 * s}px ${TYPE}`, 0.85);
+      line(`Running time ${mm}:${String(ss).padStart(2, "0")} · retakes: ${stats.deaths}`, 212, `${11 * s}px ${TYPE}`, 0.85);
+      line(isTouch ? "— tap to watch it again —" : "— click to watch it again —", 296, `${11 * s}px ${TYPE}`, blink);
+    }
+    // Grain over the card
+    ctx.save(); ctx.globalAlpha = 0.09; ctx.globalCompositeOperation = "screen";
+    ctx.drawImage(noiseCv, (Math.random() * 160) | 0, (Math.random() * 90) | 0, 480, 270, f.x, f.y, f.w, f.h);
+    ctx.restore();
+  }
+
+  // ---------- Main loop ----------
   let last = performance.now(), t = 0;
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
-    if (state === "play") update(dt);
-    ctx.fillStyle = "#120a05"; ctx.fillRect(0, 0, vw, vh);
-    if (level && mapCv) {
-      updateSmoke(dt);
-      ctx.save();
-      ctx.translate(vw / 2, vh / 2); ctx.scale(zoom, zoom); ctx.translate(-Math.round(cam.x), -Math.round(cam.y));
-      drawCity();
-      drawProps(t);
-      drawSigns();
-      for (const L of leaders) drawRadius(L);
-      drawDowns();
-      for (const p of people) drawGoon(p);
-      for (const c of cops) drawCop(c, t);
-      for (const L of leaders) drawDon(L, t);
-      drawSmoke();
-      for (const f of floaters) {
-        ctx.globalAlpha = clamp(f.life / f.max * 1.5, 0, 1);
-        label(f.text, f.x, f.y, f.color, f.big ? `20px ${MARKER}` : `13px ${FONT}`);
-      }
-      ctx.globalAlpha = 1;
-      ctx.restore();
-      drawLamp(dt, t);
-      if (state === "play") drawHUD();
+    const paused = state === "play" && wasLocked && !locked && !isTouch;
+    if ((state === "play" && !paused) || state === "dying") update(dt);
+    if (fadeDir) {
+      fade = clamp(fade + fadeDir * dt * (fadeDir > 0 ? 1.6 : 1), 0, 1);
+      if (fadeDir < 0 && fade <= 0) { fadeDir = 0; const fn = after; after = null; if (fn) fn(); }
+      else if (fadeDir > 0 && fade >= 1) fadeDir = 0;
+    }
+    ctx.fillStyle = "#000"; ctx.fillRect(0, 0, vw, vh);
+    const flicker = 0.93 + Math.random() * 0.07;
+    const jitter = Math.random() < 0.03 ? rand(-2, 2) : 0;
+    if ((state === "play" || state === "dying") && lvl) {
+      renderWorld(t);
+      let bright = flicker * fade * (player.flash > 0 ? 1.25 : 1) * (1 - player.hurt * 1.2);
+      if (state === "dying") bright *= 0.7;
+      develop(Math.max(0.05, bright));
+      const shake = player.hurt > 0 ? rand(-4, 4) * player.hurt * 3 : 0;
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(buf, film.x + shake, film.y + jitter + shake, film.w, film.h);
+      projector();
+      drawHUD();
     } else {
-      drawMenuDesk();
-      drawLamp(dt, t);
+      ctx.save(); ctx.globalAlpha = state === "card" ? fade * flicker : flicker;
+      drawCard(t);
+      ctx.restore();
+      projector(0.8);
     }
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
+  // Exposed for automated play-testing
+  window.__mobber = { get state() { return state; }, get player() { return player; }, get enemies() { return enemies; },
+    get objs() { return objs; }, LEVELS, startLevel, wallAt: (x, y) => wallAt(x, y) };
 })();
 </script>
 </body>

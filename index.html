@@ -37,17 +37,28 @@
   const DECO = "Limelight, serif", SERIF = "'Playfair Display', Georgia, serif", TYPE = "'Special Elite', 'Courier New', monospace";
   const CREAM = "#ece6da";
 
-  let vw = 0, vh = 0, dpr = 1, film = { x: 0, y: 0, w: 0, h: 0 };
+  let vw = 0, vh = 0, dpr = 1, film = { x: 0, y: 0, w: 0, h: 0, s: 1 }, cardRect = film, hudRect = film, portrait = false;
   function resize() {
     dpr = Math.min(window.devicePixelRatio || 1, 2);
     vw = window.innerWidth; vh = window.innerHeight;
     cv.width = vw * dpr; cv.height = vh * dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     // Letterboxed 16:9 frame, like a projected reel
-    const s = Math.min(vw / W, vh / H);
-    film = { w: W * s, h: H * s, x: (vw - W * s) / 2, y: (vh - H * s) / 2, s };
+    const fit = Math.min(vw / W, vh / H);
+    cardRect = { w: W * fit, h: H * fit, x: (vw - W * fit) / 2, y: (vh - H * fit) / 2, s: fit };
+    portrait = isTouch && vh > vw;
+    if (portrait) {
+      // Held upright: a bigger picture across the top (sides cropped), HUD under it, thumbs below
+      const s = Math.min(vh * 0.42 / H, vw * 1.7 / W);
+      film = { w: W * s, h: H * s, x: (vw - W * s) / 2, y: Math.max(10, vh * 0.05), s };
+      hudRect = { x: 0, y: film.y, w: vw, h: film.h + 40 * s, s };
+    } else {
+      film = cardRect; hudRect = film;
+    }
   }
   window.addEventListener("resize", resize);
+  window.addEventListener("orientationchange", () => { resize(); setTimeout(resize, 250); setTimeout(resize, 800); });
+  if (window.visualViewport) window.visualViewport.addEventListener("resize", resize);
   resize();
   if (document.fonts) ["16px Limelight", "italic 700 16px 'Playfair Display'", "900 16px 'Playfair Display'", "16px 'Special Elite'"]
     .forEach(f => document.fonts.load(f).catch(() => {}));
@@ -1010,10 +1021,10 @@
   }
 
   function drawHUD() {
-    const p = player, f = film, s = f.s;
+    const p = player, f = hudRect, s = f.s;
     const fs = n => Math.max(10, n * s);
     // Crosshair
-    const cx = f.x + f.w / 2, cy = f.y + f.h / 2, g = 4 + p.recoil * 6;
+    const cx = film.x + film.w / 2, cy = film.y + film.h / 2, g = 4 + p.recoil * 6;
     ctx.strokeStyle = "rgba(236,230,218,0.8)"; ctx.lineWidth = 1.5; ctx.beginPath();
     ctx.moveTo(cx - g - 6, cy); ctx.lineTo(cx - g, cy); ctx.moveTo(cx + g, cy); ctx.lineTo(cx + g + 6, cy);
     ctx.moveTo(cx, cy - g - 6); ctx.lineTo(cx, cy - g); ctx.moveTo(cx, cy + g); ctx.lineTo(cx, cy + g + 6); ctx.stroke();
@@ -1059,8 +1070,8 @@
       ctx.fillStyle = "rgba(236,230,218,0.5)"; ctx.beginPath(); ctx.arc(m.x + Math.cos(ka) * kd, m.y + Math.sin(ka) * kd, 24, 0, 6.283); ctx.fill();
     } else if (isTouch && timer < 8) {
       ctx.fillStyle = "rgba(236,230,218,0.5)"; ctx.textAlign = "center"; ctx.font = `${fs(10)}px ${TYPE}`;
-      ctx.fillText("thumb here to walk & turn", f.x + f.w * 0.2, f.y + f.h * 0.72);
-      ctx.fillText("drag here to aim", f.x + f.w * 0.72, f.y + f.h * 0.5);
+      ctx.fillText("thumb here to walk & turn", portrait ? vw * 0.25 : f.x + f.w * 0.2, portrait ? vh * 0.72 : f.y + f.h * 0.72);
+      ctx.fillText("drag here to aim", portrait ? vw * 0.7 : f.x + f.w * 0.72, portrait ? vh * 0.62 : f.y + f.h * 0.5);
     }
     if (wasLocked && !locked && !isTouch) {
       ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(f.x, f.y, f.w, f.h);
@@ -1103,7 +1114,7 @@
     ctx.restore();
   }
   function drawCard(t) {
-    const f = film, s = f.s;
+    const f = cardRect, s = f.s;
     ctx.fillStyle = "#0b0a09"; ctx.fillRect(f.x, f.y, f.w, f.h);
     const m = 22 * s;
     ctx.strokeStyle = CREAM; ctx.lineWidth = 2; ctx.strokeRect(f.x + m, f.y + m, f.w - m * 2, f.h - m * 2);
@@ -1119,6 +1130,7 @@
       line("~ a gangland picture in three reels ~", 180, `italic 700 ${13 * s}px ${SERIF}`);
       line("WASD move · mouse aim · click fire · R reload · Q swap guns", 232, `${9 * s}px ${TYPE}`, 0.75);
       line(isTouch ? "left thumb walks & turns · right thumb aims · it fires when you're on target" : "Esc to pause · Shift to run", 248, `${9 * s}px ${TYPE}`, 0.6);
+      if (portrait) line("best played sideways (turn off rotation lock)", 268, `${9 * s}px ${TYPE}`, 0.6);
       line(isTouch ? "— tap to roll film —" : "— click to roll film —", 296, `${12 * s}px ${TYPE}`, blink);
     } else if (card.kind === "chapter") {
       const L = LEVELS[card.idx];
@@ -1149,7 +1161,8 @@
   let last = performance.now(), t = 0;
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
-    const paused = state === "play" && ((wasLocked && !locked && !isTouch) || (isTouch && vh > vw));
+    if (window.innerWidth !== vw || window.innerHeight !== vh) resize();
+    const paused = state === "play" && wasLocked && !locked && !isTouch;
     if ((state === "play" && !paused) || state === "dying") update(dt);
     if (fadeDir) {
       fade = clamp(fade + fadeDir * dt * (fadeDir > 0 ? 1.6 : 1), 0, 1);
@@ -1158,18 +1171,7 @@
     }
     ctx.fillStyle = "#000"; ctx.fillRect(0, 0, vw, vh);
     const flicker = 0.93 + Math.random() * 0.07;
-    if (isTouch && vh > vw) {
-      // Ask for landscape; the picture is far too small held upright
-      ctx.fillStyle = CREAM; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-      ctx.font = `28px ${DECO}`; ctx.fillText("MOBBER", vw / 2, vh / 2 - 50);
-      ctx.font = `16px ${TYPE}`; ctx.fillText("Turn your phone sideways", vw / 2, vh / 2);
-      ctx.font = `13px ${TYPE}`; ctx.globalAlpha = 0.7; ctx.fillText("to roll the picture", vw / 2, vh / 2 + 24); ctx.globalAlpha = 1;
-      ctx.strokeStyle = CREAM; ctx.lineWidth = 2; ctx.save(); ctx.translate(vw / 2, vh / 2 + 90); ctx.rotate(-Math.PI / 2 * (0.5 + 0.5 * Math.sin(t * 2)));
-      ctx.strokeRect(-16, -28, 32, 56); ctx.restore();
-      fireBtn.style.visibility = swapBtn.style.visibility = "hidden";
-      requestAnimationFrame(frame); return;
-    }
-    fireBtn.style.visibility = swapBtn.style.visibility = "visible";
+
     const jitter = Math.random() < 0.03 ? rand(-2, 2) : 0;
     if ((state === "play" || state === "dying") && lvl) {
       renderWorld(t);

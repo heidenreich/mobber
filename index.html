@@ -9,10 +9,10 @@
 <style>
   html, body { margin: 0; height: 100%; background: #000; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
   canvas { display: block; width: 100vw; height: 100vh; cursor: crosshair; }
-  #fire { position: fixed; right: 22px; bottom: 22px; width: 88px; height: 88px; border-radius: 50%; display: none;
+  #fire { position: fixed; right: 26px; bottom: 26px; width: 104px; height: 104px; border-radius: 50%; display: none;
     border: 2px solid rgba(236,230,218,0.7); background: rgba(236,230,218,0.12); color: #ece6da;
     font: 15px "Special Elite", monospace; letter-spacing: 2px; }
-  #swap { position: fixed; right: 124px; bottom: 34px; width: 64px; height: 64px; border-radius: 50%; display: none;
+  #swap { position: fixed; right: 144px; bottom: 30px; width: 64px; height: 64px; border-radius: 50%; display: none;
     border: 2px solid rgba(236,230,218,0.5); background: rgba(236,230,218,0.08); color: #ece6da; font: 12px "Special Elite", monospace; }
 </style>
 </head>
@@ -619,31 +619,56 @@
   cv.addEventListener("wheel", e => { if (player && state === "play") switchWeapon(1 - player.weapon); });
   cv.addEventListener("click", () => { initAudio(); if (state !== "play") advance(); });
   // Touch: left thumb moves, right thumb looks, buttons fire and swap
+  // Touch: a floating stick under the left thumb (up/down walks, left/right turns);
+  // drag anywhere on the right, including on FIRE, to fine-tune aim.
+  const STICK_R = 60;
+  function lookBy(dx) { if (player) player.a += dx * 0.0055; }
   cv.addEventListener("touchstart", e => {
     initAudio();
-    if (state !== "play") { advance(); return; }
+    if (state !== "play") { advance(); e.preventDefault(); return; }
     for (const t of e.changedTouches) {
-      if (t.clientX < vw / 2 && !touch.move) touch.move = { id: t.identifier, x: t.clientX, y: t.clientY, dx: 0, dy: 0 };
+      if (t.clientX < vw * 0.45 && !touch.move) touch.move = { id: t.identifier, x: t.clientX, y: t.clientY, kx: t.clientX, ky: t.clientY, dx: 0, dy: 0 };
       else if (!touch.look) touch.look = { id: t.identifier, x: t.clientX };
     }
     e.preventDefault();
   }, { passive: false });
-  cv.addEventListener("touchmove", e => {
+  function trackTouches(e) {
     for (const t of e.changedTouches) {
-      if (touch.move && t.identifier === touch.move.id) { touch.move.dx = clamp((t.clientX - touch.move.x) / 50, -1, 1); touch.move.dy = clamp((t.clientY - touch.move.y) / 50, -1, 1); }
-      if (touch.look && t.identifier === touch.look.id && player) { player.a += (t.clientX - touch.look.x) * 0.006; touch.look.x = t.clientX; }
+      if (touch.move && t.identifier === touch.move.id) {
+        const m = touch.move;
+        let dx = t.clientX - m.x, dy = t.clientY - m.y, d = Math.hypot(dx, dy);
+        // Let the stick follow a thumb that drifts too far, so it never "runs out"
+        if (d > STICK_R) { m.x += dx * (1 - STICK_R / d); m.y += dy * (1 - STICK_R / d); dx = t.clientX - m.x; dy = t.clientY - m.y; d = STICK_R; }
+        m.kx = t.clientX; m.ky = t.clientY;
+        const dead = 0.18, n = d / STICK_R, k = n < dead ? 0 : (n - dead) / (1 - dead) / (n || 1);
+        m.dx = dx / STICK_R * k; m.dy = dy / STICK_R * k;
+      }
+      if (touch.look && t.identifier === touch.look.id) { lookBy(t.clientX - touch.look.x); touch.look.x = t.clientX; }
     }
     e.preventDefault();
-  }, { passive: false });
-  cv.addEventListener("touchend", e => {
+  }
+  function endTouches(e) {
     for (const t of e.changedTouches) {
       if (touch.move && t.identifier === touch.move.id) touch.move = null;
       if (touch.look && t.identifier === touch.look.id) touch.look = null;
     }
-  });
+  }
+  cv.addEventListener("touchmove", trackTouches, { passive: false });
+  cv.addEventListener("touchend", endTouches);
+  cv.addEventListener("touchcancel", endTouches);
   const fireBtn = document.getElementById("fire"), swapBtn = document.getElementById("swap");
-  fireBtn.addEventListener("touchstart", e => { e.preventDefault(); initAudio(); firing = true; }, { passive: false });
-  fireBtn.addEventListener("touchend", e => { e.preventDefault(); firing = false; }, { passive: false });
+  let fireTouch = null;
+  fireBtn.addEventListener("touchstart", e => {
+    e.preventDefault(); initAudio(); firing = true;
+    const t = e.changedTouches[0]; fireTouch = { id: t.identifier, x: t.clientX };
+  }, { passive: false });
+  fireBtn.addEventListener("touchmove", e => {
+    e.preventDefault();
+    for (const t of e.changedTouches) if (fireTouch && t.identifier === fireTouch.id) { lookBy(t.clientX - fireTouch.x); fireTouch.x = t.clientX; }
+  }, { passive: false });
+  const fireUp = e => { e.preventDefault(); firing = false; fireTouch = null; };
+  fireBtn.addEventListener("touchend", fireUp, { passive: false });
+  fireBtn.addEventListener("touchcancel", fireUp, { passive: false });
   swapBtn.addEventListener("touchstart", e => { e.preventDefault(); if (player) switchWeapon(1 - player.weapon); }, { passive: false });
 
   function switchWeapon(i) {
@@ -723,7 +748,7 @@
       if (e.hp <= 0) continue;
       const [, tY, sx] = project(e.x, e.y);
       if (tY < 0.15 || tY > zbuf[col]) continue;
-      const half = (K / tY) * 0.22;
+      const half = (K / tY) * (isTouch ? 0.3 : 0.22);
       if (Math.abs(sx - col) < half && tY < bestD) { bestD = tY; best = e; }
     }
     return best;
@@ -781,6 +806,25 @@
     }
   }
 
+  // On touch screens the view drifts onto a gangster near the crosshair, and fires when one is under it.
+  function aimAssist(dt) {
+    const p = player;
+    let best = null, bestDa = 0.16;
+    for (const e of enemies) {
+      if (e.hp <= 0) continue;
+      const d = Math.hypot(e.x - p.x, e.y - p.y);
+      if (d > 14) continue;
+      let da = Math.atan2(e.y - p.y, e.x - p.x) - p.a;
+      da = Math.atan2(Math.sin(da), Math.cos(da));
+      if (Math.abs(da) < bestDa && los(p.x, p.y, e.x, e.y)) { bestDa = Math.abs(da); best = da; }
+    }
+    if (best !== null) p.a += Math.sign(best) * Math.min(Math.abs(best), 1.6 * dt);
+  }
+  function autoFire() {
+    if (!isTouch || player.reload > 0) return false;
+    const e = hitscan(W / 2);
+    return !!e && e.state !== "dying" && Math.hypot(e.x - player.x, e.y - player.y) < 13;
+  }
   function update(dt) {
     const p = player;
     timer += dt; stats.time += dt;
@@ -792,7 +836,8 @@
     if (keys.has("d")) st += 1;
     if (keys.has("arrowleft")) turn -= 1;
     if (keys.has("arrowright")) turn += 1;
-    if (touch.move) { fw -= touch.move.dy; st += touch.move.dx; }
+    if (touch.move) { fw -= touch.move.dy; turn += touch.move.dx * 1.05; st += touch.move.dx * 0.25; }
+    if (isTouch) aimAssist(dt);
     p.a += turn * 2.4 * dt;
     const m = Math.hypot(fw, st), speed = keys.has("shift") ? 4.2 : 3.2;
     if (m > 0.05) {
@@ -806,7 +851,7 @@
     p.recoil = Math.max(0, p.recoil - dt * 7);
     p.hurt = Math.max(0, p.hurt - dt);
     if (p.reload > 0) { p.reload -= dt; if (p.reload <= 0) { p.reload = 0; finishReload(); } }
-    if (firing && state === "play") fire();
+    if ((firing || autoFire()) && state === "play") fire();
     for (const e of enemies) updateEnemy(e, dt);
     // Pickups
     for (let i = objs.length - 1; i >= 0; i--) {
@@ -1005,6 +1050,18 @@
       ctx.fillStyle = CREAM; ctx.fillText(msg.text, f.x + f.w / 2, f.y + 30 * s);
       ctx.globalAlpha = 1;
     }
+    if (touch.move) {
+      const m = touch.move;
+      ctx.strokeStyle = "rgba(236,230,218,0.45)"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(m.x, m.y, STICK_R, 0, 6.283); ctx.stroke();
+      ctx.fillStyle = "rgba(236,230,218,0.08)"; ctx.fill();
+      const kd = Math.min(STICK_R, Math.hypot(m.kx - m.x, m.ky - m.y)), ka = Math.atan2(m.ky - m.y, m.kx - m.x);
+      ctx.fillStyle = "rgba(236,230,218,0.5)"; ctx.beginPath(); ctx.arc(m.x + Math.cos(ka) * kd, m.y + Math.sin(ka) * kd, 24, 0, 6.283); ctx.fill();
+    } else if (isTouch && timer < 8) {
+      ctx.fillStyle = "rgba(236,230,218,0.5)"; ctx.textAlign = "center"; ctx.font = `${fs(10)}px ${TYPE}`;
+      ctx.fillText("thumb here to walk & turn", f.x + f.w * 0.2, f.y + f.h * 0.72);
+      ctx.fillText("drag here to aim", f.x + f.w * 0.72, f.y + f.h * 0.5);
+    }
     if (wasLocked && !locked && !isTouch) {
       ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(f.x, f.y, f.w, f.h);
       ctx.fillStyle = CREAM; ctx.textAlign = "center"; ctx.font = `${fs(22)}px ${DECO}`; ctx.fillText("INTERMISSION", f.x + f.w / 2, f.y + f.h / 2);
@@ -1061,7 +1118,7 @@
       line("MOBBER", 150, `${58 * s}px ${DECO}`);
       line("~ a gangland picture in three reels ~", 180, `italic 700 ${13 * s}px ${SERIF}`);
       line("WASD move · mouse aim · click fire · R reload · Q swap guns", 232, `${9 * s}px ${TYPE}`, 0.75);
-      line(isTouch ? "left thumb moves · right thumb looks · FIRE to shoot" : "Esc to pause · Shift to run", 248, `${9 * s}px ${TYPE}`, 0.6);
+      line(isTouch ? "left thumb walks & turns · right thumb aims · it fires when you're on target" : "Esc to pause · Shift to run", 248, `${9 * s}px ${TYPE}`, 0.6);
       line(isTouch ? "— tap to roll film —" : "— click to roll film —", 296, `${12 * s}px ${TYPE}`, blink);
     } else if (card.kind === "chapter") {
       const L = LEVELS[card.idx];
@@ -1092,7 +1149,7 @@
   let last = performance.now(), t = 0;
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
-    const paused = state === "play" && wasLocked && !locked && !isTouch;
+    const paused = state === "play" && ((wasLocked && !locked && !isTouch) || (isTouch && vh > vw));
     if ((state === "play" && !paused) || state === "dying") update(dt);
     if (fadeDir) {
       fade = clamp(fade + fadeDir * dt * (fadeDir > 0 ? 1.6 : 1), 0, 1);
@@ -1101,6 +1158,18 @@
     }
     ctx.fillStyle = "#000"; ctx.fillRect(0, 0, vw, vh);
     const flicker = 0.93 + Math.random() * 0.07;
+    if (isTouch && vh > vw) {
+      // Ask for landscape; the picture is far too small held upright
+      ctx.fillStyle = CREAM; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.font = `28px ${DECO}`; ctx.fillText("MOBBER", vw / 2, vh / 2 - 50);
+      ctx.font = `16px ${TYPE}`; ctx.fillText("Turn your phone sideways", vw / 2, vh / 2);
+      ctx.font = `13px ${TYPE}`; ctx.globalAlpha = 0.7; ctx.fillText("to roll the picture", vw / 2, vh / 2 + 24); ctx.globalAlpha = 1;
+      ctx.strokeStyle = CREAM; ctx.lineWidth = 2; ctx.save(); ctx.translate(vw / 2, vh / 2 + 90); ctx.rotate(-Math.PI / 2 * (0.5 + 0.5 * Math.sin(t * 2)));
+      ctx.strokeRect(-16, -28, 32, 56); ctx.restore();
+      fireBtn.style.visibility = swapBtn.style.visibility = "hidden";
+      requestAnimationFrame(frame); return;
+    }
+    fireBtn.style.visibility = swapBtn.style.visibility = "visible";
     const jitter = Math.random() < 0.03 ? rand(-2, 2) : 0;
     if ((state === "play" || state === "dying") && lvl) {
       renderWorld(t);

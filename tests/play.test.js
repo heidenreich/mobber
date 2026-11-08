@@ -7,6 +7,17 @@ let srv, browser;
 before(async () => { srv = await serve(); browser = await chromium.launch(); });
 after(async () => { await browser.close(); srv.server.close(); });
 
+// Stand on the floor square next to the exit door, facing it
+const faceExit = page => game(page, () => {
+  const M = window.__mobber, P = M.player, map = M.level.map;
+  for (let y = 0; y < map.length; y++) for (let x = 0; x < map[y].length; x++) {
+    if (map[y][x] !== "E") continue;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      if (M.map[y + dy] && M.map[y + dy][x + dx] === ".") { P.x = x + dx + 0.5; P.y = y + dy + 0.5; P.a = Math.atan2(-dy, -dx); return; }
+    }
+  }
+});
+
 async function startedGame() {
   const g = await openGame(browser, srv.url);
   await rollFilm(g.page);
@@ -82,8 +93,7 @@ test("ledger, exit door and the next chapter", async () => {
   });
   await page.waitForTimeout(300);
   assert.equal(await game(page, () => window.__mobber.player.ledger), true, "ledger not picked up");
-  // The exit door is on the right-hand wall of chapter one
-  await game(page, () => { const P = window.__mobber.player; P.x = 22.5; P.y = 13.5; P.a = 0; });
+  await faceExit(page);
   await page.keyboard.down("w"); await page.waitForTimeout(600); await page.keyboard.up("w");
   await page.waitForFunction(() => window.__mobber.state === "card");
   await page.waitForTimeout(700);
@@ -97,8 +107,7 @@ test("taking out the Don and leaving rolls THE END", async () => {
   const { page, context, errors } = await startedGame();
   await game(page, () => window.__mobber.startLevel(2));
   await game(page, () => { for (const e of window.__mobber.enemies) { e.hp = 0; e.state = "dead"; } });
-  // The penthouse exit is in the bottom wall
-  await game(page, () => { const P = window.__mobber.player; P.x = 21.5; P.y = 19.5; P.a = Math.PI / 2; });
+  await faceExit(page);
   await page.keyboard.down("w"); await page.waitForTimeout(600); await page.keyboard.up("w");
   await page.waitForFunction(() => window.__mobber.state === "card");
   assert.equal(await game(page, () => window.__mobber.card.kind), "end");
@@ -108,9 +117,48 @@ test("taking out the Don and leaving rolls THE END", async () => {
 
 test("the exit stays shut without the ledger", async () => {
   const { page, context } = await startedGame();
-  await game(page, () => { const M = window.__mobber, P = M.player; for (const e of M.enemies) { e.hp = 0; e.state = "dead"; } P.x = 22.5; P.y = 13.5; P.a = 0; });
+  await game(page, () => { for (const e of window.__mobber.enemies) { e.hp = 0; e.state = "dead"; } });
+  await faceExit(page);
   await page.keyboard.down("w"); await page.waitForTimeout(800); await page.keyboard.up("w");
   assert.equal(await game(page, () => window.__mobber.state), "play");
+  await context.close();
+});
+
+test("a door slides open as you walk up and closes behind you", async () => {
+  const { page, context, errors } = await startedGame();
+  // Chapter one: the door between the main hall and the bar
+  const door = () => game(page, () => window.__mobber.doors.get(5 * window.__mobber.level.map[0].length + 9).open);
+  await game(page, () => { const M = window.__mobber, P = M.player; for (const e of M.enemies) { e.hp = 0; e.state = "dead"; } P.x = 9.5; P.y = 8.5; P.a = -Math.PI / 2; });
+  assert.equal(await door(), 0, "starts closed");
+  assert.equal(await game(page, () => window.__mobber.wallAt(9.5, 5.5)), true, "a closed door blocks the way");
+  await page.keyboard.down("w"); await page.waitForTimeout(1600); await page.keyboard.up("w");
+  assert.ok(await door() > 0.85, "door should be open");
+  assert.ok(await game(page, () => window.__mobber.player.y < 5.5), "player should be through the doorway");
+  // Walk on into the bar and wait: the door shuts behind you
+  await game(page, () => { const P = window.__mobber.player; P.x = 3.5; P.y = 3.5; });
+  await page.waitForTimeout(5000);
+  assert.equal(await door(), 0, "door should have closed");
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test("walking into a secret wall slides it back to reveal a stash", async () => {
+  const { page, context, errors } = await startedGame();
+  // Chapter one: the cloak room's east wall at (7, 18) hides a small room
+  await game(page, () => { const M = window.__mobber, P = M.player; for (const e of M.enemies) { e.hp = 0; e.state = "dead"; } P.x = 6.5; P.y = 18.5; P.a = 0; });
+  assert.equal(await game(page, () => window.__mobber.map[18][7]), "!");
+  await page.keyboard.down("w"); await page.waitForTimeout(500); await page.keyboard.up("w");
+  await page.waitForTimeout(2600);
+  const after = await game(page, () => ({ old: window.__mobber.map[18][7], next: window.__mobber.map[18][8], end: window.__mobber.map[18][9], found: window.__mobber.stats.secretsFound.size }));
+  assert.deepEqual(after, { old: ".", next: ".", end: "W", found: 1 });
+  // The stash's cash is now reachable
+  await page.keyboard.down("w"); await page.waitForTimeout(500); await page.keyboard.up("w");
+  await game(page, () => { const P = window.__mobber.player; P.x = 8.5; P.y = 19.5; });
+  await page.waitForTimeout(300);
+  await game(page, () => { const P = window.__mobber.player; P.x = 8.5; P.y = 20.5; });
+  await page.waitForTimeout(300);
+  assert.ok(await game(page, () => window.__mobber.stats.cash) > 0, "should have picked up the stash cash");
+  assert.deepEqual(errors, []);
   await context.close();
 });
 

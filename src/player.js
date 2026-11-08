@@ -6,6 +6,7 @@ import { LEVELS } from "./levels.js";
 import { OBJ } from "./art/sprites.js";
 import { SND } from "./audio.js";
 import { los, moveBy, objectiveDone } from "./world.js";
+import { tryPush } from "./doors.js";
 import { cam, camera, project, zbuf } from "./render/camera.js";
 import { fadeOut, showCard } from "./flow.js";
 
@@ -117,7 +118,9 @@ export function updatePlayer(dt) {
   const m = Math.hypot(fw, st), speed = keys.has("shift") ? PLAYER.runSpeed : PLAYER.walkSpeed;
   if (m > 0.05) {
     const k = Math.min(1, m) / m * speed * dt;
-    moveBy(p, (cam.dirX * fw - cam.dirY * st) * k, (cam.dirY * fw + cam.dirX * st) * k, PLAYER.radius);
+    const bumped = moveBy(p, (cam.dirX * fw - cam.dirY * st) * k, (cam.dirY * fw + cam.dirX * st) * k, PLAYER.radius);
+    // Walking straight into a secret wall pushes it
+    if (bumped && fw > 0.3) tryPush(p.x, p.y, cam.dirX, cam.dirY);
     p.bob += dt * 9; p.moving = true;
     checkExit();
   } else p.moving = false;
@@ -127,6 +130,14 @@ export function updatePlayer(dt) {
   p.hurt = Math.max(0, p.hurt - dt);
   if (p.reload > 0) { p.reload -= dt; if (p.reload <= 0) { p.reload = 0; finishReload(); } }
   if ((input.firing || autoFire()) && game.state === "play") fire();
+}
+
+// E on desktop: push a secret wall you're facing
+export function use() {
+  const p = game.player;
+  if (!p || game.state !== "play") return;
+  camera();
+  tryPush(p.x, p.y, cam.dirX, cam.dirY, 1.0);
 }
 
 export function collectPickups() {

@@ -1,12 +1,13 @@
 // Entry point: sets up the screen and controls, then runs the frame loop.
 import { isTouch } from "./config.js";
 import { rand } from "./util.js";
-import { game, input } from "./state.js";
+import { game, input, stats } from "./state.js";
 import { LEVELS } from "./levels.js";
 import { ctx, view, watchScreen, resizeIfChanged } from "./screen.js";
 import { wallAt } from "./world.js";
 import { updatePlayer, collectPickups } from "./player.js";
 import { updateEnemy } from "./enemies.js";
+import { updateDoors, updateSecrets } from "./doors.js";
 import { startLevel, tickFade } from "./flow.js";
 import { installDesktopInput } from "./input/desktop.js";
 import { installTouchInput } from "./input/touch.js";
@@ -24,6 +25,8 @@ if (document.fonts) ["16px Limelight", "italic 700 16px 'Playfair Display'", "90
 
 function update(dt) {
   updatePlayer(dt);
+  updateDoors(dt);
+  updateSecrets(dt);
   for (const e of game.enemies) updateEnemy(e, dt);
   collectPickups();
   if (game.msg.t > 0) game.msg.t -= dt;
@@ -64,5 +67,5 @@ requestAnimationFrame(frame);
 // Hook for the automated tests in tests/
 window.__mobber = {
   get state() { return game.state; }, get player() { return game.player; }, get enemies() { return game.enemies; },
-  get objs() { return game.objs; }, get level() { return game.level; }, get card() { return game.card; }, LEVELS, startLevel, wallAt,
+  get objs() { return game.objs; }, get level() { return game.level; }, get card() { return game.card; }, get map() { return game.map; }, get doors() { return game.doors; }, stats, LEVELS, startLevel, wallAt,
 };

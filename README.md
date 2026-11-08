@@ -15,7 +15,10 @@ A first-person shooter styled as a lost 1931 gangster film: black and white, fil
 | Shoot | Click or Space | Hold FIRE. It also fires on its own when a gangster is under the crosshair |
 | Reload | R (automatic when empty) | Automatic |
 | Swap guns | Q, 1/2 or the mouse wheel | SWAP |
+| Search for secret walls | Walk into a wall, or press E | Walk into a wall |
 | Pause | Esc | — |
+
+Doors open by themselves as you walk up to them. Some walls hide rooms: look for faint scrape marks near the floor.
 
 ## Running it locally
 
@@ -29,7 +32,7 @@ npm start            # then open http://127.0.0.1:8000/
 
 ## Tests
 
-The tests play the game in headless Chromium: the maps, shooting, the ledger and exit, every chapter, dying and retrying, the ending, and the phone controls.
+The tests play the game in headless Chromium: the maps, shooting, the ledger and exit, doors and secret walls, every chapter, dying and retrying, the ending, and the phone controls.
 
 ```sh
 npm install
@@ -51,6 +54,7 @@ src/
   state.js            the game's shared state (one object, read and updated by the modules)
   screen.js           canvas sizing, landscape vs. portrait layout
   world.js            loading a map, walls, line of sight, the light map, collision
+  doors.js            sliding doors and secret walls
   player.js           moving, shooting, reloading, pickups, the exit
   enemies.js          gangster behavior: idle -> chase -> aim -> fire
   flow.js             title card -> chapter card -> play -> death / next chapter / the end
@@ -78,5 +82,6 @@ All the art and sound are generated in code when the page loads; there are no im
 ### Common changes
 
 - **Difficulty:** `src/config.js`. Enemy health, damage, accuracy and reaction time, player speed, and how strong the phone aim assist is.
-- **A new chapter:** add an entry to `src/levels.js`. The legend at the top lists every map character. `npm test` checks that the map is sealed and that everything in it can be reached.
+- **A new chapter:** add an entry to `src/levels.js`. The legend at the top lists every map character. `npm test` checks that the map is sealed, that everything in it can be reached, and that the objective and exit never depend on finding a secret.
+- **Doors and secrets:** put `D` between two walls for a door, and `!` in a wall (with open floor behind it) for a secret. Their timing and speed are in `DOORS` in `src/config.js`.
 - **New furniture or pickups:** draw it in `src/art/sprites.js`, then give it a map letter in the `SPAWNS` table in `src/world.js`.

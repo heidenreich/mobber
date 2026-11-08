@@ -5,6 +5,7 @@ import { rand, clamp } from "./util.js";
 import { game, say } from "./state.js";
 import { LEVELS } from "./levels.js";
 import { OBJ } from "./art/sprites.js";
+import { setupDoors, partialSolid } from "./doors.js";
 
 const WALLS = "#WPBTE";
 
@@ -22,14 +23,26 @@ const SPAWNS = {
   L: { art: "ledger", scale: 0.6, pick: "ledger", bob: true },
 };
 
+// Blocks movement and sight: walls, closed doors and moving secret walls
 export function wallAt(x, y) {
   const xi = x | 0, yi = y | 0;
-  return xi < 0 || yi < 0 || xi >= game.width || yi >= game.height || game.map[yi][xi] !== ".";
+  if (xi < 0 || yi < 0 || xi >= game.width || yi >= game.height) return true;
+  const c = game.map[yi][xi];
+  if (c === ".") return false;
+  if (c === "D" || c === "~") return partialSolid(c, xi, yi, x, y);
+  return true;
+}
+// Blocks lamplight: walls only (light spills under doors)
+function solidAt(x, y) {
+  const xi = x | 0, yi = y | 0;
+  if (xi < 0 || yi < 0 || xi >= game.width || yi >= game.height) return true;
+  const c = game.map[yi][xi];
+  return c !== "." && c !== "D";
 }
 
-export function los(x0, y0, x1, y1) {
+export function los(x0, y0, x1, y1, blocks = wallAt) {
   const d = Math.hypot(x1 - x0, y1 - y0), n = Math.ceil(d / 0.15);
-  for (let i = 1; i < n; i++) if (wallAt(x0 + (x1 - x0) * i / n, y0 + (y1 - y0) * i / n)) return false;
+  for (let i = 1; i < n; i++) if (blocks(x0 + (x1 - x0) * i / n, y0 + (y1 - y0) * i / n)) return false;
   return true;
 }
 
@@ -39,6 +52,7 @@ export function loadLevel(i) {
   game.height = lvl.map.length; game.width = lvl.map[0].length;
   game.map = lvl.map.map(r => r.split(""));
   game.objs = []; game.enemies = [];
+  setupDoors(lvl.map);
   // Guns and ammo carry over from the previous chapter
   const prev = game.player;
   const player = game.player = {
@@ -48,7 +62,7 @@ export function loadLevel(i) {
   };
   for (let y = 0; y < game.height; y++) for (let x = 0; x < game.width; x++) {
     const ch = game.map[y][x], cx = x + 0.5, cy = y + 0.5;
-    if (WALLS.includes(ch)) continue;
+    if (WALLS.includes(ch) || ch === "D" || ch === "!") continue; // doors and secrets stay in the map
     game.map[y][x] = ".";
     if (ch === "S") { player.x = cx; player.y = cy; player.a = facingOpen(x, y); }
     else if (ENEMY_TYPES[ch]) {
@@ -63,11 +77,12 @@ export function loadLevel(i) {
   say(lvl.objective === "ledger" ? "Find the ledger." : "Find Don Vitale.", 3);
 }
 
-// Start facing down the longest open corridor
+// Start facing down the longest open line of sight, looking through doors
 function facingOpen(x, y) {
+  const open = (px, py) => { const c = (game.map[py | 0] || [])[px | 0]; return c === "." || c === "D"; };
   let best = 0, bestN = -1;
   for (const a of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
-    let n = 0; while (n < 20 && !wallAt(x + 0.5 + Math.cos(a) * (n + 1), y + 0.5 + Math.sin(a) * (n + 1))) n++;
+    let n = 0; while (n < 20 && open(x + 0.5 + Math.cos(a) * (n + 1), y + 0.5 + Math.sin(a) * (n + 1))) n++;
     if (n > bestN) { bestN = n; best = a; }
   }
   return best;
@@ -82,12 +97,12 @@ function buildLight() {
   const lamps = game.objs.filter(o => o.light);
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
     const wx = (x + 0.5) / sub, wy = (y + 0.5) / sub;
-    if (wallAt(wx, wy)) continue;
+    if (solidAt(wx, wy)) continue;
     let v = ambient;
     for (const l of lamps) {
       const d = Math.hypot(l.x - wx, l.y - wy), [I, R] = l.light;
       if (d >= R) continue;
-      if (!los(l.x, l.y, wx, wy)) continue;
+      if (!los(l.x, l.y, wx, wy, solidAt)) continue;
       const f = 1 - d / R; v += I * f * f;
     }
     data[y * w + x] = Math.min(1.35, v);

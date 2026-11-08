@@ -6,31 +6,39 @@
 //
 // To add a chapter, append an entry here. `objective` is "ledger" (find the L,
 // then the exit) or "boss" (take out the V, then the exit).
+//
 // # brick  W wallpaper  P wood panel  B bar shelves  T deco tile  E exit door
+// D sliding door: put it between two walls, with open floor on the other two sides
+// ! secret wall: looks like the wall next to it; walking into it slides it back up
+//   to two squares, so leave open floor behind it
 // S start  g goon  G heavy  V the Don  c table  k crate  p piano  l floor lamp  * hanging lamp  o barrel
 // $ cash  + first aid  a drum magazine  L ledger
 export const LEVELS = [
   { chapter: "CHAPTER ONE", title: "The Blue Note Club", floor: "checker", ceil: "tin", ambient: 0.4, objective: "ledger",
-    card: ["The Vitale boys keep their books", "behind the bar of the Blue Note.", "Walk in. Take the ledger. Walk out."],
+    card: ["The Vitale boys keep their books", "in the back office of the Blue Note.", "Walk in. Take the ledger. Walk out.", "They say the old place is full of hidden rooms."],
     map: [
-      "WWWWWWWWBBBBBBBBWWWWWWWW",
-      "W.l....W........W.....lW",
-      "W......W.c....c.W..g...W",
-      "W..$...W...l....W......W",
-      "W..a...W..g..g.......L.W",
-      "WWW.WWWW........W......W",
-      "W..........p....WWWWW.WW",
-      "W.c..c..........W.....lW",
-      "W....l.....g....W..+...W",
-      "W.c..c..........W.g....W",
-      "W.......c..c....W......W",
-      "WWWW.WWWW..WWWWWW......W",
-      "Wl.....W....W.....g....W",
-      "W..g...W.$..W..........E",
-      "W......W....W.....$...lW",
-      "W..............WWWWWWWWW",
-      "W+..S..W...l.W.........W",
-      "WWWWWWWWWWWWWWWWWWWWWWWW",
+      "BBBBBBBBBBBBBBWWWWWWWPPPPPPPPP",
+      "Wl.........$.Bk..aW..Pl......P",
+      "W...g........!....W.*P...c.L.P",
+      "W......c..g..B..$.W..P..g....P",
+      "W............Bk..*W..D.......P",
+      "WWWWWWWWWDWWWWWWWWW..P.......P",
+      "Wl...............lW..P.....g.P",
+      "W.........g...p...W.*P+......P",
+      "W..c...c..........W..PPPP!PPPP",
+      "W....g....*.......D..PP$...*PP",
+      "W............g....W..PP.....PP",
+      "W..c...c...c......W..PP$...$PP",
+      "W.................Wg.#########",
+      "Wl...............lW..#......o#",
+      "WWWWDWWWWWWWWWWDWWW*.#.kk....#",
+      "Wl.....WWWWW......W..#...*..a#",
+      "W......W.*.W.k....W..D.......#",
+      "W..*...W..+W..*...W..#...g...#",
+      "W...S..!...W...g..W..#.......E",
+      "W......W...W....k.W..#.......#",
+      "W......W$.$Wk....+W..#.......#",
+      "WWWWWWWWWWWWWWWWWWWWW#########",
     ] },
   { chapter: "CHAPTER TWO", title: "Pier 9", floor: "concrete", ceil: "beams", ambient: 0.42, objective: "ledger",
     card: ["The ledger points to a warehouse", "full of Canadian rye and Vitale muscle.", "Their shipping book is in the foreman's office."],

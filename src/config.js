@@ -59,6 +59,16 @@ export const ENEMY_TYPES = {
   V: { name: "boss", art: "boss", hp: 420, speed: 1.05, dmg: [7, 12], cd: [1.0, 1.7], range: 14, aim: 0.45, burst: 3, scale: 1.05 },
 };
 
+export const DOORS = {
+  reach: 1.3,               // doors open when someone is this close to their center
+  holdOpen: 3,              // seconds a door stays open after everyone leaves
+  speed: 1.6,               // fraction of the door per second
+  passableAt: 0.85,         // how open a door must be to walk or see through
+  thickness: 0.12,
+  secretTravel: 2,          // squares a secret wall slides back
+  secretSpeed: 1.0,         // squares per second
+};
+
 export const ENEMY_AI = {
   sightRange: 16,
   hearingRange: 12,         // gunshots alert enemies this close

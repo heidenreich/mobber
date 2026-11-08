@@ -105,3 +105,31 @@ export const CEILS = {
 
 // Map letter -> wall texture (see levels.js for the legend)
 export const WALL_TEXTURES = { "#": TEX.brick, W: TEX.paper, P: TEX.panel, B: TEX.bar, T: TEX.deco, E: TEX.door };
+
+// Sliding door: wood with a frosted glass panel and a brass pull
+export const DOOR_TEX = bitmap(64, 64, g => {
+  g.fillStyle = gray(96); g.fillRect(0, 0, 64, 64);
+  for (let x = 0; x < 64; x += 8) { g.fillStyle = gray(80); g.fillRect(x, 0, 1, 64); }
+  g.strokeStyle = "rgba(30,30,30,0.3)";
+  for (let i = 0; i < 12; i++) { const x = rand(0, 64); g.beginPath(); g.moveTo(x, 0); g.bezierCurveTo(x + rand(-3, 3), 20, x + rand(-3, 3), 44, x, 64); g.stroke(); }
+  g.fillStyle = gray(58); g.fillRect(14, 8, 36, 24);
+  g.fillStyle = gray(182); g.fillRect(16, 10, 32, 20);
+  g.strokeStyle = gray(150); g.lineWidth = 1;
+  for (let k = -20; k < 40; k += 6) { g.beginPath(); g.moveTo(16 + k, 10); g.lineTo(36 + k, 30); g.stroke(); }
+  g.strokeStyle = gray(60); g.lineWidth = 2; g.strokeRect(14, 38, 36, 20);
+  g.fillStyle = gray(225); g.fillRect(52, 30, 3, 12); g.fillStyle = gray(150); g.fillRect(53, 31, 1, 10);
+  g.fillStyle = gray(40); g.fillRect(0, 0, 2, 64); g.fillRect(62, 0, 2, 64);
+});
+
+// Secret walls look like their neighbors, plus faint scrape marks where they've been moved
+function scuffed(src) {
+  const L = src.L.slice(), A = src.A.slice();
+  for (const cx of [14, 40]) for (let r = 6; r <= 14; r += 2) {
+    for (let a = 0.15; a < Math.PI - 0.15; a += 0.02) {
+      const x = Math.round(cx + Math.cos(a) * r * 1.4), y = Math.round(64 - Math.sin(a) * r * 0.6);
+      if (x >= 0 && x < 64 && y >= 0 && y < 64) L[y * 64 + x] *= 0.5;
+    }
+  }
+  return { w: 64, h: 64, L, A };
+}
+export const SECRET_TEXTURES = Object.fromEntries(Object.entries(WALL_TEXTURES).map(([k, t]) => [k, scuffed(t)]));

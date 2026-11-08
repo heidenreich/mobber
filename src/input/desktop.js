@@ -4,7 +4,7 @@ import { isTouch, PLAYER } from "../config.js";
 import { game, input } from "../state.js";
 import { cv } from "../screen.js";
 import { initAudio } from "../audio.js";
-import { switchWeapon, startReload } from "../player.js";
+import { switchWeapon, startReload, use } from "../player.js";
 import { advance, requestLock } from "../flow.js";
 
 export function installDesktopInput() {
@@ -15,6 +15,7 @@ export function installDesktopInput() {
     if (k === "2" && p) switchWeapon(1);
     if (k === "q" && p) switchWeapon(1 - p.weapon);
     if (k === "r" && p) startReload();
+    if (k === "e") use();
     if (k === "enter") advance();
   });
   window.addEventListener("keyup", e => { const k = e.key.toLowerCase(); input.keys.delete(k); if (k === " ") input.firing = false; });

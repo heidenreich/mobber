@@ -48,6 +48,7 @@ test("right thumb drag fine-tunes aim", async () => {
 
 test("aim assist pulls onto a nearby goon and auto-fires", async () => {
   const g = await phone("iPhone 13 landscape");
+  await game(g.page, () => window.__mobber.startLevel(window.__mobber.LEVELS.findIndex(l => l.title === "The Blue Note Club")));
   await game(g.page, () => {
     const M = window.__mobber, P = M.player, e = M.enemies[0];
     P.x = 6.5; P.y = 8.5; P.a = 0; P.hp = 100;

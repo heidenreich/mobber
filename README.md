@@ -2,7 +2,7 @@
 
 *A gangland picture in three reels.*
 
-A first-person shooter styled as a lost 1931 gangster film: black and white, film grain, projector flicker and silent-movie title cards. You shoot your way through the Vitale family's speakeasy, waterfront warehouse and hotel penthouse.
+A first-person shooter styled as a lost 1931 gangster film: black and white, film grain, projector flicker and silent-movie title cards. You shoot your way through the Vitale family's speakeasy, waterfront warehouse and hotel penthouse, walking the rainy streets between them: Mulberry Street to the Blue Note, the waterfront to Pier 9, and Regent Square to the Hotel Regent.
 
 **Play it:** https://heidenreich.github.io/mobber/
 
@@ -15,7 +15,10 @@ A first-person shooter styled as a lost 1931 gangster film: black and white, fil
 | Shoot | Click or Space | Hold FIRE. It also fires on its own when a gangster is under the crosshair |
 | Reload | R (automatic when empty) | Automatic |
 | Swap guns | Q, 1/2 or the mouse wheel | SWAP |
+| Search for secret walls | Walk into a wall, or press E | Walk into a wall |
 | Pause | Esc | — |
+
+Doors open by themselves as you walk up to them. Some walls hide rooms: look for faint scrape marks near the floor.
 
 ## Running it locally
 
@@ -29,7 +32,7 @@ npm start            # then open http://127.0.0.1:8000/
 
 ## Tests
 
-The tests play the game in headless Chromium: the maps, shooting, the ledger and exit, every chapter, dying and retrying, the ending, and the phone controls.
+The tests play the game in headless Chromium: the maps, shooting, the ledger and exit, the street scenes, doors and secret walls, every level, dying and retrying, the ending, and the phone controls.
 
 ```sh
 npm install
@@ -47,10 +50,11 @@ style.css
 src/
   main.js             starts everything and runs the frame loop
   config.js           screen size and every tuning number (speeds, damage, aim assist)
-  levels.js           the three chapters as plain data: maps and title-card text
+  levels.js           the six levels (three streets, three locations) as plain data
   state.js            the game's shared state (one object, read and updated by the modules)
   screen.js           canvas sizing, landscape vs. portrait layout
   world.js            loading a map, walls, line of sight, the light map, collision
+  doors.js            sliding doors and secret walls
   player.js           moving, shooting, reloading, pickups, the exit
   enemies.js          gangster behavior: idle -> chase -> aim -> fire
   flow.js             title card -> chapter card -> play -> death / next chapter / the end
@@ -64,7 +68,8 @@ src/
   art/
     bitmap.js         turns canvas drawings into grayscale bitmaps
     textures.js       wall, floor and ceiling textures
-    sprites.js        gangsters, furniture, lamps and pickups
+    sprites.js        gangsters, furniture, lamps, pickups and street props
+    streets.js        the night sky, two-story building fronts and entrances
     guns.js           the revolver and the tommy gun
   input/
     desktop.js        keyboard, mouse, pointer lock
@@ -78,5 +83,6 @@ All the art and sound are generated in code when the page loads; there are no im
 ### Common changes
 
 - **Difficulty:** `src/config.js`. Enemy health, damage, accuracy and reaction time, player speed, and how strong the phone aim assist is.
-- **A new chapter:** add an entry to `src/levels.js`. The legend at the top lists every map character. `npm test` checks that the map is sealed and that everything in it can be reached.
+- **A new level:** add an entry to `src/levels.js`. For a street scene, set `sky`, `wallHeight: 2`, `rain` and `objective: "reach"`, and pick an `entrance` for the door at the end. The legend at the top lists every map character. `npm test` checks that the map is sealed, that everything in it can be reached, and that the objective and exit never depend on finding a secret.
+- **Doors and secrets:** put `D` between two walls for a door, and `!` in a wall (with open floor behind it) for a secret. Their timing and speed are in `DOORS` in `src/config.js`.
 - **New furniture or pickups:** draw it in `src/art/sprites.js`, then give it a map letter in the `SPAWNS` table in `src/world.js`.

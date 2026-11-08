@@ -32,7 +32,7 @@ export function drawCard(t) {
     line("A MOBBER PICTURE", 92, `${11 * s}px ${TYPE}`, 0.8);
     line("MOBBER", 150, `${58 * s}px ${DECO}`);
     line("~ a gangland picture in three reels ~", 180, `italic 700 ${13 * s}px ${SERIF}`);
-    line("WASD move · mouse aim · click fire · R reload · Q swap guns", 232, `${9 * s}px ${TYPE}`, 0.75);
+    line("WASD move · mouse aim · click fire · E search walls · R reload · Q swap guns", 232, `${9 * s}px ${TYPE}`, 0.75);
     line(isTouch ? "left thumb walks & turns · right thumb aims · it fires when you're on target" : "Esc to pause · Shift to run", 248, `${9 * s}px ${TYPE}`, 0.6);
     if (view.portrait) line("best played sideways (turn off rotation lock)", 268, `${9 * s}px ${TYPE}`, 0.6);
     line(isTouch ? "— tap to roll film —" : "— click to roll film —", 296, `${12 * s}px ${TYPE}`, blink);
@@ -52,7 +52,7 @@ export function drawCard(t) {
     line("THE END", 108, `${46 * s}px ${DECO}`);
     line("By morning the city had a new boss.", 146, `italic 700 ${16 * s}px ${SERIF}`);
     line(`${stats.kills} Vitale men down · $${stats.cash.toLocaleString()} collected · ${acc}% of shots on target`, 192, `${11 * s}px ${TYPE}`, 0.85);
-    line(`Running time ${mm}:${String(ss).padStart(2, "0")} · retakes: ${stats.deaths}`, 212, `${11 * s}px ${TYPE}`, 0.85);
+    line(`Running time ${mm}:${String(ss).padStart(2, "0")} · secrets found: ${stats.secretsFound.size} · retakes: ${stats.deaths}`, 212, `${11 * s}px ${TYPE}`, 0.85);
     line(isTouch ? "— tap to watch it again —" : "— click to watch it again —", 296, `${11 * s}px ${TYPE}`, blink);
   }
   // Grain over the card

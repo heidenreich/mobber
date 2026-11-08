@@ -33,7 +33,9 @@ export function drawHUD() {
   ctx.font = `${fs(14)}px ${DECO}`; ctx.fillText("$" + stats.cash.toLocaleString(), f.x + 78 * s, base);
   ctx.textAlign = "center"; ctx.font = `${fs(10)}px ${TYPE}`;
   const left = game.enemies.filter(e => e.hp > 0).length;
-  const obj = game.level.objective === "ledger" ? (p.ledger ? "LEDGER IN HAND — FIND THE EXIT" : "FIND THE LEDGER")
+  const o = game.level.objective;
+  const obj = o === "reach" ? game.level.goal.toUpperCase()
+    : o === "ledger" ? (p.ledger ? "LEDGER IN HAND — FIND THE EXIT" : "FIND THE LEDGER")
     : (objectiveDone() ? "THE DON IS DOWN — FIND THE EXIT" : "FIND DON VITALE");
   ctx.fillText(obj, f.x + f.w / 2, base - 12 * s);
   ctx.font = `italic 700 ${fs(10)}px ${SERIF}`; ctx.fillText(`${left} of the Vitale outfit remain`, f.x + f.w / 2, base);

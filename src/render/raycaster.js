@@ -1,21 +1,38 @@
 // Draws the 3D view into the film's luma buffer: floor and ceiling, walls (one
 // ray per screen column), sprites sorted far to near, then the gun in your hand.
-import { W, H, HALF, K, FOG, WEAPONS } from "../config.js";
+import { W, H, HALF, K, PLANE, FOG, GLOW, WEAPONS } from "../config.js";
 import { clamp } from "../util.js";
 import { game } from "../state.js";
-import { FLOORS, CEILS, TEX, WALL_TEXTURES } from "../art/textures.js";
+import { FLOORS, CEILS, TEX, WALL_TEXTURES, DOOR_TEX, SECRET_TEXTURES } from "../art/textures.js";
 import { PEOPLE } from "../art/sprites.js";
+import { ENTRANCES, makeSky } from "../art/streets.js";
 import { GUN_ART } from "../art/guns.js";
 import { lightMap, lightAt } from "../world.js";
+import { partialBox, secretTex } from "../doors.js";
 import { cam, camera, project, zbuf } from "./camera.js";
 import { luma } from "./film.js";
+
+const SKY = makeSky(HALF);
+// Each screen column's angle from the view direction, for wrapping the sky around
+const COL_ANGLE = Float32Array.from({ length: W }, (_, x) => Math.atan((2 * x / W - 1) * PLANE));
 
 export function renderWorld(t) {
   camera();
   const { dirX, dirY, planeX, planeY } = cam;
-  const p = game.player, px = p.x, py = p.y, map = game.map, MW = game.width, MH = game.height;
-  const fl = FLOORS[game.level.floor].L, ce = CEILS[game.level.ceil].L;
+  const p = game.player, px = p.x, py = p.y, map = game.map, MW = game.width, MH = game.height, lvl = game.level;
+  const fl = FLOORS[lvl.floor].L, ce = lvl.sky ? null : CEILS[lvl.ceil].L;
   const light = lightMap.data, LW = lightMap.w, LH = lightMap.h, LSUB = lightMap.sub;
+  const wallH = lvl.wallHeight || 1;
+  const exitTex = lvl.entrance ? ENTRANCES[lvl.entrance] : TEX.door;
+
+  // Outdoors: the night sky, which turns with you
+  if (ce === null) {
+    for (let x = 0; x < W; x++) {
+      const a = (p.a + COL_ANGLE[x]) / (Math.PI * 2);
+      const u = (((a - Math.floor(a)) * SKY.w) | 0) % SKY.w;
+      for (let y = 0; y < HALF; y++) luma[y * W + x] = SKY.L[y * SKY.w + u];
+    }
+  }
 
   // Floor and ceiling, one row at a time
   for (let y = HALF + 1; y < H; y++) {
@@ -28,11 +45,11 @@ export function renderWorld(t) {
       const ti = ((((fy * 64) | 0) & 63) << 6) | (((fx * 64) | 0) & 63);
       const li = light[clamp((fy * LSUB) | 0, 0, LH - 1) * LW + clamp((fx * LSUB) | 0, 0, LW - 1)] * fog;
       luma[rf + x] = fl[ti] * li;
-      luma[rc + x] = ce[ti] * li * 0.75;
+      if (ce) luma[rc + x] = ce[ti] * li * 0.75;
       fx += sx; fy += sy;
     }
   }
-  for (let x = 0; x < W; x++) luma[HALF * W + x] = 0;
+  if (ce) for (let x = 0; x < W; x++) luma[HALF * W + x] = 0;
 
   // Walls: step each ray through the grid until it hits one (DDA)
   for (let x = 0; x < W; x++) {
@@ -42,24 +59,55 @@ export function renderWorld(t) {
     let stepX, stepY, sdx, sdy, side = 0;
     if (rdx < 0) { stepX = -1; sdx = (px - mx) * ddx; } else { stepX = 1; sdx = (mx + 1 - px) * ddx; }
     if (rdy < 0) { stepY = -1; sdy = (py - my) * ddy; } else { stepY = 1; sdy = (my + 1 - py) * ddy; }
-    let c = ".";
+    let c = ".", part = null;
     for (let n = 0; n < 64; n++) {
       if (sdx < sdy) { sdx += ddx; mx += stepX; side = 0; } else { sdy += ddy; my += stepY; side = 1; }
       c = (mx < 0 || my < 0 || mx >= MW || my >= MH) ? "#" : map[my][mx];
-      if (c !== ".") break;
+      if (c === ".") continue;
+      // Doors and moving secret walls fill only part of their square
+      if (c === "D" || c === "~") {
+        const box = partialBox(mx, my), hit = box && rayBox(px, py, rdx, rdy, box);
+        if (!hit) continue;
+        part = { box, t: hit.t, side: hit.side };
+      }
+      break;
     }
-    const perp = Math.max(0.01, side === 0 ? sdx - ddx : sdy - ddy);
+    let perp, wallX, tex;
+    if (part) {
+      perp = part.t; side = part.side;
+      const hx = px + rdx * perp, hy = py + rdy * perp, b = part.box;
+      if (b.door) {
+        // Measured from the door's edge, so the wood slides along as it opens
+        const across = b.door.axis === "x" ? side === 1 : side === 0;
+        wallX = across ? (b.door.axis === "x" ? hx - b.x0 : hy - b.y0) : 0.02;
+        tex = DOOR_TEX;
+      } else {
+        wallX = side === 0 ? hy - b.y0 : hx - b.x0;
+        tex = WALL_TEXTURES[b.mover.tex];
+      }
+    } else {
+      perp = side === 0 ? sdx - ddx : sdy - ddy;
+      wallX = side === 0 ? py + perp * rdy : px + perp * rdx;
+      wallX -= Math.floor(wallX);
+      tex = c === "!" ? SECRET_TEXTURES[secretTex(mx, my)] : c === "E" ? exitTex : WALL_TEXTURES[c] || TEX.brick;
+    }
+    perp = Math.max(0.01, perp);
     zbuf[x] = perp;
-    const lineH = K / perp, y0 = HALF - lineH / 2;
-    let wallX = side === 0 ? py + perp * rdy : px + perp * rdx;
-    wallX -= Math.floor(wallX);
-    let tx = (wallX * 64) | 0;
-    if ((side === 0 && rdx > 0) || (side === 1 && rdy < 0)) tx = 63 - tx;
-    const tex = (WALL_TEXTURES[c] || TEX.brick).L;
+    // Walls stand on the floor and rise wallH units (two stories outdoors)
+    const lineH = K / perp, y0 = HALF + lineH / 2 - lineH * wallH;
+    let tx = clamp((wallX * 64) | 0, 0, 63);
+    // Mirror where needed so textures (and the lettering on signs) read left to right
+    if ((side === 0 && rdx < 0) || (side === 1 && rdy > 0)) tx = 63 - tx;
     const lit = lightAt(px + rdx * (perp - 0.06), py + rdy * (perp - 0.06)) * Math.exp(-perp * FOG) * (side ? 0.8 : 1);
-    const ys = Math.max(0, y0 | 0), ye = Math.min(H, Math.ceil(y0 + lineH));
-    const step = 64 / lineH; let ty = (ys - y0) * step;
-    for (let y = ys; y < ye; y++) { luma[y * W + x] = tex[(((ty | 0) & 63) << 6) | tx] * lit; ty += step; }
+    const ys = Math.max(0, y0 | 0), ye = Math.min(H, Math.ceil(HALF + lineH / 2));
+    // 64-high textures repeat once per story; taller ones (facades) stretch over the whole wall
+    const texH = tex.h, L = tex.L, step = (texH === 64 ? 64 * wallH : texH) / (lineH * wallH);
+    let ty = (ys - y0) * step;
+    for (let y = ys; y < ye; y++) {
+      const v = L[(((ty | 0) % texH) << 6) | tx];
+      luma[y * W + x] = v > GLOW ? v : v * lit; // lit windows and signs shine on their own
+      ty += step;
+    }
   }
 
   // Sprites, far to near
@@ -78,6 +126,17 @@ export function renderWorld(t) {
   for (const s of list) drawSprite(s);
 
   drawGun(t);
+}
+
+// Where a ray first enters an axis-aligned box, and which kind of face it hit
+// (side 0 = a face running north-south, 1 = east-west). Null if it misses.
+function rayBox(px, py, rdx, rdy, b) {
+  const ix = 1 / (rdx || 1e-9), iy = 1 / (rdy || 1e-9);
+  const tx1 = (b.x0 - px) * ix, tx2 = (b.x1 - px) * ix, ty1 = (b.y0 - py) * iy, ty2 = (b.y1 - py) * iy;
+  const txn = Math.min(tx1, tx2), tyn = Math.min(ty1, ty2);
+  const tn = Math.max(txn, tyn), tf = Math.min(Math.max(tx1, tx2), Math.max(ty1, ty2));
+  if (tf < tn || tn <= 0.01) return null;
+  return { t: tn, side: txn > tyn ? 0 : 1 };
 }
 
 function drawSprite(s) {

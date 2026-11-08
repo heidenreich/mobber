@@ -17,10 +17,14 @@ export const game = {
   fade: 1,              // 0..1 picture brightness during transitions
   fadeDir: 0,
   afterFade: null,      // called once a fade-out finishes
+  doors: new Map(),     // see doors.js
+  secrets: new Map(),
+  movers: [],
+  moverCells: new Map(),
 };
 
-export const stats = { kills: 0, cash: 0, shots: 0, hits: 0, deaths: 0, time: 0 };
-export function resetStats() { Object.assign(stats, { kills: 0, cash: 0, shots: 0, hits: 0, deaths: 0, time: 0 }); }
+export const stats = { kills: 0, cash: 0, shots: 0, hits: 0, deaths: 0, time: 0, secretsFound: new Set() };
+export function resetStats() { Object.assign(stats, { kills: 0, cash: 0, shots: 0, hits: 0, deaths: 0, time: 0, secretsFound: new Set() }); }
 
 export const input = {
   keys: new Set(),

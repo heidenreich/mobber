@@ -8,6 +8,7 @@ export const HALF = H / 2;
 export const PLANE = 0.75;          // camera plane length: sets the field of view (~73°)
 export const K = (W / 2) / PLANE;   // projection scale: wall height in pixels at distance 1
 export const FOG = 0.05;            // how quickly things fade into the dark with distance
+export const GLOW = 240;            // texture brightness above which walls light themselves (windows, signs)
 
 export const isTouch = matchMedia("(pointer: coarse)").matches;
 
@@ -57,6 +58,16 @@ export const ENEMY_TYPES = {
   g: { name: "goon", art: "goon", hp: 40, speed: 1.5, dmg: [6, 11], cd: [1.3, 2.3], range: 13, aim: 0.5, burst: 1, scale: 0.95 },
   G: { name: "heavy", art: "heavy", hp: 95, speed: 1.15, dmg: [13, 22], cd: [1.7, 2.7], range: 7, aim: 0.6, burst: 1, scale: 1.0 },
   V: { name: "boss", art: "boss", hp: 420, speed: 1.05, dmg: [7, 12], cd: [1.0, 1.7], range: 14, aim: 0.45, burst: 3, scale: 1.05 },
+};
+
+export const DOORS = {
+  reach: 1.3,               // doors open when someone is this close to their center
+  holdOpen: 3,              // seconds a door stays open after everyone leaves
+  speed: 1.6,               // fraction of the door per second
+  passableAt: 0.85,         // how open a door must be to walk or see through
+  thickness: 0.12,
+  secretTravel: 2,          // squares a secret wall slides back
+  secretSpeed: 1.0,         // squares per second
 };
 
 export const ENEMY_AI = {

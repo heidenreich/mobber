@@ -1,36 +1,92 @@
-// The three chapters, as plain data.
+// The levels, in order, as plain data: each chapter's location is preceded by a
+// street scene that ends at its front door.
 //
 // Each map is a grid of characters, one per square. Rows must all be the same
 // length and the outer edge must be walls. tests/maps.test.js checks this, and
 // that everything is reachable from the start.
 //
-// To add a chapter, append an entry here. `objective` is "ledger" (find the L,
-// then the exit) or "boss" (take out the V, then the exit).
+// To add a level, add an entry here. `objective` is "ledger" (find the L, then
+// the exit), "boss" (take out the V, then the exit) or "reach" (just get to the
+// exit; street scenes use it, with `goal` as the on-screen objective).
+//
+// Street scenes also set: sky (night sky instead of a ceiling), wallHeight: 2
+// (two-story buildings), rain, and `entrance`, the facade drawn on the E square
+// ("bluenote", "pier" or "hotel").
+//
 // # brick  W wallpaper  P wood panel  B bar shelves  T deco tile  E exit door
+// F storefront  H tenement  U the Blue Note's front   (two-story facades for streets)
+// D sliding door: put it between two walls, with open floor on the other two sides
+// ! secret wall: looks like the wall next to it; walking into it slides it back up
+//   to two squares, so leave open floor behind it
 // S start  g goon  G heavy  V the Don  c table  k crate  p piano  l floor lamp  * hanging lamp  o barrel
 // $ cash  + first aid  a drum magazine  L ledger
+// Streets: C parked car  m street lamp  h hydrant  t trash can  n newsstand
 export const LEVELS = [
-  { chapter: "CHAPTER ONE", title: "The Blue Note Club", floor: "checker", ceil: "tin", ambient: 0.4, objective: "ledger",
-    card: ["The Vitale boys keep their books", "behind the bar of the Blue Note.", "Walk in. Take the ledger. Walk out."],
+  { chapter: "EXT. MULBERRY STREET — NIGHT", title: "Mulberry Street", ambient: 0.3, goal: "Get to the Blue Note", entrance: "bluenote",
+    card: ["Rain on Mulberry Street.", "Vitale lookouts are posted outside the Blue Note.", "Get to the club."],
+    floor: "cobbles", sky: true, wallHeight: 2, rain: true, objective: "reach",
     map: [
-      "WWWWWWWWBBBBBBBBWWWWWWWW",
-      "W.l....W........W.....lW",
-      "W......W.c....c.W..g...W",
-      "W..$...W...l....W......W",
-      "W..a...W..g..g.......L.W",
-      "WWW.WWWW........W......W",
-      "W..........p....WWWWW.WW",
-      "W.c..c..........W.....lW",
-      "W....l.....g....W..+...W",
-      "W.c..c..........W.g....W",
-      "W.......c..c....W......W",
-      "WWWW.WWWW..WWWWWW......W",
-      "Wl.....W....W.....g....W",
-      "W..g...W.$..W..........E",
-      "W......W....W.....$...lW",
-      "W..............WWWWWWWWW",
-      "W+..S..W...l.W.........W",
-      "WWWWWWWWWWWWWWWWWWWWWWWW",
+      "HHHHHHFFFFHHHHHHFFFFHHHHHHFFFFHHUUUUUUUU",
+      "HHHHHHFFFFHHHHHHFFFFHHHHHHFFFFHHUUUUUUUU",
+      "HHHHHHFFFFHHHHHHFFFFHHHHHHFFFFHHUUUEUUUU",
+      "H.......m...n.......m...t.......m......H",
+      "H..............C.......................H",
+      "H........................g........g....H",
+      "H.S..........g.........................H",
+      "H..................g..........g........H",
+      "H.....C.....................C..........H",
+      "H...m......h..m....t......m..........m.H",
+      "HHHHHHHHFFFFHHHHHHFFFF..####FFFFHHHHHHHH",
+      "HHHHHHHHFFFFHHHHHHFFFF..####FFFFHHHHHHHH",
+      "HHHHHHHHFFFFHHHHH#####..#####FFFHHHHHHHH",
+      "HHHHHHHHFFFFHHHHH#.+.......m#FFFHHHHHHHH",
+      "HHHHHHHHFFFFHHHHH#...g....$.#FFFHHHHHHHH",
+      "HHHHHHHHFFFFHHHHH############FFFHHHHHHHH",
+    ] },
+  { chapter: "CHAPTER ONE", title: "The Blue Note Club", floor: "checker", ceil: "tin", ambient: 0.4, objective: "ledger",
+    card: ["The Vitale boys keep their books", "in the back office of the Blue Note.", "Walk in. Take the ledger. Walk out.", "They say the old place is full of hidden rooms."],
+    map: [
+      "BBBBBBBBBBBBBBWWWWWWWPPPPPPPPP",
+      "Wl.........$.Bk..aW..Pl......P",
+      "W...g........!....W.*P...c.L.P",
+      "W......c..g..B..$.W..P..g....P",
+      "W............Bk..*W..D.......P",
+      "WWWWWWWWWDWWWWWWWWW..P.......P",
+      "Wl...............lW..P.....g.P",
+      "W.........g...p...W.*P+......P",
+      "W..c...c..........W..PPPP!PPPP",
+      "W....g....*.......D..PP$...*PP",
+      "W............g....W..PP.....PP",
+      "W..c...c...c......W..PP$...$PP",
+      "W.................Wg.#########",
+      "Wl...............lW..#......o#",
+      "WWWWDWWWWWWWWWWDWWW*.#.kk....#",
+      "Wl.....WWWWW......W..#...*..a#",
+      "W......W.*.W.k....W..D.......#",
+      "W..*...W..+W..*...W..#...g...#",
+      "W...S..!...W...g..W..#.......E",
+      "W......W...W....k.W..#.......#",
+      "W......W$.$Wk....+W..#.......#",
+      "WWWWWWWWWWWWWWWWWWWWW#########",
+    ] },
+  { chapter: "EXT. THE WATERFRONT — LATER", title: "The Waterfront", ambient: 0.28, goal: "Get to Pier 9", entrance: "pier",
+    card: ["Out the back of the Blue Note and down to the docks.", "The ledger says Pier 9.", "The Vitales know you're coming."],
+    floor: "cobbles", sky: true, wallHeight: 2, rain: true, objective: "reach",
+    map: [
+      "HHHHHHHH###########HHHHHHHH#################",
+      "HHHHHHHH#####k.m..kHHHHHHHH#################",
+      "HHHHHHHH#####.g.a..HHHHHHHH#################",
+      "#.....m....t................m............m.#",
+      "#...................kk........C............#",
+      "#.........g............g...............G...#",
+      "#.S.............................g..........E",
+      "#................g........k................#",
+      "#.......C..........................oo......#",
+      "#.................m.....h.............m....#",
+      "##########HHHHHH##############....##########",
+      "##########HHHHHH##############.$+.##########",
+      "##########HHHHHH############################",
+      "##########HHHHHH############################",
     ] },
   { chapter: "CHAPTER TWO", title: "Pier 9", floor: "concrete", ceil: "beams", ambient: 0.42, objective: "ledger",
     card: ["The ledger points to a warehouse", "full of Canadian rye and Vitale muscle.", "Their shipping book is in the foreman's office."],
@@ -55,6 +111,31 @@ export const LEVELS = [
       "#..g....#.............aE",
       "#.......#....*.........#",
       "########################",
+    ] },
+  { chapter: "EXT. REGENT SQUARE — NIGHT", title: "Regent Square", ambient: 0.32, goal: "Get into the Hotel Regent", entrance: "hotel",
+    card: ["Across town, the Hotel Regent glows like a wedding cake.", "Don Vitale's men are watching the square."],
+    floor: "cobbles", sky: true, wallHeight: 2, rain: true, objective: "reach",
+    map: [
+      "HHHHHHHHHHFFFFFFHHHHHHHHTTTTTTTTTTTTTFFF",
+      "HHHHHHHHHHFFFFFFHHHHHHHHTTTTTTTTTTTTTFFF",
+      "HHHHHHHHHHFFFFFFHHHHHHHHTTTTTTTTTTTTTFFF",
+      "HHHHHHHHHHFFFFFFHHHHHHHHTTTTTTETTTTTTFFF",
+      "H.$..m.....n................m...m......F",
+      "H............................G.G.......F",
+      "H.......C........g.....................F",
+      "H................................g.....F",
+      "H..............m........m..............F",
+      "H.........g........oo......g...........F",
+      "H..................oo................+.F",
+      "H..............m........m..............F",
+      "H......................................F",
+      "H..S.........C........g.C.........C....F",
+      "H......................................F",
+      "H.....t.....a.................h.....m..F",
+      "HHHHHHHHHHHHFFFFFFFFHHHHHHHHFFFFFFFFFFFF",
+      "HHHHHHHHHHHHFFFFFFFFHHHHHHHHFFFFFFFFFFFF",
+      "HHHHHHHHHHHHFFFFFFFFHHHHHHHHFFFFFFFFFFFF",
+      "HHHHHHHHHHHHFFFFFFFFHHHHHHHHFFFFFFFFFFFF",
     ] },
   { chapter: "CHAPTER THREE", title: "Hotel Regent, Top Floor", floor: "carpet", ceil: "plaster", ambient: 0.42, objective: "boss",
     card: ["Don Vitale takes his supper", "in the penthouse at eight o'clock.", "Don't be late."],

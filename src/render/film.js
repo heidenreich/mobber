@@ -47,6 +47,22 @@ export function develop(bright) {
   bctx.putImageData(img, 0, 0);
 }
 
+// Rain for street scenes: slanted streaks over the frame
+const drops = Array.from({ length: 140 }, () => ({ x: Math.random(), y: Math.random(), s: rand(0.8, 1.3), l: rand(0.03, 0.07) }));
+export function rain(dt) {
+  const film = view.film;
+  ctx.save(); ctx.beginPath(); ctx.rect(film.x, film.y, film.w, film.h); ctx.clip();
+  ctx.strokeStyle = "rgba(220,220,220,0.18)"; ctx.lineWidth = 1; ctx.beginPath();
+  for (const d of drops) {
+    d.y += dt * d.s * 1.6; d.x -= dt * d.s * 0.18;
+    if (d.y > 1) { d.y -= 1.1; d.x = Math.random() * 1.2; }
+    if (d.x < 0) d.x += 1.2;
+    const x = film.x + d.x * film.w, y = film.y + d.y * film.h;
+    ctx.moveTo(x, y); ctx.lineTo(x - d.l * film.h * 0.12, y + d.l * film.h);
+  }
+  ctx.stroke(); ctx.restore();
+}
+
 // Projector artifacts on top of the frame
 const scratches = [];
 export function projector(intensity = 1) {

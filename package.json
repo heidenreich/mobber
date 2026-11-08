@@ -1,0 +1,12 @@
+{
+  "name": "mobber",
+  "private": true,
+  "description": "A black-and-white 1930s gangster first-person shooter that runs in the browser.",
+  "scripts": {
+    "start": "node scripts/serve.js",
+    "test": "node --test --test-concurrency=1 tests/*.test.js"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
+  }
+}

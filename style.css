@@ -1,0 +1,9 @@
+html, body { margin: 0; height: 100%; background: #000; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+canvas { display: block; width: 100vw; height: 100vh; cursor: crosshair; }
+
+/* Phone buttons, shown only during play on touch screens */
+#fire { position: fixed; right: 26px; bottom: 26px; width: 104px; height: 104px; border-radius: 50%; display: none;
+  border: 2px solid rgba(236,230,218,0.7); background: rgba(236,230,218,0.12); color: #ece6da;
+  font: 15px "Special Elite", monospace; letter-spacing: 2px; }
+#swap { position: fixed; right: 144px; bottom: 30px; width: 64px; height: 64px; border-radius: 50%; display: none;
+  border: 2px solid rgba(236,230,218,0.5); background: rgba(236,230,218,0.08); color: #ece6da; font: 12px "Special Elite", monospace; }

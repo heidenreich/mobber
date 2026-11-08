@@ -1,0 +1,119 @@
+// The current chapter's space: loading a map, walls, line of sight, the light map
+// and collision.
+import { ENEMY_TYPES, PLAYER } from "./config.js";
+import { rand, clamp } from "./util.js";
+import { game, say } from "./state.js";
+import { LEVELS } from "./levels.js";
+import { OBJ } from "./art/sprites.js";
+
+const WALLS = "#WPBTE";
+
+// Map letter -> what gets placed there. `light` is [intensity, radius] for lamps.
+const SPAWNS = {
+  c: { art: "table", scale: 0.75, block: true, light: [0.8, 3.6] },
+  k: { art: "crate", scale: 0.85, block: true },
+  p: { art: "piano", scale: 0.9, block: true },
+  o: { art: "barrel", scale: 0.7, block: true },
+  l: { art: "lamp", scale: 1.0, block: true, glow: true, light: [1.2, 5.5] },
+  "*": { art: "hanging", scale: 0.6, hang: true, glow: true, light: [1.25, 6] },
+  $: { art: "cash", scale: 0.6, pick: "cash" },
+  "+": { art: "medkit", scale: 0.6, pick: "med" },
+  a: { art: "ammo", scale: 0.6, pick: "ammo" },
+  L: { art: "ledger", scale: 0.6, pick: "ledger", bob: true },
+};
+
+export function wallAt(x, y) {
+  const xi = x | 0, yi = y | 0;
+  return xi < 0 || yi < 0 || xi >= game.width || yi >= game.height || game.map[yi][xi] !== ".";
+}
+
+export function los(x0, y0, x1, y1) {
+  const d = Math.hypot(x1 - x0, y1 - y0), n = Math.ceil(d / 0.15);
+  for (let i = 1; i < n; i++) if (wallAt(x0 + (x1 - x0) * i / n, y0 + (y1 - y0) * i / n)) return false;
+  return true;
+}
+
+export function loadLevel(i) {
+  const lvl = LEVELS[i];
+  game.levelIdx = i; game.level = lvl;
+  game.height = lvl.map.length; game.width = lvl.map[0].length;
+  game.map = lvl.map.map(r => r.split(""));
+  game.objs = []; game.enemies = [];
+  // Guns and ammo carry over from the previous chapter
+  const prev = game.player;
+  const player = game.player = {
+    x: 2, y: 2, a: 0, hp: PLAYER.maxHp, weapon: prev && prev.has[1] ? 1 : 0, has: prev ? prev.has.slice() : [true, false],
+    mag: [6, prev ? Math.max(prev.mag[1], 0) : 0], reserve: prev ? prev.reserve : 0,
+    fireCd: 0, reload: 0, recoil: 0, flash: 0, bob: 0, moving: false, hurt: 0, ledger: false,
+  };
+  for (let y = 0; y < game.height; y++) for (let x = 0; x < game.width; x++) {
+    const ch = game.map[y][x], cx = x + 0.5, cy = y + 0.5;
+    if (WALLS.includes(ch)) continue;
+    game.map[y][x] = ".";
+    if (ch === "S") { player.x = cx; player.y = cy; player.a = facingOpen(x, y); }
+    else if (ENEMY_TYPES[ch]) {
+      const type = ENEMY_TYPES[ch];
+      game.enemies.push({ x: cx, y: cy, type, hp: type.hp, state: "idle", t: 0, cd: rand(0.5, 1.5), alert: false, lx: cx, ly: cy, burstLeft: 0, step: 0 });
+    }
+    else if (SPAWNS[ch]) game.objs.push({ x: cx, y: cy, ...SPAWNS[ch], art: OBJ[SPAWNS[ch].art] });
+  }
+  if (prev) player.mag[0] = 6;
+  buildLight();
+  game.timer = 0;
+  say(lvl.objective === "ledger" ? "Find the ledger." : "Find Don Vitale.", 3);
+}
+
+// Start facing down the longest open corridor
+function facingOpen(x, y) {
+  let best = 0, bestN = -1;
+  for (const a of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
+    let n = 0; while (n < 20 && !wallAt(x + 0.5 + Math.cos(a) * (n + 1), y + 0.5 + Math.sin(a) * (n + 1))) n++;
+    if (n > bestN) { bestN = n; best = a; }
+  }
+  return best;
+}
+
+// Light map: lamps throw pools of light, blocked by walls. Sampled at 4x4 per square.
+export const lightMap = { data: null, w: 0, h: 0, sub: 4 };
+function buildLight() {
+  const sub = lightMap.sub, ambient = game.level.ambient;
+  const w = lightMap.w = game.width * sub, h = lightMap.h = game.height * sub;
+  const data = lightMap.data = new Float32Array(w * h).fill(ambient);
+  const lamps = game.objs.filter(o => o.light);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const wx = (x + 0.5) / sub, wy = (y + 0.5) / sub;
+    if (wallAt(wx, wy)) continue;
+    let v = ambient;
+    for (const l of lamps) {
+      const d = Math.hypot(l.x - wx, l.y - wy), [I, R] = l.light;
+      if (d >= R) continue;
+      if (!los(l.x, l.y, wx, wy)) continue;
+      const f = 1 - d / R; v += I * f * f;
+    }
+    data[y * w + x] = Math.min(1.35, v);
+  }
+}
+export function lightAt(x, y) {
+  const { data, w, h, sub } = lightMap;
+  return data[clamp((y * sub) | 0, 0, h - 1) * w + clamp((x * sub) | 0, 0, w - 1)];
+}
+
+export function blocked(x, y, r, self) {
+  if (wallAt(x - r, y - r) || wallAt(x + r, y - r) || wallAt(x - r, y + r) || wallAt(x + r, y + r)) return true;
+  for (const o of game.objs) if (o.block && Math.abs(o.x - x) < r + 0.28 && Math.abs(o.y - y) < r + 0.28) return true;
+  for (const e of game.enemies) if (e !== self && e.hp > 0 && Math.hypot(e.x - x, e.y - y) < r + 0.25) return true;
+  if (self !== game.player && Math.hypot(game.player.x - x, game.player.y - y) < r + 0.25) return true;
+  return false;
+}
+
+// Moves along each axis separately so you slide along walls instead of sticking
+export function moveBy(o, dx, dy, r) {
+  let hit = false;
+  if (!blocked(o.x + dx, o.y, r, o)) o.x += dx; else hit = true;
+  if (!blocked(o.x, o.y + dy, r, o)) o.y += dy; else hit = true;
+  return hit;
+}
+
+export function objectiveDone() {
+  return game.level.objective === "ledger" ? game.player.ledger : !game.enemies.some(e => e.type.name === "boss" && e.hp > 0);
+}

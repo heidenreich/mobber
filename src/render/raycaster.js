@@ -1,0 +1,122 @@
+// Draws the 3D view into the film's luma buffer: floor and ceiling, walls (one
+// ray per screen column), sprites sorted far to near, then the gun in your hand.
+import { W, H, HALF, K, FOG, WEAPONS } from "../config.js";
+import { clamp } from "../util.js";
+import { game } from "../state.js";
+import { FLOORS, CEILS, TEX, WALL_TEXTURES } from "../art/textures.js";
+import { PEOPLE } from "../art/sprites.js";
+import { GUN_ART } from "../art/guns.js";
+import { lightMap, lightAt } from "../world.js";
+import { cam, camera, project, zbuf } from "./camera.js";
+import { luma } from "./film.js";
+
+export function renderWorld(t) {
+  camera();
+  const { dirX, dirY, planeX, planeY } = cam;
+  const p = game.player, px = p.x, py = p.y, map = game.map, MW = game.width, MH = game.height;
+  const fl = FLOORS[game.level.floor].L, ce = CEILS[game.level.ceil].L;
+  const light = lightMap.data, LW = lightMap.w, LH = lightMap.h, LSUB = lightMap.sub;
+
+  // Floor and ceiling, one row at a time
+  for (let y = HALF + 1; y < H; y++) {
+    const rowDist = (0.5 * K) / (y - HALF);
+    const fog = Math.exp(-rowDist * FOG);
+    let fx = px + rowDist * (dirX - planeX), fy = py + rowDist * (dirY - planeY);
+    const sx = rowDist * 2 * planeX / W, sy = rowDist * 2 * planeY / W;
+    const rf = y * W, rc = (H - 1 - y) * W;
+    for (let x = 0; x < W; x++) {
+      const ti = ((((fy * 64) | 0) & 63) << 6) | (((fx * 64) | 0) & 63);
+      const li = light[clamp((fy * LSUB) | 0, 0, LH - 1) * LW + clamp((fx * LSUB) | 0, 0, LW - 1)] * fog;
+      luma[rf + x] = fl[ti] * li;
+      luma[rc + x] = ce[ti] * li * 0.75;
+      fx += sx; fy += sy;
+    }
+  }
+  for (let x = 0; x < W; x++) luma[HALF * W + x] = 0;
+
+  // Walls: step each ray through the grid until it hits one (DDA)
+  for (let x = 0; x < W; x++) {
+    const camX = 2 * x / W - 1, rdx = dirX + planeX * camX, rdy = dirY + planeY * camX;
+    let mx = px | 0, my = py | 0;
+    const ddx = Math.abs(1 / rdx), ddy = Math.abs(1 / rdy);
+    let stepX, stepY, sdx, sdy, side = 0;
+    if (rdx < 0) { stepX = -1; sdx = (px - mx) * ddx; } else { stepX = 1; sdx = (mx + 1 - px) * ddx; }
+    if (rdy < 0) { stepY = -1; sdy = (py - my) * ddy; } else { stepY = 1; sdy = (my + 1 - py) * ddy; }
+    let c = ".";
+    for (let n = 0; n < 64; n++) {
+      if (sdx < sdy) { sdx += ddx; mx += stepX; side = 0; } else { sdy += ddy; my += stepY; side = 1; }
+      c = (mx < 0 || my < 0 || mx >= MW || my >= MH) ? "#" : map[my][mx];
+      if (c !== ".") break;
+    }
+    const perp = Math.max(0.01, side === 0 ? sdx - ddx : sdy - ddy);
+    zbuf[x] = perp;
+    const lineH = K / perp, y0 = HALF - lineH / 2;
+    let wallX = side === 0 ? py + perp * rdy : px + perp * rdx;
+    wallX -= Math.floor(wallX);
+    let tx = (wallX * 64) | 0;
+    if ((side === 0 && rdx > 0) || (side === 1 && rdy < 0)) tx = 63 - tx;
+    const tex = (WALL_TEXTURES[c] || TEX.brick).L;
+    const lit = lightAt(px + rdx * (perp - 0.06), py + rdy * (perp - 0.06)) * Math.exp(-perp * FOG) * (side ? 0.8 : 1);
+    const ys = Math.max(0, y0 | 0), ye = Math.min(H, Math.ceil(y0 + lineH));
+    const step = 64 / lineH; let ty = (ys - y0) * step;
+    for (let y = ys; y < ye; y++) { luma[y * W + x] = tex[(((ty | 0) & 63) << 6) | tx] * lit; ty += step; }
+  }
+
+  // Sprites, far to near
+  const list = [];
+  for (const o of game.objs) list.push({ x: o.x, y: o.y, art: o.art, scale: o.scale, hang: o.hang, glow: o.glow, bob: o.bob ? Math.sin(t * 3) * 0.03 : 0 });
+  for (const e of game.enemies) {
+    const A = PEOPLE[e.type.art];
+    let art = A.idle;
+    if (e.state === "aim") art = A.aim; else if (e.state === "fire") art = e.t > 0.07 ? A.fire : A.aim;
+    else if (e.state === "hurt") art = A.hurt; else if (e.state === "dying") art = e.t > 0.25 ? A.hurt : A.fall;
+    else if (e.state === "dead") art = A.dead;
+    list.push({ x: e.x, y: e.y, art, scale: e.type.scale, bob: e.moving ? Math.abs(Math.sin(e.step * 9)) * 0.02 : 0, muzzle: e.state === "fire" && e.t > 0.07 });
+  }
+  for (const s of list) s.d = (s.x - px) ** 2 + (s.y - py) ** 2;
+  list.sort((a, b) => b.d - a.d);
+  for (const s of list) drawSprite(s);
+
+  drawGun(t);
+}
+
+function drawSprite(s) {
+  const [, tY, sx] = project(s.x, s.y);
+  if (tY < 0.12) return;
+  const bm = s.art, size = (K / tY) * s.scale;
+  const floorY = HALF + (K * 0.5) / tY;
+  const top = (s.hang ? HALF - (K * 0.5) / tY : floorY - size) - s.bob * (K / tY);
+  const wpx = size * bm.w / bm.h, left = sx - wpx / 2;
+  const x0 = Math.max(0, left | 0), x1 = Math.min(W, (left + wpx) | 0);
+  let lit = lightAt(s.x, s.y) * Math.exp(-tY * FOG);
+  if (s.glow) lit = Math.max(lit, 1.05);
+  if (s.muzzle) lit = Math.max(lit, 0.9);
+  const y0 = Math.max(0, top | 0), y1 = Math.min(H, (top + size) | 0), stepY = bm.h / size;
+  for (let x = x0; x < x1; x++) {
+    if (tY >= zbuf[x]) continue;
+    const tx = ((x - left) / wpx * bm.w) | 0;
+    let ty = (y0 - top) * stepY;
+    for (let y = y0; y < y1; y++) {
+      const i = (ty | 0) * bm.w + tx;
+      if (bm.A[i] > 110) luma[y * W + x] = bm.L[i] * (bm.L[i] > 245 ? 1.1 : lit);
+      ty += stepY;
+    }
+  }
+}
+
+function drawGun(t) {
+  const p = game.player, art = GUN_ART[p.weapon][p.flash > 0 ? 1 : 0];
+  const bobX = p.moving ? Math.cos(p.bob) * 6 : 0, bobY = p.moving ? Math.abs(Math.sin(p.bob)) * 6 : Math.sin(t * 1.5) * 1.5;
+  const reloadDrop = p.reload > 0 ? Math.sin(Math.min(1, p.reload / WEAPONS[p.weapon].reload) * Math.PI) * 70 : 0;
+  const ox = (p.weapon === 0 ? W / 2 + 10 : W / 2 - 40) + bobX + p.recoil * 6;
+  const oy = H - art.h - 4 + bobY + p.recoil * 10 + reloadDrop;
+  const lit = Math.min(1.05, lightAt(p.x, p.y) * 0.5 + 0.6) + (p.flash > 0 ? 0.3 : 0);
+  for (let y = 0; y < art.h; y++) {
+    const sy = (oy + y) | 0; if (sy < 0 || sy >= H) continue;
+    for (let x = 0; x < art.w; x++) {
+      const sx = (ox + x) | 0; if (sx < 0 || sx >= W) continue;
+      const i = y * art.w + x;
+      if (art.A[i] > 110) luma[sy * W + sx] = art.L[i] * (art.L[i] > 245 ? 1.1 : lit);
+    }
+  }
+}

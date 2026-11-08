@@ -8,6 +8,7 @@ export const HALF = H / 2;
 export const PLANE = 0.75;          // camera plane length: sets the field of view (~73°)
 export const K = (W / 2) / PLANE;   // projection scale: wall height in pixels at distance 1
 export const FOG = 0.05;            // how quickly things fade into the dark with distance
+export const GLOW = 240;            // texture brightness above which walls light themselves (windows, signs)
 
 export const isTouch = matchMedia("(pointer: coarse)").matches;
 

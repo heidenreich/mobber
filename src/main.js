@@ -11,7 +11,7 @@ import { updateDoors, updateSecrets } from "./doors.js";
 import { startLevel, tickFade } from "./flow.js";
 import { installDesktopInput } from "./input/desktop.js";
 import { installTouchInput } from "./input/touch.js";
-import { buf, develop, projector } from "./render/film.js";
+import { buf, develop, projector, rain } from "./render/film.js";
 import { renderWorld } from "./render/raycaster.js";
 import { drawHUD } from "./render/hud.js";
 import { drawCard } from "./render/cards.js";
@@ -52,6 +52,7 @@ function frame(now) {
     const shake = p.hurt > 0 ? rand(-4, 4) * p.hurt * 3 : 0;
     ctx.imageSmoothingEnabled = true;
     ctx.drawImage(buf, film.x + shake, film.y + jitter + shake, film.w, film.h);
+    if (game.level.rain) rain(dt);
     projector();
     drawHUD();
   } else {

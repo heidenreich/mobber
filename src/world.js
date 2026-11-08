@@ -7,7 +7,7 @@ import { LEVELS } from "./levels.js";
 import { OBJ } from "./art/sprites.js";
 import { setupDoors, partialSolid } from "./doors.js";
 
-const WALLS = "#WPBTE";
+const WALLS = "#WPBTEFHU";
 
 // Map letter -> what gets placed there. `light` is [intensity, radius] for lamps.
 const SPAWNS = {
@@ -21,6 +21,12 @@ const SPAWNS = {
   "+": { art: "medkit", scale: 0.6, pick: "med" },
   a: { art: "ammo", scale: 0.6, pick: "ammo" },
   L: { art: "ledger", scale: 0.6, pick: "ledger", bob: true },
+  // Street furniture. `size` is how far the solid part reaches from the center.
+  C: { art: "car", scale: 0.8, block: true, size: 0.8 },
+  m: { art: "lamppost", scale: 1.8, block: true, size: 0.15, glow: true, light: [1.3, 6] },
+  h: { art: "hydrant", scale: 0.6, block: true, size: 0.2 },
+  t: { art: "trash", scale: 0.7, block: true, size: 0.25 },
+  n: { art: "newsstand", scale: 0.9, block: true, size: 0.45 },
 };
 
 // Blocks movement and sight: walls, closed doors and moving secret walls
@@ -74,7 +80,7 @@ export function loadLevel(i) {
   if (prev) player.mag[0] = 6;
   buildLight();
   game.timer = 0;
-  say(lvl.objective === "ledger" ? "Find the ledger." : "Find Don Vitale.", 3);
+  say(lvl.objective === "ledger" ? "Find the ledger." : lvl.objective === "boss" ? "Find Don Vitale." : lvl.goal, 3);
 }
 
 // Start facing down the longest open line of sight, looking through doors
@@ -115,7 +121,7 @@ export function lightAt(x, y) {
 
 export function blocked(x, y, r, self) {
   if (wallAt(x - r, y - r) || wallAt(x + r, y - r) || wallAt(x - r, y + r) || wallAt(x + r, y + r)) return true;
-  for (const o of game.objs) if (o.block && Math.abs(o.x - x) < r + 0.28 && Math.abs(o.y - y) < r + 0.28) return true;
+  for (const o of game.objs) if (o.block && Math.abs(o.x - x) < r + (o.size || 0.28) && Math.abs(o.y - y) < r + (o.size || 0.28)) return true;
   for (const e of game.enemies) if (e !== self && e.hp > 0 && Math.hypot(e.x - x, e.y - y) < r + 0.25) return true;
   if (self !== game.player && Math.hypot(game.player.x - x, game.player.y - y) < r + 0.25) return true;
   return false;
@@ -130,5 +136,7 @@ export function moveBy(o, dx, dy, r) {
 }
 
 export function objectiveDone() {
-  return game.level.objective === "ledger" ? game.player.ledger : !game.enemies.some(e => e.type.name === "boss" && e.hp > 0);
+  const o = game.level.objective;
+  if (o === "reach") return true; // street scenes: just get to the door
+  return o === "ledger" ? game.player.ledger : !game.enemies.some(e => e.type.name === "boss" && e.hp > 0);
 }

@@ -16,7 +16,7 @@ before(async () => {
 });
 after(async () => { await browser.close(); srv.server.close(); });
 
-const WALLS = "#WPBTE", BLOCKERS = "ckpol";
+const WALLS = "#WPBTEFHU", BLOCKERS = "ckpolChmtn";
 const STEPS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 
 function flood(map, start, throughSecrets) {
@@ -45,10 +45,13 @@ function analyse(map) {
   };
 }
 
-test("there are three chapters", () => assert.equal(levels.length, 3));
+test("three locations, each preceded by a street scene", () => {
+  assert.equal(levels.length, 6);
+  levels.forEach((l, i) => assert.equal(l.objective === "reach", i % 2 === 0, `${l.title}: streets and locations should alternate`));
+});
 
-for (let i = 0; i < 3; i++) {
-  test(`chapter ${i + 1} map is sound and beatable`, () => {
+for (let i = 0; i < 6; i++) {
+  test(`level ${i + 1} map is sound and beatable`, () => {
     const { title, objective, map } = levels[i];
     const w = map[0].length, h = map.length;
     map.forEach((row, y) => assert.equal(row.length, w, `${title}: row ${y} has the wrong length`));
@@ -64,7 +67,7 @@ for (let i = 0; i < 3; i++) {
     const exits = cells.filter(k => k.c === "E");
     assert.ok(exits.length >= 1 && exits.every(touchesMain), `${title}: exit door can't be reached (without secrets)`);
     for (const d of cells.filter(k => k.c === "D")) {
-      const wall = c => "#WPBT!".includes(c);
+      const wall = c => "#WPBTFHU!".includes(c);
       const ew = wall(at(d.x - 1, d.y)) && wall(at(d.x + 1, d.y)) && !wall(at(d.x, d.y - 1)) && !wall(at(d.x, d.y + 1));
       const ns = wall(at(d.x, d.y - 1)) && wall(at(d.x, d.y + 1)) && !wall(at(d.x - 1, d.y)) && !wall(at(d.x + 1, d.y));
       assert.ok(ew || ns, `${title}: door at ${d.x},${d.y} must sit between two walls with floor on the other sides`);

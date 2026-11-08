@@ -120,3 +120,38 @@ export const OBJ = {
     g.fillStyle = gray(36); g.fillRect(20, 53, 24, 3);
   }),
 };
+
+// Street furniture
+OBJ.car = bitmap(128, 64, g => {
+  g.fillStyle = gray(30);
+  g.beginPath(); g.moveTo(6, 50); g.lineTo(10, 34); g.lineTo(34, 30); g.lineTo(46, 14); g.lineTo(86, 14); g.lineTo(98, 30); g.lineTo(120, 34); g.lineTo(122, 50); g.closePath(); g.fill();
+  g.fillStyle = gray(70); g.fillRect(52, 18, 15, 12); g.fillRect(70, 18, 15, 12);           // windows
+  g.fillStyle = gray(150); g.fillRect(10, 36, 110, 2);                                       // chrome trim
+  g.fillStyle = gray(18); g.beginPath(); g.ellipse(18, 36, 14, 8, 0, Math.PI, 0); g.ellipse(106, 36, 14, 8, 0, Math.PI, 0); g.fill(); // fenders
+  for (const x of [28, 98]) { g.fillStyle = gray(12); g.beginPath(); g.arc(x, 52, 11, 0, 6.283); g.fill(); g.fillStyle = gray(200); g.beginPath(); g.arc(x, 52, 5, 0, 6.283); g.fill(); }
+  g.fillStyle = gray(250); g.beginPath(); g.arc(119, 40, 3, 0, 6.283); g.fill();              // headlamp
+  g.fillStyle = gray(90); g.fillRect(4, 44, 6, 4);
+});
+OBJ.lamppost = bitmap(32, 128, g => {
+  g.fillStyle = gray(30); g.fillRect(14, 20, 4, 104); g.fillRect(10, 120, 12, 8); g.fillRect(12, 40, 8, 3);
+  g.fillStyle = gray(40); g.beginPath(); g.moveTo(8, 10); g.lineTo(24, 10); g.lineTo(20, 4); g.lineTo(12, 4); g.fill();
+  g.fillStyle = gray(255); g.beginPath(); g.moveTo(10, 10); g.lineTo(22, 10); g.lineTo(20, 20); g.lineTo(12, 20); g.closePath(); g.fill();
+});
+OBJ.hydrant = bitmap(64, 64, g => {
+  g.fillStyle = gray(120); g.fillRect(26, 42, 12, 20); g.fillRect(22, 48, 20, 5); g.fillRect(24, 60, 16, 4);
+  g.beginPath(); g.arc(32, 42, 6, Math.PI, 0); g.fill();
+  g.fillStyle = gray(170); g.fillRect(28, 44, 2, 16);
+});
+OBJ.trash = bitmap(64, 64, g => {
+  g.fillStyle = gray(96); g.fillRect(22, 40, 20, 24);
+  g.fillStyle = gray(70); for (let x = 24; x < 42; x += 4) g.fillRect(x, 42, 1, 22);
+  g.fillStyle = gray(120); g.beginPath(); g.ellipse(32, 39, 12, 3, 0, 0, 6.283); g.fill();
+  g.fillStyle = gray(210); g.fillRect(36, 34, 6, 5);  // a newspaper sticking out
+});
+OBJ.newsstand = bitmap(64, 64, g => {
+  g.fillStyle = gray(60); g.fillRect(8, 24, 48, 40);
+  g.fillStyle = gray(30); g.fillRect(4, 20, 56, 6);
+  g.fillStyle = gray(225); for (let i = 0; i < 4; i++) g.fillRect(12 + i * 11, 30, 9, 12);
+  g.fillStyle = gray(60); for (let i = 0; i < 4; i++) { g.fillRect(13 + i * 11, 32, 7, 1); g.fillRect(13 + i * 11, 35, 5, 1); }
+  g.fillStyle = gray(18); g.font = "bold 6px monospace"; g.textAlign = "center"; g.fillText("EXTRA!", 32, 54);
+});

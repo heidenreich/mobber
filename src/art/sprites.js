@@ -155,3 +155,19 @@ OBJ.newsstand = bitmap(64, 64, g => {
   g.fillStyle = gray(60); for (let i = 0; i < 4; i++) { g.fillRect(13 + i * 11, 32, 7, 1); g.fillRect(13 + i * 11, 35, 5, 1); }
   g.fillStyle = gray(18); g.font = "bold 6px monospace"; g.textAlign = "center"; g.fillText("EXTRA!", 32, 54);
 });
+
+// Loot: a box of revolver rounds, and a dropped tommy gun
+OBJ.rounds = bitmap(64, 64, g => {
+  g.fillStyle = gray(150); g.fillRect(22, 50, 20, 13);
+  g.fillStyle = gray(90); g.fillRect(22, 50, 20, 3);
+  g.fillStyle = gray(30); g.font = "bold 6px monospace"; g.textAlign = "center"; g.fillText(".38", 32, 60);
+  g.fillStyle = gray(220); for (let i = 0; i < 4; i++) { g.fillRect(24 + i * 5, 45, 3, 6); } // rounds poking out
+  g.fillStyle = gray(160); for (let i = 0; i < 4; i++) { g.fillRect(24 + i * 5, 44, 3, 2); }
+});
+OBJ.tommy = bitmap(64, 64, g => {
+  g.fillStyle = gray(36); g.fillRect(10, 54, 36, 5); g.fillRect(4, 55, 8, 3);
+  g.fillStyle = gray(98); g.beginPath(); g.moveTo(44, 53); g.lineTo(60, 55); g.lineTo(60, 61); g.lineTo(44, 59); g.fill();
+  g.fillStyle = gray(30); g.beginPath(); g.arc(28, 58, 6, 0, 6.283); g.fill();
+  g.strokeStyle = gray(120); g.lineWidth = 1; g.beginPath(); g.arc(28, 58, 4, 0, 6.283); g.stroke();
+  g.fillStyle = gray(150); for (let x = 12; x < 22; x += 3) g.fillRect(x, 53, 1, 7);
+});

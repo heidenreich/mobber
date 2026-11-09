@@ -90,7 +90,10 @@ export function tryPush(px, py, dirX, dirY, reach = 0.7) {
   // It slides away from you, along whichever axis you're facing it on
   const ddx = tx + 0.5 - px, ddy = ty + 0.5 - py;
   const dx = Math.abs(ddx) >= Math.abs(ddy) ? Math.sign(ddx) : 0, dy = dx ? 0 : Math.sign(ddy);
-  const free = (x, y) => game.map[y] && game.map[y][x] === "." && !game.objs.some(o => (o.x | 0) === x && (o.y | 0) === y);
+  // Never slide onto a prop, a gangster or you
+  const inSquare = (a, x, y) => a.x > x - 0.25 && a.x < x + 1.25 && a.y > y - 0.25 && a.y < y + 1.25;
+  const free = (x, y) => game.map[y] && game.map[y][x] === "." && !game.objs.some(o => (o.x | 0) === x && (o.y | 0) === y)
+    && !game.enemies.some(e => e.hp > 0 && inSquare(e, x, y)) && !inSquare(game.player, x, y);
   let dist = 0;
   while (dist < DOORS.secretTravel && free(tx + dx * (dist + 1), ty + dy * (dist + 1))) dist++;
   if (!dist) return false;

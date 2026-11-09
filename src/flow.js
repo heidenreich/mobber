@@ -1,8 +1,8 @@
 // Moving between the title card, chapter cards, play, death and the end,
 // with fades in between.
-import { isTouch, PLAYER } from "./config.js";
+import { isTouch } from "./config.js";
 import { clamp } from "./util.js";
-import { game, input, resetStats } from "./state.js";
+import { game, stats, input, resetStats } from "./state.js";
 import { cv, fireBtn, swapBtn } from "./screen.js";
 import { loadLevel } from "./world.js";
 
@@ -19,7 +19,7 @@ export function advance() {
   if (game.state !== "card" || game.fade < 0.6) return;
   const c = game.card;
   if (c.kind === "chapter") startLevel(c.idx);
-  else if (c.kind === "dead") { game.player.hp = PLAYER.maxHp; startLevel(c.idx, true); }
+  else if (c.kind === "dead") startLevel(c.idx, true);
   else if (c.kind === "end") { resetStats(); game.player = null; showCard("chapter", 0); }
 }
 
@@ -27,10 +27,19 @@ export function requestLock() {
   if (!isTouch && cv.requestPointerLock) { try { const p = cv.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch (e) {} }
 }
 
+// A snapshot of your loadout and stats as each scene begins, so a retry after
+// "CUT!" really does rewind the reel: what you picked up or spent on the failed
+// attempt is undone (only the retake count goes up).
+let checkpoint = null;
+const copyStats = () => ({ ...stats, secretsFound: new Set(stats.secretsFound) });
+
 export function startLevel(i, retry) {
-  if (!retry && i === 0) game.player = null; // a fresh run starts with just the revolver
-  if (retry) game.player.ledger = false;
+  if (retry && checkpoint) {
+    game.player = structuredClone(checkpoint.player);
+    Object.assign(stats, { ...checkpoint.stats, secretsFound: new Set(checkpoint.stats.secretsFound), deaths: stats.deaths });
+  } else if (i === 0) game.player = null; // a fresh run starts with just the revolver
   loadLevel(i);
+  if (!retry || !checkpoint) checkpoint = { player: structuredClone(game.player), stats: copyStats() };
   game.state = "play"; game.fade = 0; game.fadeDir = 1;
   requestLock();
   if (isTouch) { fireBtn.style.display = "block"; swapBtn.style.display = "block"; }

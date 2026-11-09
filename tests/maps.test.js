@@ -62,12 +62,12 @@ for (let i = 0; i < 6; i++) {
     for (const k of cells) {
       if (k.x === 0 || k.y === 0 || k.x === w - 1 || k.y === h - 1) assert.ok(WALLS.includes(k.c), `${title}: gap in the outer wall at ${k.x},${k.y}`);
     }
-    for (const k of cells.filter(k => "gGV$+aL".includes(k.c))) assert.ok(reach(k), `${title}: '${k.c}' at ${k.x},${k.y} can't be reached`);
+    for (const k of cells.filter(k => "gGV$+arL".includes(k.c))) assert.ok(reach(k), `${title}: '${k.c}' at ${k.x},${k.y} can't be reached`);
     for (const k of cells.filter(k => "LV".includes(k.c))) assert.ok(reachMain(k), `${title}: the objective at ${k.x},${k.y} is only reachable through a secret wall`);
     const exits = cells.filter(k => k.c === "E");
     assert.ok(exits.length >= 1 && exits.every(touchesMain), `${title}: exit door can't be reached (without secrets)`);
     for (const d of cells.filter(k => k.c === "D")) {
-      const wall = c => "#WPBTFHU!".includes(c);
+      const wall = c => "#WPBTEFHU!".includes(c); // the same set doors.js uses
       const ew = wall(at(d.x - 1, d.y)) && wall(at(d.x + 1, d.y)) && !wall(at(d.x, d.y - 1)) && !wall(at(d.x, d.y + 1));
       const ns = wall(at(d.x, d.y - 1)) && wall(at(d.x, d.y + 1)) && !wall(at(d.x - 1, d.y)) && !wall(at(d.x + 1, d.y));
       assert.ok(ew || ns, `${title}: door at ${d.x},${d.y} must sit between two walls with floor on the other sides`);

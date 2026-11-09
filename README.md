@@ -20,6 +20,8 @@ A first-person shooter styled as a lost 1931 gangster film: black and white, fil
 
 Doors open by themselves as you walk up to them. Some walls hide rooms: look for faint scrape marks near the floor.
 
+Ammo is limited. You start with a loaded revolver and 12 spare rounds. Boxes of rounds and tommy gun drums are lying around, and gangsters you put down leave something behind: usually revolver rounds, sometimes their tommy gun, sometimes cash. With both guns empty, a click swings the gun at anyone in arm's reach.
+
 ## Running it locally
 
 There's no build step. The game is plain HTML, CSS and JavaScript modules. Browsers won't load modules from a double-clicked file, so serve the folder:
@@ -82,7 +84,7 @@ All the art and sound are generated in code when the page loads; there are no im
 
 ### Common changes
 
-- **Difficulty:** `src/config.js`. Enemy health, damage, accuracy and reaction time, player speed, and how strong the phone aim assist is.
+- **Difficulty:** `src/config.js`. Enemy health, damage, accuracy and reaction time, player speed, how strong the phone aim assist is, and how much ammo you start with, find and loot (`AMMO`).
 - **A new level:** add an entry to `src/levels.js`. For a street scene, set `sky`, `wallHeight: 2`, `rain` and `objective: "reach"`, and pick an `entrance` for the door at the end. The legend at the top lists every map character. `npm test` checks that the map is sealed, that everything in it can be reached, and that the objective and exit never depend on finding a secret.
 - **Doors and secrets:** put `D` between two walls for a door, and `!` in a wall (with open floor behind it) for a secret. Their timing and speed are in `DOORS` in `src/config.js`.
 - **New furniture or pickups:** draw it in `src/art/sprites.js`, then give it a map letter in the `SPAWNS` table in `src/world.js`.

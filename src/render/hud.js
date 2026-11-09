@@ -42,7 +42,8 @@ export function drawHUD() {
   ctx.textAlign = "right"; ctx.font = `${fs(9)}px ${TYPE}`;
   ctx.fillText(WEAPONS[p.weapon].name + (p.has[1] && p.has[0] ? "   [Q]" : ""), f.x + f.w - 18 * s, base - 13 * s);
   ctx.font = `${fs(17)}px ${DECO}`;
-  const ammo = p.reload > 0 ? "RELOADING" : p.weapon === 0 ? `${p.mag[0]} / ∞` : `${p.mag[1]} / ${p.reserve}`;
+  const ammo = p.reload > 0 ? "RELOADING" : `${p.mag[p.weapon]} / ${p.reserve[p.weapon]}`;
+  if (!p.reload && p.mag[p.weapon] + p.reserve[p.weapon] === 0) ctx.fillStyle = Math.floor(game.timer * 3) % 2 ? "#ffffff" : CREAM;
   ctx.fillText(ammo, f.x + f.w - 18 * s, base);
   // Messages ("Find the ledger.", pickups)
   const msg = game.msg;

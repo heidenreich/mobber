@@ -95,13 +95,13 @@ export const ENTRANCES = {
   }),
 };
 
-// Night sky panorama, 1024 wide, wrapped around the horizon. Height is the top half of the view.
-export function makeSky(height) {
-  return bitmap(1024, height, g => {
+// Night sky panorama, wrapped all the way around the horizon. Height is the top half of the view.
+export function makeSky(width, height) {
+  return bitmap(width, height, g => {
     const gr = g.createLinearGradient(0, 0, 0, height);
     gr.addColorStop(0, gray(8)); gr.addColorStop(0.7, gray(34)); gr.addColorStop(1, gray(70));
-    g.fillStyle = gr; g.fillRect(0, 0, 1024, height);
-    for (let i = 0; i < 160; i++) { g.fillStyle = `rgba(255,255,255,${rand(0.2, 0.7)})`; g.fillRect(rand(0, 1024), rand(0, height * 0.6), 1, 1); }
+    g.fillStyle = gr; g.fillRect(0, 0, width, height);
+    for (let i = 0; i < 320; i++) { g.fillStyle = `rgba(255,255,255,${rand(0.2, 0.7)})`; g.fillRect(rand(0, width), rand(0, height * 0.6), 1, 1); }
     // Moon with a halo
     const mx = 300, my = height * 0.28;
     const halo = g.createRadialGradient(mx, my, 6, mx, my, 60);
@@ -110,15 +110,15 @@ export function makeSky(height) {
     g.fillStyle = gray(250); g.beginPath(); g.arc(mx, my, 13, 0, 6.283); g.fill();
     g.fillStyle = gray(215); g.beginPath(); g.arc(mx + 4, my - 3, 3, 0, 6.283); g.arc(mx - 5, my + 4, 2, 0, 6.283); g.fill();
     // Clouds drifting across
-    for (let i = 0; i < 14; i++) {
-      const cx = rand(0, 1024), cy = rand(height * 0.1, height * 0.55), w = rand(60, 160);
+    for (let i = 0; i < 28; i++) {
+      const cx = rand(0, width), cy = rand(height * 0.1, height * 0.55), w = rand(60, 160);
       const c = g.createRadialGradient(cx, cy, 0, cx, cy, w / 2);
       c.addColorStop(0, "rgba(120,120,120,0.35)"); c.addColorStop(1, "rgba(120,120,120,0)");
       g.fillStyle = c; g.beginPath(); g.ellipse(cx, cy, w / 2, w / 7, 0, 0, 6.283); g.fill();
     }
     // Distant skyline along the horizon, with lit windows
     let x = 0;
-    while (x < 1024) {
+    while (x < width) {
       const w = rand(14, 46), h = rand(height * 0.12, height * 0.42);
       g.fillStyle = gray(rand(14, 26)); g.fillRect(x, height - h, w, h);
       if (Math.random() < 0.15) { g.fillRect(x + w / 2 - 1, height - h - 14, 2, 14); } // spire

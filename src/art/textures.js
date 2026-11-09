@@ -60,7 +60,7 @@ export const TEX = {
     g.strokeStyle = gray(70); g.lineWidth = 2; g.strokeRect(16, 20, 32, 16); g.strokeRect(16, 42, 32, 18);
     g.fillStyle = gray(225); g.beginPath(); g.arc(47, 41, 2.5, 0, 6.283); g.fill();
     g.fillStyle = gray(15); g.fillRect(18, 7, 28, 10);
-    g.fillStyle = gray(240); g.font = "bold 8px monospace"; g.textAlign = "center"; g.fillText("EXIT", 32, 15);
+    g.fillStyle = gray(250); g.font = "bold 8px monospace"; g.textAlign = "center"; g.fillText("EXIT", 32, 15);
   }),
 };
 export const FLOORS = {

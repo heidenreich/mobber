@@ -1,6 +1,6 @@
 // The current chapter's space: loading a map, walls, line of sight, the light map
 // and collision.
-import { ENEMY_TYPES, PLAYER } from "./config.js";
+import { ENEMY_TYPES, PLAYER, AMMO } from "./config.js";
 import { rand, clamp } from "./util.js";
 import { game, say } from "./state.js";
 import { LEVELS } from "./levels.js";
@@ -19,7 +19,8 @@ const SPAWNS = {
   "*": { art: "hanging", scale: 0.6, hang: true, glow: true, light: [1.25, 6] },
   $: { art: "cash", scale: 0.6, pick: "cash" },
   "+": { art: "medkit", scale: 0.6, pick: "med" },
-  a: { art: "ammo", scale: 0.6, pick: "ammo" },
+  a: { art: "ammo", scale: 0.6, pick: "rounds", weapon: 1, amount: AMMO.drum },
+  r: { art: "rounds", scale: 0.6, pick: "rounds", weapon: 0, amount: AMMO.revolverBox },
   L: { art: "ledger", scale: 0.6, pick: "ledger", bob: true },
   // Street furniture. `size` is how far the solid part reaches from the center.
   C: { art: "car", scale: 0.8, block: true, size: 0.8 },
@@ -59,11 +60,11 @@ export function loadLevel(i) {
   game.map = lvl.map.map(r => r.split(""));
   game.objs = []; game.enemies = [];
   setupDoors(lvl.map);
-  // Guns and ammo carry over from the previous chapter
+  // Guns and ammo carry over from the previous scene (flow.js passes the right loadout on a retry)
   const prev = game.player;
   const player = game.player = {
-    x: 2, y: 2, a: 0, hp: PLAYER.maxHp, weapon: prev && prev.has[1] ? 1 : 0, has: prev ? prev.has.slice() : [true, false],
-    mag: [6, prev ? Math.max(prev.mag[1], 0) : 0], reserve: prev ? prev.reserve : 0,
+    x: 2, y: 2, a: 0, hp: PLAYER.maxHp, weapon: prev ? prev.weapon : 0, has: prev ? prev.has.slice() : [true, false],
+    mag: prev ? prev.mag.slice() : [6, 0], reserve: prev ? prev.reserve.slice() : [AMMO.startRevolverReserve, 0],
     fireCd: 0, reload: 0, recoil: 0, flash: 0, bob: 0, moving: false, hurt: 0, ledger: false,
   };
   for (let y = 0; y < game.height; y++) for (let x = 0; x < game.width; x++) {
@@ -77,7 +78,6 @@ export function loadLevel(i) {
     }
     else if (SPAWNS[ch]) game.objs.push({ x: cx, y: cy, ...SPAWNS[ch], art: OBJ[SPAWNS[ch].art] });
   }
-  if (prev) player.mag[0] = 6;
   buildLight();
   game.timer = 0;
   say(lvl.objective === "ledger" ? "Find the ledger." : lvl.objective === "boss" ? "Find Don Vitale." : lvl.goal, 3);

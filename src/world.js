@@ -1,13 +1,13 @@
 // The current chapter's space: loading a map, walls, line of sight, the light map
 // and collision.
-import { ENEMY_TYPES, PLAYER } from "./config.js";
+import { ENEMY_TYPES, PLAYER, AMMO } from "./config.js";
 import { rand, clamp } from "./util.js";
 import { game, say } from "./state.js";
 import { LEVELS } from "./levels.js";
 import { OBJ } from "./art/sprites.js";
 import { setupDoors, partialSolid } from "./doors.js";
 
-const WALLS = "#WPBTEFHU";
+const WALLS = "#WPBTEFHUR";
 
 // Map letter -> what gets placed there. `light` is [intensity, radius] for lamps.
 const SPAWNS = {
@@ -19,7 +19,8 @@ const SPAWNS = {
   "*": { art: "hanging", scale: 0.6, hang: true, glow: true, light: [1.25, 6] },
   $: { art: "cash", scale: 0.6, pick: "cash" },
   "+": { art: "medkit", scale: 0.6, pick: "med" },
-  a: { art: "ammo", scale: 0.6, pick: "ammo" },
+  a: { art: "ammo", scale: 0.6, pick: "rounds", weapon: 1, amount: AMMO.drum },
+  r: { art: "rounds", scale: 0.6, pick: "rounds", weapon: 0, amount: AMMO.revolverBox },
   L: { art: "ledger", scale: 0.6, pick: "ledger", bob: true },
   // Street furniture. `size` is how far the solid part reaches from the center.
   C: { art: "car", scale: 0.8, block: true, size: 0.8 },
@@ -27,6 +28,11 @@ const SPAWNS = {
   h: { art: "hydrant", scale: 0.6, block: true, size: 0.2 },
   t: { art: "trash", scale: 0.7, block: true, size: 0.25 },
   n: { art: "newsstand", scale: 0.9, block: true, size: 0.45 },
+  // The hotel roof
+  w: { art: "watertower", scale: 2.6, block: true, size: 0.8 },
+  q: { art: "chimney", scale: 1.1, block: true, size: 0.3 },
+  N: { art: "regentSign", scale: 1.5, block: true, size: 0.6, glow: true },
+  A: { art: "autogiro", scale: 1.3, block: true, size: 1.0 },
 };
 
 // Blocks movement and sight: walls, closed doors and moving secret walls
@@ -59,11 +65,11 @@ export function loadLevel(i) {
   game.map = lvl.map.map(r => r.split(""));
   game.objs = []; game.enemies = [];
   setupDoors(lvl.map);
-  // Guns and ammo carry over from the previous chapter
+  // Guns and ammo carry over from the previous scene (flow.js passes the right loadout on a retry)
   const prev = game.player;
   const player = game.player = {
-    x: 2, y: 2, a: 0, hp: PLAYER.maxHp, weapon: prev && prev.has[1] ? 1 : 0, has: prev ? prev.has.slice() : [true, false],
-    mag: [6, prev ? Math.max(prev.mag[1], 0) : 0], reserve: prev ? prev.reserve : 0,
+    x: 2, y: 2, a: 0, hp: PLAYER.maxHp, weapon: prev ? prev.weapon : 0, has: prev ? prev.has.slice() : [true, false],
+    mag: prev ? prev.mag.slice() : [6, 0], reserve: prev ? prev.reserve.slice() : [AMMO.startRevolverReserve, 0],
     fireCd: 0, reload: 0, recoil: 0, flash: 0, bob: 0, moving: false, hurt: 0, ledger: false,
   };
   for (let y = 0; y < game.height; y++) for (let x = 0; x < game.width; x++) {
@@ -73,14 +79,14 @@ export function loadLevel(i) {
     if (ch === "S") { player.x = cx; player.y = cy; player.a = facingOpen(x, y); }
     else if (ENEMY_TYPES[ch]) {
       const type = ENEMY_TYPES[ch];
-      game.enemies.push({ x: cx, y: cy, type, hp: type.hp, state: "idle", t: 0, cd: rand(0.5, 1.5), alert: false, lx: cx, ly: cy, burstLeft: 0, step: 0 });
+      // A fleeing Don is already on the run when the scene opens
+      game.enemies.push({ x: cx, y: cy, type, hp: type.hp, state: "idle", t: 0, cd: rand(0.5, 1.5), alert: !!type.flees, lx: cx, ly: cy, burstLeft: 0, step: 0, wp: 0 });
     }
     else if (SPAWNS[ch]) game.objs.push({ x: cx, y: cy, ...SPAWNS[ch], art: OBJ[SPAWNS[ch].art] });
   }
-  if (prev) player.mag[0] = 6;
   buildLight();
   game.timer = 0;
-  say(lvl.objective === "ledger" ? "Find the ledger." : lvl.objective === "boss" ? "Find Don Vitale." : lvl.goal, 3);
+  say(lvl.goal || (lvl.objective === "ledger" ? "Find the ledger." : "Find Don Vitale."), 3);
 }
 
 // Start facing down the longest open line of sight, looking through doors
@@ -138,5 +144,6 @@ export function moveBy(o, dx, dy, r) {
 export function objectiveDone() {
   const o = game.level.objective;
   if (o === "reach") return true; // street scenes: just get to the door
+  if (o === "doubles") return !game.enemies.some(e => e.type.name === "double" && e.hp > 0);
   return o === "ledger" ? game.player.ledger : !game.enemies.some(e => e.type.name === "boss" && e.hp > 0);
 }

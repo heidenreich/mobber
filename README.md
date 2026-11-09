@@ -2,7 +2,9 @@
 
 *A gangland picture in three reels.*
 
-A first-person shooter styled as a lost 1931 gangster film: black and white, film grain, projector flicker and silent-movie title cards. You shoot your way through the Vitale family's speakeasy, waterfront warehouse and hotel penthouse, walking the rainy streets between them: Mulberry Street to the Blue Note, the waterfront to Pier 9, and Regent Square to the Hotel Regent.
+A first-person shooter styled as a lost 1931 gangster film: black and white, film grain, projector flicker and silent-movie title cards.
+
+Your brother Eddie kept the books at the Blue Note, and kept them honest. The Vitale family pulled him out of the river. Over one night you follow his ledger from the club to the docks to the Hotel Regent, walking the rainy streets between them, and the picture ends at dawn with a chase across the hotel roof: stop Don Vitale before his autogiro flies him out of town.
 
 **Play it:** https://heidenreich.github.io/mobber/
 
@@ -19,6 +21,8 @@ A first-person shooter styled as a lost 1931 gangster film: black and white, fil
 | Pause | Esc | — |
 
 Doors open by themselves as you walk up to them. Some walls hide rooms: look for faint scrape marks near the floor.
+
+Ammo is limited. You start with a loaded revolver and 12 spare rounds. Boxes of rounds and tommy gun drums are lying around, and gangsters you put down leave something behind: usually revolver rounds, sometimes their tommy gun, sometimes cash. With both guns empty, a click swings the gun at anyone in arm's reach.
 
 ## Running it locally
 
@@ -50,7 +54,7 @@ style.css
 src/
   main.js             starts everything and runs the frame loop
   config.js           screen size and every tuning number (speeds, damage, aim assist)
-  levels.js           the six levels (three streets, three locations) as plain data
+  levels.js           the story cards and the seven scenes (three streets, three locations, the roof) as plain data
   state.js            the game's shared state (one object, read and updated by the modules)
   screen.js           canvas sizing, landscape vs. portrait layout
   world.js            loading a map, walls, line of sight, the light map, collision
@@ -82,7 +86,8 @@ All the art and sound are generated in code when the page loads; there are no im
 
 ### Common changes
 
-- **Difficulty:** `src/config.js`. Enemy health, damage, accuracy and reaction time, player speed, and how strong the phone aim assist is.
+- **Difficulty:** `src/config.js`. Enemy health, damage, accuracy and reaction time, player speed, how strong the phone aim assist is, and how much ammo you start with, find and loot (`AMMO`).
+- **The story:** the prologue and epilogue are `STORY` in `src/levels.js`, and each scene's title card is its `card` lines.
 - **A new level:** add an entry to `src/levels.js`. For a street scene, set `sky`, `wallHeight: 2`, `rain` and `objective: "reach"`, and pick an `entrance` for the door at the end. The legend at the top lists every map character. `npm test` checks that the map is sealed, that everything in it can be reached, and that the objective and exit never depend on finding a secret.
 - **Doors and secrets:** put `D` between two walls for a door, and `!` in a wall (with open floor behind it) for a secret. Their timing and speed are in `DOORS` in `src/config.js`.
 - **New furniture or pickups:** draw it in `src/art/sprites.js`, then give it a map letter in the `SPAWNS` table in `src/world.js`.

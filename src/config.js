@@ -48,6 +48,23 @@ export const AIM_ASSIST = {
   autoFireRange: 13,
 };
 
+// Ammo is limited: you start with a loaded revolver and a few spare rounds, and
+// find more on the floor or on the gangsters you put down.
+export const AMMO = {
+  startRevolverReserve: 12,
+  revolverBox: 12,          // a box of rounds found lying around (r on the map)
+  drum: 50,                 // a tommy gun drum (a on the map); the first one gives you the gun
+  goonRounds: 6,            // a downed goon usually has revolver rounds on him...
+  goonRoundsChance: 0.6,
+  goonTommyRounds: 20,      // ...sometimes his tommy gun, with a part-used drum...
+  goonTommyChance: 0.25,    // ...and otherwise some cash
+  heavyRounds: 10,
+  bossCash: 1000,
+};
+
+// With both guns empty, clicking swings the gun at anyone in arm's reach
+export const MELEE = { range: 1.4, dmg: 25, rate: 0.55 };
+
 export const WEAPONS = [
   { name: "REVOLVER", mag: 6, rate: 0.36, dmg: 34, spread: 1.5, reload: 1.3 },
   { name: "TOMMY GUN", mag: 50, rate: 0.085, dmg: 15, spread: 9, reload: 2.0 },
@@ -57,7 +74,10 @@ export const WEAPONS = [
 export const ENEMY_TYPES = {
   g: { name: "goon", art: "goon", hp: 40, speed: 1.5, dmg: [6, 11], cd: [1.3, 2.3], range: 13, aim: 0.5, burst: 1, scale: 0.95 },
   G: { name: "heavy", art: "heavy", hp: 95, speed: 1.15, dmg: [13, 22], cd: [1.7, 2.7], range: 7, aim: 0.6, burst: 1, scale: 1.0 },
-  V: { name: "boss", art: "boss", hp: 420, speed: 1.05, dmg: [7, 12], cd: [1.0, 1.7], range: 14, aim: 0.45, burst: 3, scale: 1.05 },
+  // Body doubles dressed as the Don, waiting in the penthouse
+  v: { name: "double", art: "boss", hp: 120, speed: 1.05, dmg: [6, 10], cd: [1.1, 1.8], range: 13, aim: 0.45, burst: 3, scale: 1.05 },
+  // The real Don runs for his getaway along the level's `route`, stopping to fire
+  V: { name: "boss", art: "boss", hp: 480, speed: 1.7, dmg: [7, 12], cd: [1.0, 1.7], range: 14, aim: 0.45, burst: 3, scale: 1.05, flees: true },
 };
 
 export const DOORS = {
@@ -78,5 +98,4 @@ export const ENEMY_AI = {
   accuracyFalloff: 0.045,   // ...minus this much per unit of distance
   accuracyMin: 0.18,
   movingTargetPenalty: 0.72, // hit chance multiplier when you're on the move
-  dropChance: 0.5,          // chance a downed gangster drops ammo or cash
 };

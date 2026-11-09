@@ -60,7 +60,7 @@ export const TEX = {
     g.strokeStyle = gray(70); g.lineWidth = 2; g.strokeRect(16, 20, 32, 16); g.strokeRect(16, 42, 32, 18);
     g.fillStyle = gray(225); g.beginPath(); g.arc(47, 41, 2.5, 0, 6.283); g.fill();
     g.fillStyle = gray(15); g.fillRect(18, 7, 28, 10);
-    g.fillStyle = gray(240); g.font = "bold 8px monospace"; g.textAlign = "center"; g.fillText("EXIT", 32, 15);
+    g.fillStyle = gray(250); g.font = "bold 8px monospace"; g.textAlign = "center"; g.fillText("EXIT", 32, 15);
   }),
 };
 export const FLOORS = {
@@ -91,6 +91,11 @@ FLOORS.cobbles = bitmap(64, 64, g => {
     g.fillStyle = "rgba(255,255,255,0.18)"; g.fillRect(x + 2, y + 2, 2, 1);   // wet highlight
   }
   speckle(g, 64, 64, 300, 0.3);
+});
+
+FLOORS.tar = bitmap(64, 64, g => {
+  g.fillStyle = gray(72); g.fillRect(0, 0, 64, 64); speckle(g, 64, 64, 1800, 0.4);
+  g.fillStyle = gray(52); g.fillRect(0, 31, 64, 2); g.fillRect(31, 0, 2, 64);   // tar seams
 });
 
 export const CEILS = {

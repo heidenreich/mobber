@@ -5,8 +5,8 @@ import { game, input, stats } from "./state.js";
 import { LEVELS } from "./levels.js";
 import { ctx, view, watchScreen, resizeIfChanged } from "./screen.js";
 import { wallAt } from "./world.js";
-import { updatePlayer, collectPickups } from "./player.js";
-import { updateEnemy } from "./enemies.js";
+import { updatePlayer, collectPickups, tickPlayerEffects } from "./player.js";
+import { updateEnemy, hurtPlayer } from "./enemies.js";
 import { updateDoors, updateSecrets } from "./doors.js";
 import { startLevel, tickFade } from "./flow.js";
 import { installDesktopInput } from "./input/desktop.js";
@@ -24,11 +24,14 @@ if (document.fonts) ["16px Limelight", "italic 700 16px 'Playfair Display'", "90
   .forEach(f => document.fonts.load(f).catch(() => {}));
 
 function update(dt) {
-  updatePlayer(dt);
+  // While the death fade runs, the world keeps moving but you don't: no walking,
+  // shooting, looting, pushing walls or slipping out the exit.
+  const alive = game.state === "play";
+  if (alive) updatePlayer(dt); else tickPlayerEffects(dt);
   updateDoors(dt);
   updateSecrets(dt);
   for (const e of game.enemies) updateEnemy(e, dt);
-  collectPickups();
+  if (alive) collectPickups();
   if (game.msg.t > 0) game.msg.t -= dt;
 }
 
@@ -37,13 +40,13 @@ function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
   resizeIfChanged();
   const paused = game.state === "play" && input.wasLocked && !input.locked && !isTouch;
-  if ((game.state === "play" && !paused) || game.state === "dying") update(dt);
+  if ((game.state === "play" && !paused) || game.state === "dying" || game.state === "won") update(dt);
   tickFade(dt);
   const { vw, vh, film } = view;
   ctx.fillStyle = "#000"; ctx.fillRect(0, 0, vw, vh);
   const flicker = 0.93 + Math.random() * 0.07;
   const jitter = Math.random() < 0.03 ? rand(-2, 2) : 0;
-  if ((game.state === "play" || game.state === "dying") && game.level) {
+  if ((game.state === "play" || game.state === "dying" || game.state === "won") && game.level) {
     const p = game.player;
     renderWorld(t);
     let bright = flicker * game.fade * (p.flash > 0 ? 1.25 : 1) * (1 - p.hurt * 1.2);
@@ -68,5 +71,5 @@ requestAnimationFrame(frame);
 // Hook for the automated tests in tests/
 window.__mobber = {
   get state() { return game.state; }, get player() { return game.player; }, get enemies() { return game.enemies; },
-  get objs() { return game.objs; }, get level() { return game.level; }, get card() { return game.card; }, get map() { return game.map; }, get doors() { return game.doors; }, stats, LEVELS, startLevel, wallAt,
+  get objs() { return game.objs; }, get level() { return game.level; }, get card() { return game.card; }, get map() { return game.map; }, get doors() { return game.doors; }, get fade() { return game.fade; }, stats, LEVELS, startLevel, wallAt, hurtPlayer,
 };

@@ -1,4 +1,5 @@
 // Gangsters (every pose), furniture, lamps and pickups, drawn facing the camera.
+import { rand } from "../util.js";
 import { gray, bitmap } from "./bitmap.js";
 
 // People, drawn facing the camera
@@ -154,4 +155,58 @@ OBJ.newsstand = bitmap(64, 64, g => {
   g.fillStyle = gray(225); for (let i = 0; i < 4; i++) g.fillRect(12 + i * 11, 30, 9, 12);
   g.fillStyle = gray(60); for (let i = 0; i < 4; i++) { g.fillRect(13 + i * 11, 32, 7, 1); g.fillRect(13 + i * 11, 35, 5, 1); }
   g.fillStyle = gray(18); g.font = "bold 6px monospace"; g.textAlign = "center"; g.fillText("EXTRA!", 32, 54);
+});
+
+// Loot: a box of revolver rounds, and a dropped tommy gun
+OBJ.rounds = bitmap(64, 64, g => {
+  g.fillStyle = gray(150); g.fillRect(22, 50, 20, 13);
+  g.fillStyle = gray(90); g.fillRect(22, 50, 20, 3);
+  g.fillStyle = gray(30); g.font = "bold 6px monospace"; g.textAlign = "center"; g.fillText(".38", 32, 60);
+  g.fillStyle = gray(220); for (let i = 0; i < 4; i++) { g.fillRect(24 + i * 5, 45, 3, 6); } // rounds poking out
+  g.fillStyle = gray(160); for (let i = 0; i < 4; i++) { g.fillRect(24 + i * 5, 44, 3, 2); }
+});
+OBJ.tommy = bitmap(64, 64, g => {
+  g.fillStyle = gray(36); g.fillRect(10, 54, 36, 5); g.fillRect(4, 55, 8, 3);
+  g.fillStyle = gray(98); g.beginPath(); g.moveTo(44, 53); g.lineTo(60, 55); g.lineTo(60, 61); g.lineTo(44, 59); g.fill();
+  g.fillStyle = gray(30); g.beginPath(); g.arc(28, 58, 6, 0, 6.283); g.fill();
+  g.strokeStyle = gray(120); g.lineWidth = 1; g.beginPath(); g.arc(28, 58, 4, 0, 6.283); g.stroke();
+  g.fillStyle = gray(150); for (let x = 12; x < 22; x += 3) g.fillRect(x, 53, 1, 7);
+});
+
+// The hotel roof
+OBJ.watertower = bitmap(64, 128, g => {
+  g.fillStyle = gray(40);
+  for (const x of [12, 30, 48]) g.fillRect(x, 70, 4, 58);                    // legs
+  g.strokeStyle = gray(40); g.lineWidth = 2; g.beginPath(); g.moveTo(14, 80); g.lineTo(50, 120); g.moveTo(50, 80); g.lineTo(14, 120); g.stroke();
+  g.fillStyle = gray(96); g.fillRect(8, 26, 48, 46);                          // the wooden tank
+  g.fillStyle = gray(70); for (let x = 8; x < 56; x += 6) g.fillRect(x, 26, 1, 46);
+  g.fillStyle = gray(45); for (const y of [34, 50, 64]) g.fillRect(6, y, 52, 3); // iron hoops
+  g.fillStyle = gray(80); g.beginPath(); g.moveTo(4, 27); g.lineTo(32, 6); g.lineTo(60, 27); g.closePath(); g.fill(); // conical roof
+  g.fillStyle = gray(120); g.fillRect(31, 2, 2, 6);
+});
+OBJ.chimney = bitmap(32, 64, g => {
+  g.fillStyle = gray(46); g.fillRect(6, 10, 20, 54);
+  for (let y = 12, r = 0; y < 64; y += 6, r++) for (let x = 6 + (r % 2 ? 5 : 0); x < 26; x += 10) { g.fillStyle = gray(rand(80, 105)); g.fillRect(x, y, 9, 5); }
+  g.fillStyle = gray(70); g.fillRect(4, 6, 24, 6);
+});
+OBJ.regentSign = bitmap(192, 64, g => {
+  g.strokeStyle = gray(40); g.lineWidth = 3;
+  for (const x of [20, 96, 172]) { g.beginPath(); g.moveTo(x, 40); g.lineTo(x, 64); g.stroke(); }
+  g.beginPath(); g.moveTo(10, 60); g.lineTo(182, 60); g.stroke();
+  g.fillStyle = gray(30); g.fillRect(4, 4, 184, 38);
+  g.fillStyle = gray(250); g.font = "bold 30px serif"; g.textAlign = "center"; g.textBaseline = "middle";
+  g.fillText("REGENT", 96, 24);
+  for (let i = 0; i < 16; i++) { g.beginPath(); g.arc(10 + i * 11.5, 6, 1.6, 0, 6.283); g.fill(); g.beginPath(); g.arc(10 + i * 11.5, 40, 1.6, 0, 6.283); g.fill(); }
+});
+OBJ.autogiro = bitmap(128, 96, g => {
+  g.fillStyle = gray(30); g.fillRect(62, 14, 4, 26);                          // rotor mast
+  g.fillStyle = gray(60); g.fillRect(4, 10, 120, 4);                         // rotor blades
+  g.fillStyle = gray(110);
+  g.beginPath(); g.moveTo(14, 58); g.quadraticCurveTo(40, 40, 92, 46); g.lineTo(120, 50); g.lineTo(120, 58); g.quadraticCurveTo(70, 70, 14, 66); g.closePath(); g.fill(); // fuselage
+  g.fillStyle = gray(150); g.fillRect(30, 54, 64, 3);
+  g.fillStyle = gray(40); g.fillRect(52, 44, 16, 10);                        // open cockpit
+  g.fillStyle = gray(80); g.beginPath(); g.moveTo(112, 50); g.lineTo(126, 36); g.lineTo(126, 58); g.closePath(); g.fill(); // tail
+  g.fillStyle = gray(70); g.fillRect(6, 52, 8, 14); g.fillStyle = gray(40); g.fillRect(2, 50, 3, 18); // propeller
+  g.fillStyle = gray(30); g.fillRect(40, 66, 2, 16); g.fillRect(82, 64, 2, 18);
+  for (const x of [41, 83]) { g.fillStyle = gray(15); g.beginPath(); g.arc(x, 84, 7, 0, 6.283); g.fill(); g.fillStyle = gray(150); g.beginPath(); g.arc(x, 84, 2.5, 0, 6.283); g.fill(); }
 });

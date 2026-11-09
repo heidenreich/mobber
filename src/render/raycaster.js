@@ -12,7 +12,7 @@ import { partialBox, secretTex } from "../doors.js";
 import { cam, camera, project, zbuf } from "./camera.js";
 import { luma } from "./film.js";
 
-const SKY = makeSky(HALF);
+const NIGHT_SKY = makeSky(2048, HALF), DAWN_SKY = makeSky(2048, HALF, true);
 // Each screen column's angle from the view direction, for wrapping the sky around
 const COL_ANGLE = Float32Array.from({ length: W }, (_, x) => Math.atan((2 * x / W - 1) * PLANE));
 
@@ -25,7 +25,8 @@ export function renderWorld(t) {
   const wallH = lvl.wallHeight || 1;
   const exitTex = lvl.entrance ? ENTRANCES[lvl.entrance] : TEX.door;
 
-  // Outdoors: the night sky, which turns with you
+  // Outdoors: the sky, which turns with you
+  const SKY = lvl.sky === "dawn" ? DAWN_SKY : NIGHT_SKY;
   if (ce === null) {
     for (let x = 0; x < W; x++) {
       const a = (p.a + COL_ANGLE[x]) / (Math.PI * 2);
@@ -49,7 +50,11 @@ export function renderWorld(t) {
       fx += sx; fy += sy;
     }
   }
-  if (ce) for (let x = 0; x < W; x++) luma[HALF * W + x] = 0;
+  // The horizon rows: nothing else writes them, so set them every frame
+  if (ce) for (let x = 0; x < W; x++) { luma[HALF * W + x] = 0; luma[(HALF - 1) * W + x] = 0; }
+  else for (let x = 0; x < W; x++) luma[HALF * W + x] = luma[(HALF - 1) * W + x];
+  // A door or sliding wall can share your own square, which the grid walk below never tests
+  const here = map[py | 0][px | 0], hereBox = here === "D" || here === "~" ? partialBox(px | 0, py | 0) : null;
 
   // Walls: step each ray through the grid until it hits one (DDA)
   for (let x = 0; x < W; x++) {
@@ -60,7 +65,9 @@ export function renderWorld(t) {
     if (rdx < 0) { stepX = -1; sdx = (px - mx) * ddx; } else { stepX = 1; sdx = (mx + 1 - px) * ddx; }
     if (rdy < 0) { stepY = -1; sdy = (py - my) * ddy; } else { stepY = 1; sdy = (my + 1 - py) * ddy; }
     let c = ".", part = null;
-    for (let n = 0; n < 64; n++) {
+    const own = hereBox && rayBox(px, py, rdx, rdy, hereBox);
+    if (own) part = { box: hereBox, t: own.t, side: own.side };
+    for (let n = 0; n < 64 && !part; n++) {
       if (sdx < sdy) { sdx += ddx; mx += stepX; side = 0; } else { sdy += ddy; my += stepY; side = 1; }
       c = (mx < 0 || my < 0 || mx >= MW || my >= MH) ? "#" : map[my][mx];
       if (c === ".") continue;

@@ -1,5 +1,5 @@
-// You: moving, shooting, reloading, picking things up and leaving through the exit.
-import { W, K, isTouch, PLAYER, TOUCH, AIM_ASSIST, WEAPONS, ENEMY_AI } from "./config.js";
+// You: moving, shooting, reloading, looting and leaving through the exit.
+import { W, K, isTouch, PLAYER, TOUCH, AIM_ASSIST, WEAPONS, ENEMY_AI, AMMO, MELEE } from "./config.js";
 import { rand, clamp } from "./util.js";
 import { game, stats, input, say } from "./state.js";
 import { LEVELS } from "./levels.js";
@@ -10,6 +10,8 @@ import { tryPush } from "./doors.js";
 import { cam, camera, project, zbuf } from "./render/camera.js";
 import { fadeOut, showCard } from "./flow.js";
 
+const ammoLeft = (p, i) => p.mag[i] + p.reserve[i];
+
 export function switchWeapon(i) {
   const p = game.player;
   if (!p.has[i] || p.weapon === i) return;
@@ -19,53 +21,93 @@ export function switchWeapon(i) {
 export function startReload() {
   const p = game.player, w = WEAPONS[p.weapon];
   if (p.reload > 0 || p.mag[p.weapon] >= w.mag) return;
-  if (p.weapon === 1 && p.reserve <= 0) { say("Out of drums."); return; }
+  if (p.reserve[p.weapon] <= 0) return;
   p.reload = w.reload; SND.reload();
 }
 
 function finishReload() {
-  const p = game.player, w = WEAPONS[p.weapon];
-  if (p.weapon === 0) p.mag[0] = 6;
-  else { const n = Math.min(w.mag - p.mag[1], p.reserve); p.mag[1] += n; p.reserve -= n; }
+  const p = game.player, i = p.weapon;
+  const n = Math.min(WEAPONS[i].mag - p.mag[i], p.reserve[i]);
+  p.mag[i] += n; p.reserve[i] -= n;
 }
 
-// The nearest living enemy under a screen column, in front of any wall
-function hitscan(col) {
+// The nearest living enemy under a screen column, in front of any wall or closed door
+function hitscan(col, maxDist = Infinity) {
   camera();
+  const p = game.player;
   let best = null, bestD = Infinity;
   for (const e of game.enemies) {
     if (e.hp <= 0) continue;
     const [, tY, sx] = project(e.x, e.y);
-    if (tY < 0.15 || tY > zbuf[col]) continue;
+    if (tY < 0.15 || tY > zbuf[col] || tY > maxDist) continue;
     const half = (K / tY) * (isTouch ? TOUCH.hitWidth : PLAYER.hitWidth);
-    if (Math.abs(sx - col) < half && tY < bestD) { bestD = tY; best = e; }
+    // Same line-of-sight rule enemies use, so a half-open door hides you both equally
+    if (Math.abs(sx - col) < half && tY < bestD && los(p.x, p.y, e.x, e.y)) { bestD = tY; best = e; }
   }
   return best;
+}
+
+// What a downed gangster leaves on the floor
+function dropLoot(e) {
+  const at = (pick, art, extra) => game.objs.push({ x: e.x, y: e.y, art: OBJ[art], scale: 0.6, pick, ...extra });
+  if (e.type.name === "boss") return at("cash", "cash", { amount: AMMO.bossCash });
+  if (e.type.name === "heavy") return at("rounds", "rounds", { weapon: 0, amount: AMMO.heavyRounds });
+  const r = Math.random();
+  if (r < AMMO.goonTommyChance) at("rounds", "tommy", { weapon: 1, amount: AMMO.goonTommyRounds });
+  else if (r < AMMO.goonTommyChance + AMMO.goonRoundsChance) at("rounds", "rounds", { weapon: 0, amount: AMMO.goonRounds });
+  else at("cash", "cash");
+}
+
+function damage(t, dmg) {
+  const p = game.player;
+  stats.hits++;
+  t.hp -= dmg;
+  t.alert = true; t.lx = p.x; t.ly = p.y;
+  if (t.hp <= 0) {
+    t.state = "dying"; t.t = 0.5; stats.kills++; SND.down();
+    dropLoot(t);
+    if (t.type.name === "double") {
+      const left = game.enemies.filter(e => e.type.name === "double" && e.hp > 0).length;
+      say(left ? "That's not the Don. It's a double!" : "Another double! The real Don is making for the roof.", 4);
+    }
+    if (t.type.name === "boss") {
+      if (game.level.endOnBoss) {
+        // The Don goes down and the picture ends: no exit to find
+        game.state = "won";
+        say("That's for Eddie.", 4);
+        fadeOut(() => showCard("epilogue"), 3);
+      } else say("Don Vitale is finished. Get to the exit.", 4);
+    }
+  } else if (t.state !== "aim" || Math.random() < 0.4) { t.state = "hurt"; t.t = 0.18; }
+}
+
+// Out of bullets: crack whoever's in arm's reach with the butt of the gun
+function pistolWhip() {
+  const p = game.player;
+  p.fireCd = MELEE.rate; p.recoil = 1.6;
+  const t = hitscan(W / 2, MELEE.range);
+  SND.whip(!!t);
+  if (t) damage(t, MELEE.dmg * rand(0.85, 1.15));
+  else if (game.msg.t <= 0) say("Out of ammo. Search the bodies.");
 }
 
 function fire() {
   const p = game.player, w = WEAPONS[p.weapon];
   if (p.reload > 0 || p.fireCd > 0) return;
-  if (p.mag[p.weapon] <= 0) { SND.click(); p.fireCd = 0.25; startReload(); return; }
+  if (p.mag[p.weapon] <= 0) {
+    if (p.reserve[p.weapon] > 0) { startReload(); return; }
+    // This gun is dry: swap to the other one if it has rounds, otherwise go hand to hand
+    const other = 1 - p.weapon;
+    if (p.has[other] && ammoLeft(p, other) > 0) { switchWeapon(other); say(`${WEAPONS[p.weapon].name} is empty.`); return; }
+    pistolWhip(); return;
+  }
   p.mag[p.weapon]--; p.fireCd = w.rate; p.recoil = 1; p.flash = 0.06; stats.shots++;
   p.weapon === 0 ? SND.rev() : SND.tommy();
   for (const e of game.enemies) if (e.hp > 0 && Math.hypot(e.x - p.x, e.y - p.y) < ENEMY_AI.hearingRange) e.alert = true;
   const spread = w.spread * (p.moving ? 1.6 : 1);
   const col = clamp((W / 2 + rand(-spread, spread)) | 0, 0, W - 1);
   const t = hitscan(col);
-  if (t) {
-    stats.hits++;
-    t.hp -= w.dmg * rand(0.85, 1.15);
-    t.alert = true; t.lx = p.x; t.ly = p.y;
-    if (t.hp <= 0) {
-      t.state = "dying"; t.t = 0.5; stats.kills++; SND.down();
-      if (Math.random() < ENEMY_AI.dropChance) {
-        const ammo = p.has[1];
-        game.objs.push({ x: t.x, y: t.y, art: ammo ? OBJ.ammo : OBJ.cash, scale: 0.6, pick: ammo ? "ammo" : "cash" });
-      }
-      if (t.type.name === "boss") say("Don Vitale is finished. Get to the exit.", 4);
-    } else if (t.state !== "aim" || Math.random() < 0.4) { t.state = "hurt"; t.t = 0.18; }
-  }
+  if (t) damage(t, w.dmg * rand(0.85, 1.15));
   if (p.mag[p.weapon] === 0) startReload();
 }
 
@@ -84,9 +126,11 @@ function aimAssist(dt) {
   if (best !== null) p.a += Math.sign(best) * Math.min(Math.abs(best), AIM_ASSIST.turnRate * dt);
 }
 function autoFire() {
-  if (!isTouch || game.player.reload > 0) return false;
-  const e = hitscan(W / 2);
-  return !!e && e.state !== "dying" && Math.hypot(e.x - game.player.x, e.y - game.player.y) < AIM_ASSIST.autoFireRange;
+  const p = game.player;
+  if (!isTouch || p.reload > 0) return false;
+  const dry = !p.has.some((h, i) => h && ammoLeft(p, i) > 0);
+  const e = hitscan(W / 2, dry ? MELEE.range : AIM_ASSIST.autoFireRange); // with no ammo, only swing at someone close
+  return !!e && e.state !== "dying";
 }
 
 function checkExit() {
@@ -100,7 +144,7 @@ function checkExit() {
   }
 }
 
-// Movement, timers and shooting for one frame
+// Movement, timers and shooting for one frame. Only called while playing, never while dying.
 export function updatePlayer(dt) {
   const p = game.player, keys = input.keys, touch = input.touch;
   game.timer += dt; stats.time += dt;
@@ -124,12 +168,18 @@ export function updatePlayer(dt) {
     p.bob += dt * 9; p.moving = true;
     checkExit();
   } else p.moving = false;
+  tickPlayerEffects(dt);
+  if (p.reload > 0) { p.reload -= dt; if (p.reload <= 0) { p.reload = 0; finishReload(); } }
+  if ((input.firing || autoFire()) && game.state === "play") fire();
+}
+
+// Flashes, recoil and the hurt shake keep fading even while the player is dying
+export function tickPlayerEffects(dt) {
+  const p = game.player;
   p.fireCd = Math.max(0, p.fireCd - dt);
   p.flash = Math.max(0, p.flash - dt);
   p.recoil = Math.max(0, p.recoil - dt * 7);
   p.hurt = Math.max(0, p.hurt - dt);
-  if (p.reload > 0) { p.reload -= dt; if (p.reload <= 0) { p.reload = 0; finishReload(); } }
-  if ((input.firing || autoFire()) && game.state === "play") fire();
 }
 
 // E on desktop: push a secret wall you're facing
@@ -146,10 +196,17 @@ export function collectPickups() {
     const o = objs[i];
     if (!o.pick || Math.hypot(o.x - p.x, o.y - p.y) > PLAYER.pickupRange) continue;
     if (o.pick === "med") { if (p.hp >= PLAYER.maxHp) continue; p.hp = Math.min(PLAYER.maxHp, p.hp + PLAYER.medkitHeal); say("Patched up."); }
-    else if (o.pick === "cash") { const v = Math.round(rand(1, 5)) * 100; stats.cash += v; say(`+$${v}`); }
-    else if (o.pick === "ammo") {
-      if (!p.has[1]) { p.has[1] = true; p.weapon = 1; p.mag[1] = 50; say("A Tommy gun. Now we're talking.  [1/2 or Q to swap]", 3.5); }
-      else { p.reserve += 50; say("+50 rounds"); }
+    else if (o.pick === "cash") { const v = o.amount || Math.round(rand(1, 5)) * 100; stats.cash += v; say(`+$${v.toLocaleString()}`); }
+    else if (o.pick === "rounds") {
+      const w = o.weapon;
+      if (w === 1 && !p.has[1]) {
+        p.has[1] = true; p.weapon = 1; p.mag[1] = Math.min(WEAPONS[1].mag, o.amount); p.reserve[1] += Math.max(0, o.amount - WEAPONS[1].mag);
+        say("A Tommy gun. Now we're talking.  [1/2 or Q to swap]", 3.5);
+      } else {
+        p.reserve[w] += o.amount;
+        say(`+${o.amount} ${w === 0 ? "revolver rounds" : "tommy gun rounds"}`);
+        if (p.mag[p.weapon] === 0 && p.weapon === w) startReload();
+      }
     }
     else if (o.pick === "ledger") {
       p.ledger = true; say("Got the ledger. Now find the EXIT.", 3.5);

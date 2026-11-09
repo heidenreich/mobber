@@ -11,12 +11,12 @@ before(async () => {
   srv = await serve();
   browser = await chromium.launch();
   const { page, context } = await openGame(browser, srv.url);
-  levels = await page.evaluate(() => window.__mobber.LEVELS.map(l => ({ title: l.title, objective: l.objective, map: l.map })));
+  levels = await page.evaluate(() => window.__mobber.LEVELS.map(l => ({ title: l.title, objective: l.objective, map: l.map, endOnBoss: !!l.endOnBoss, route: l.route })));
   await context.close();
 });
 after(async () => { await browser.close(); srv.server.close(); });
 
-const WALLS = "#WPBTEFHU", BLOCKERS = "ckpolChmtn";
+const WALLS = "#WPBTEFHUR", BLOCKERS = "ckpolChmtnwqNA";
 const STEPS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 
 function flood(map, start, throughSecrets) {
@@ -45,12 +45,14 @@ function analyse(map) {
   };
 }
 
-test("three locations, each preceded by a street scene", () => {
-  assert.equal(levels.length, 6);
-  levels.forEach((l, i) => assert.equal(l.objective === "reach", i % 2 === 0, `${l.title}: streets and locations should alternate`));
+test("three locations, each preceded by a street scene, then the rooftop finale", () => {
+  assert.equal(levels.length, 7);
+  levels.slice(0, 6).forEach((l, i) => assert.equal(l.objective === "reach", i % 2 === 0, `${l.title}: streets and locations should alternate`));
+  const roof = levels[6];
+  assert.ok(roof.endOnBoss && roof.objective === "boss", "the picture ends when the Don goes down on the roof");
 });
 
-for (let i = 0; i < 6; i++) {
+for (let i = 0; i < 7; i++) {
   test(`level ${i + 1} map is sound and beatable`, () => {
     const { title, objective, map } = levels[i];
     const w = map[0].length, h = map.length;
@@ -62,12 +64,24 @@ for (let i = 0; i < 6; i++) {
     for (const k of cells) {
       if (k.x === 0 || k.y === 0 || k.x === w - 1 || k.y === h - 1) assert.ok(WALLS.includes(k.c), `${title}: gap in the outer wall at ${k.x},${k.y}`);
     }
-    for (const k of cells.filter(k => "gGV$+aL".includes(k.c))) assert.ok(reach(k), `${title}: '${k.c}' at ${k.x},${k.y} can't be reached`);
-    for (const k of cells.filter(k => "LV".includes(k.c))) assert.ok(reachMain(k), `${title}: the objective at ${k.x},${k.y} is only reachable through a secret wall`);
+    for (const k of cells.filter(k => "gGvV$+arL".includes(k.c))) assert.ok(reach(k), `${title}: '${k.c}' at ${k.x},${k.y} can't be reached`);
+    for (const k of cells.filter(k => "LvV".includes(k.c))) assert.ok(reachMain(k), `${title}: the objective at ${k.x},${k.y} is only reachable through a secret wall`);
     const exits = cells.filter(k => k.c === "E");
-    assert.ok(exits.length >= 1 && exits.every(touchesMain), `${title}: exit door can't be reached (without secrets)`);
+    if (!levels[i].endOnBoss) assert.ok(exits.length >= 1 && exits.every(touchesMain), `${title}: exit door can't be reached (without secrets)`);
+    // A fleeing Don's route must be walkable from where he starts, in straight lines
+    if (levels[i].route) {
+      const don = cells.find(k => k.c === "V");
+      let [x, y] = [don.x + 0.5, don.y + 0.5];
+      for (const [tx, ty] of levels[i].route) {
+        for (let s = 0; s <= 1; s += 0.02) {
+          const c = at((x + (tx - x) * s) | 0, (y + (ty - y) * s) | 0);
+          assert.ok(!WALLS.includes(c) && !BLOCKERS.includes(c), `${title}: the Don's route is blocked by '${c}'`);
+        }
+        [x, y] = [tx, ty];
+      }
+    }
     for (const d of cells.filter(k => k.c === "D")) {
-      const wall = c => "#WPBTFHU!".includes(c);
+      const wall = c => "#WPBTEFHU!".includes(c); // the same set doors.js uses
       const ew = wall(at(d.x - 1, d.y)) && wall(at(d.x + 1, d.y)) && !wall(at(d.x, d.y - 1)) && !wall(at(d.x, d.y + 1));
       const ns = wall(at(d.x, d.y - 1)) && wall(at(d.x, d.y + 1)) && !wall(at(d.x - 1, d.y)) && !wall(at(d.x + 1, d.y));
       assert.ok(ew || ns, `${title}: door at ${d.x},${d.y} must sit between two walls with floor on the other sides`);
@@ -79,5 +93,6 @@ for (let i = 0; i < 6; i++) {
     }
     if (objective === "ledger") assert.equal(cells.filter(k => k.c === "L").length, 1, `${title}: needs one ledger`);
     if (objective === "boss") assert.equal(cells.filter(k => k.c === "V").length, 1, `${title}: needs the Don`);
+    if (objective === "doubles") assert.ok(cells.filter(k => k.c === "v").length >= 1, `${title}: needs the Don's doubles`);
   });
 }

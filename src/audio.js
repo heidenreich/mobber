@@ -52,5 +52,6 @@ export const SND = {
   reload: () => { tone(900, 0.04, "square", 0.03); setTimeout(() => tone(600, 0.05, "square", 0.03), 300); },
   down: () => tone(220, 0.35, "triangle", 0.05, 70),
   door: d => { const v = clamp(0.05 - d * 0.004, 0.008, 0.05); tone(95, 0.45, "sawtooth", v, 70); bang(500, 0.3, v * 3, 0); },
+  whip: hit => { bang(hit ? 900 : 1600, hit ? 0.12 : 0.06, hit ? 0.35 : 0.1, hit ? 0.4 : 0); },
   grind: () => { bang(350, 1.6, 0.25, 0); tone(55, 1.6, "sawtooth", 0.05, 45); },
 };

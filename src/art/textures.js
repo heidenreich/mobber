@@ -93,6 +93,11 @@ FLOORS.cobbles = bitmap(64, 64, g => {
   speckle(g, 64, 64, 300, 0.3);
 });
 
+FLOORS.tar = bitmap(64, 64, g => {
+  g.fillStyle = gray(72); g.fillRect(0, 0, 64, 64); speckle(g, 64, 64, 1800, 0.4);
+  g.fillStyle = gray(52); g.fillRect(0, 31, 64, 2); g.fillRect(31, 0, 2, 64);   // tar seams
+});
+
 export const CEILS = {
   tin: bitmap(64, 64, g => {
     g.fillStyle = gray(118); g.fillRect(0, 0, 64, 64);

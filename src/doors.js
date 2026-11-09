@@ -11,7 +11,7 @@ import { clamp } from "./util.js";
 import { game, stats, say } from "./state.js";
 import { SND } from "./audio.js";
 
-const WALL_CHARS = "#WPBTEFHU!";
+const WALL_CHARS = "#WPBTEFHUR!";
 const key = (x, y) => y * game.width + x;
 
 // Called by loadLevel with the original map rows, before entities are cleared

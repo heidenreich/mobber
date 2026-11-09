@@ -1,7 +1,7 @@
 // Silent-movie title cards: the title, chapter cards, "CUT!" and "THE END".
 import { isTouch, FONTS, CREAM } from "../config.js";
 import { game, stats } from "../state.js";
-import { LEVELS } from "../levels.js";
+import { LEVELS, STORY } from "../levels.js";
 import { ctx, view } from "../screen.js";
 import { noiseCv } from "./film.js";
 
@@ -36,6 +36,20 @@ export function drawCard(t) {
     line(isTouch ? "left thumb walks & turns · right thumb aims · it fires when you're on target" : "Esc to pause · Shift to run", 248, `${9 * s}px ${TYPE}`, 0.6);
     if (view.portrait) line("best played sideways (turn off rotation lock)", 268, `${9 * s}px ${TYPE}`, 0.6);
     line(isTouch ? "— tap to roll film —" : "— click to roll film —", 296, `${12 * s}px ${TYPE}`, blink);
+  } else if (card.kind === "prologue") {
+    line("PROLOGUE", 84, `${14 * s}px ${DECO}`, 0.85);
+    line("Chicago, 1931", 122, `italic 700 ${24 * s}px ${SERIF}`);
+    STORY.prologue.forEach((c, i) => line(c, 168 + i * 20, `${12 * s}px ${TYPE}`, 0.9));
+    line(isTouch ? "— tap to continue —" : "— click to continue —", 296, `${11 * s}px ${TYPE}`, blink);
+  } else if (card.kind === "escaped") {
+    line("HE GOT AWAY.", 130, `${40 * s}px ${DECO}`);
+    line("The autogiro climbs into the dawn with Don Vitale aboard.", 172, `italic 700 ${14 * s}px ${SERIF}`);
+    line("The picture rewinds to the start of the reel.", 200, `${11 * s}px ${TYPE}`, 0.8);
+    line(isTouch ? "— tap to roll it again —" : "— click to roll it again —", 296, `${11 * s}px ${TYPE}`, blink);
+  } else if (card.kind === "epilogue") {
+    line("EPILOGUE", 84, `${14 * s}px ${DECO}`, 0.85);
+    STORY.epilogue.forEach((c, i) => line(c, 130 + i * 22, `${i === STORY.epilogue.length - 1 ? "italic 700 " + 14 * s + "px " + SERIF : 12 * s + "px " + TYPE}`, 0.92));
+    line(isTouch ? "— tap to continue —" : "— click to continue —", 296, `${11 * s}px ${TYPE}`, blink);
   } else if (card.kind === "chapter") {
     const L = LEVELS[card.idx];
     line(L.chapter, 92, `${14 * s}px ${DECO}`, 0.85);
@@ -50,7 +64,7 @@ export function drawCard(t) {
   } else if (card.kind === "end") {
     const acc = stats.shots ? Math.round(stats.hits / stats.shots * 100) : 0, mm = Math.floor(stats.time / 60), ss = Math.floor(stats.time % 60);
     line("THE END", 108, `${46 * s}px ${DECO}`);
-    line("By morning the city had a new boss.", 146, `italic 700 ${16 * s}px ${SERIF}`);
+    line("Eddie's name was cleared. The city got a new boss.", 146, `italic 700 ${16 * s}px ${SERIF}`);
     line(`${stats.kills} Vitale men down · $${stats.cash.toLocaleString()} collected · ${acc}% of shots on target`, 192, `${11 * s}px ${TYPE}`, 0.85);
     line(`Running time ${mm}:${String(ss).padStart(2, "0")} · secrets found: ${stats.secretsFound.size} · retakes: ${stats.deaths}`, 212, `${11 * s}px ${TYPE}`, 0.85);
     line(isTouch ? "— tap to watch it again —" : "— click to watch it again —", 296, `${11 * s}px ${TYPE}`, blink);

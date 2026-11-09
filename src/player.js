@@ -66,7 +66,18 @@ function damage(t, dmg) {
   if (t.hp <= 0) {
     t.state = "dying"; t.t = 0.5; stats.kills++; SND.down();
     dropLoot(t);
-    if (t.type.name === "boss") say("Don Vitale is finished. Get to the exit.", 4);
+    if (t.type.name === "double") {
+      const left = game.enemies.filter(e => e.type.name === "double" && e.hp > 0).length;
+      say(left ? "That's not the Don. It's a double!" : "Another double! The real Don is making for the roof.", 4);
+    }
+    if (t.type.name === "boss") {
+      if (game.level.endOnBoss) {
+        // The Don goes down and the picture ends: no exit to find
+        game.state = "won";
+        say("That's for Eddie.", 4);
+        fadeOut(() => showCard("epilogue"), 3);
+      } else say("Don Vitale is finished. Get to the exit.", 4);
+    }
   } else if (t.state !== "aim" || Math.random() < 0.4) { t.state = "hurt"; t.t = 0.18; }
 }
 

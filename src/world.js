@@ -7,7 +7,7 @@ import { LEVELS } from "./levels.js";
 import { OBJ } from "./art/sprites.js";
 import { setupDoors, partialSolid } from "./doors.js";
 
-const WALLS = "#WPBTEFHU";
+const WALLS = "#WPBTEFHUR";
 
 // Map letter -> what gets placed there. `light` is [intensity, radius] for lamps.
 const SPAWNS = {
@@ -28,6 +28,11 @@ const SPAWNS = {
   h: { art: "hydrant", scale: 0.6, block: true, size: 0.2 },
   t: { art: "trash", scale: 0.7, block: true, size: 0.25 },
   n: { art: "newsstand", scale: 0.9, block: true, size: 0.45 },
+  // The hotel roof
+  w: { art: "watertower", scale: 2.6, block: true, size: 0.8 },
+  q: { art: "chimney", scale: 1.1, block: true, size: 0.3 },
+  N: { art: "regentSign", scale: 1.5, block: true, size: 0.6, glow: true },
+  A: { art: "autogiro", scale: 1.3, block: true, size: 1.0 },
 };
 
 // Blocks movement and sight: walls, closed doors and moving secret walls
@@ -74,13 +79,14 @@ export function loadLevel(i) {
     if (ch === "S") { player.x = cx; player.y = cy; player.a = facingOpen(x, y); }
     else if (ENEMY_TYPES[ch]) {
       const type = ENEMY_TYPES[ch];
-      game.enemies.push({ x: cx, y: cy, type, hp: type.hp, state: "idle", t: 0, cd: rand(0.5, 1.5), alert: false, lx: cx, ly: cy, burstLeft: 0, step: 0 });
+      // A fleeing Don is already on the run when the scene opens
+      game.enemies.push({ x: cx, y: cy, type, hp: type.hp, state: "idle", t: 0, cd: rand(0.5, 1.5), alert: !!type.flees, lx: cx, ly: cy, burstLeft: 0, step: 0, wp: 0 });
     }
     else if (SPAWNS[ch]) game.objs.push({ x: cx, y: cy, ...SPAWNS[ch], art: OBJ[SPAWNS[ch].art] });
   }
   buildLight();
   game.timer = 0;
-  say(lvl.objective === "ledger" ? "Find the ledger." : lvl.objective === "boss" ? "Find Don Vitale." : lvl.goal, 3);
+  say(lvl.goal || (lvl.objective === "ledger" ? "Find the ledger." : "Find Don Vitale."), 3);
 }
 
 // Start facing down the longest open line of sight, looking through doors
@@ -138,5 +144,6 @@ export function moveBy(o, dx, dy, r) {
 export function objectiveDone() {
   const o = game.level.objective;
   if (o === "reach") return true; // street scenes: just get to the door
+  if (o === "doubles") return !game.enemies.some(e => e.type.name === "double" && e.hp > 0);
   return o === "ledger" ? game.player.ledger : !game.enemies.some(e => e.type.name === "boss" && e.hp > 0);
 }

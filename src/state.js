@@ -2,7 +2,7 @@
 // update their fields; nothing else holds game state.
 
 export const game = {
-  state: "title",       // title | card | play | dying
+  state: "title",       // title | card | play | dying | won
   card: null,           // { kind: "chapter" | "dead" | "end", idx } while state is "card"
   levelIdx: 0,
   level: null,          // the current entry from LEVELS

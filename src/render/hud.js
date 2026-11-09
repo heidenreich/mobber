@@ -34,7 +34,8 @@ export function drawHUD() {
   ctx.textAlign = "center"; ctx.font = `${fs(10)}px ${TYPE}`;
   const left = game.enemies.filter(e => e.hp > 0).length;
   const o = game.level.objective;
-  const obj = o === "reach" ? game.level.goal.toUpperCase()
+  const obj = o === "reach" || game.level.endOnBoss ? game.level.goal.toUpperCase()
+    : o === "doubles" ? (objectiveDone() ? "IT WAS A DOUBLE — GET TO THE ROOF" : "FIND DON VITALE")
     : o === "ledger" ? (p.ledger ? "LEDGER IN HAND — FIND THE EXIT" : "FIND THE LEDGER")
     : (objectiveDone() ? "THE DON IS DOWN — FIND THE EXIT" : "FIND DON VITALE");
   ctx.fillText(obj, f.x + f.w / 2, base - 12 * s);

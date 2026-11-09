@@ -60,6 +60,20 @@ export const FACADES = {
   }),
 };
 
+// The hotel roof's parapet: a stone balustrade (only the top half shows on a waist-high wall)
+FACADES.R = bitmap(64, 64, g => {
+  g.fillStyle = gray(150); g.fillRect(0, 0, 64, 64);
+  g.fillStyle = gray(185); g.fillRect(0, 0, 64, 6);                 // capstone
+  g.fillStyle = gray(110); g.fillRect(0, 6, 64, 2);
+  g.fillStyle = gray(60); g.fillRect(0, 8, 64, 22);                 // gaps between balusters
+  for (let x = 4; x < 64; x += 10) {
+    g.fillStyle = gray(165); g.beginPath(); g.ellipse(x + 3, 19, 3.2, 10, 0, 0, 6.283); g.fill();
+    g.fillStyle = gray(200); g.fillRect(x + 1, 12, 1, 14);
+  }
+  g.fillStyle = gray(140); g.fillRect(0, 30, 64, 4);
+  speckle(g, 64, 64, 300, 0.25);
+});
+
 // Entrances at the end of each street scene: the map's E square uses one of these
 function entrance(title, size, draw) {
   return bitmap(64, 128, g => {
@@ -96,18 +110,26 @@ export const ENTRANCES = {
 };
 
 // Night sky panorama, wrapped all the way around the horizon. Height is the top half of the view.
-export function makeSky(width, height) {
+export function makeSky(width, height, dawn = false) {
   return bitmap(width, height, g => {
     const gr = g.createLinearGradient(0, 0, 0, height);
-    gr.addColorStop(0, gray(8)); gr.addColorStop(0.7, gray(34)); gr.addColorStop(1, gray(70));
+    if (dawn) { gr.addColorStop(0, gray(70)); gr.addColorStop(0.65, gray(150)); gr.addColorStop(1, gray(215)); }
+    else { gr.addColorStop(0, gray(8)); gr.addColorStop(0.7, gray(34)); gr.addColorStop(1, gray(70)); }
     g.fillStyle = gr; g.fillRect(0, 0, width, height);
-    for (let i = 0; i < 320; i++) { g.fillStyle = `rgba(255,255,255,${rand(0.2, 0.7)})`; g.fillRect(rand(0, width), rand(0, height * 0.6), 1, 1); }
-    // Moon with a halo
+    if (dawn) {
+      // The sun just clearing the skyline
+      const sx = width * 0.62, sy = height * 0.92;
+      const glow = g.createRadialGradient(sx, sy, 10, sx, sy, 220);
+      glow.addColorStop(0, "rgba(255,255,255,0.9)"); glow.addColorStop(1, "rgba(255,255,255,0)");
+      g.fillStyle = glow; g.fillRect(sx - 220, sy - 220, 440, 440);
+    }
+    if (!dawn) for (let i = 0; i < 320; i++) { g.fillStyle = `rgba(255,255,255,${rand(0.2, 0.7)})`; g.fillRect(rand(0, width), rand(0, height * 0.6), 1, 1); }
+    // Moon with a halo (fading into the morning at dawn)
     const mx = 300, my = height * 0.28;
     const halo = g.createRadialGradient(mx, my, 6, mx, my, 60);
     halo.addColorStop(0, "rgba(255,255,255,0.35)"); halo.addColorStop(1, "rgba(255,255,255,0)");
     g.fillStyle = halo; g.fillRect(mx - 60, my - 60, 120, 120);
-    g.fillStyle = gray(250); g.beginPath(); g.arc(mx, my, 13, 0, 6.283); g.fill();
+    g.fillStyle = gray(dawn ? 200 : 250); g.beginPath(); g.arc(mx, my, 13, 0, 6.283); g.fill();
     g.fillStyle = gray(215); g.beginPath(); g.arc(mx + 4, my - 3, 3, 0, 6.283); g.arc(mx - 5, my + 4, 2, 0, 6.283); g.fill();
     // Clouds drifting across
     for (let i = 0; i < 28; i++) {
@@ -120,10 +142,10 @@ export function makeSky(width, height) {
     let x = 0;
     while (x < width) {
       const w = rand(14, 46), h = rand(height * 0.12, height * 0.42);
-      g.fillStyle = gray(rand(14, 26)); g.fillRect(x, height - h, w, h);
+      g.fillStyle = gray(dawn ? rand(40, 70) : rand(14, 26)); g.fillRect(x, height - h, w, h);
       if (Math.random() < 0.15) { g.fillRect(x + w / 2 - 1, height - h - 14, 2, 14); } // spire
       for (let wy = height - h + 4; wy < height - 3; wy += 5) for (let wx = x + 3; wx < x + w - 3; wx += 5) {
-        if (Math.random() < 0.18) { g.fillStyle = gray(rand(170, 252)); g.fillRect(wx, wy, 2, 2); }
+        if (Math.random() < (dawn ? 0.04 : 0.18)) { g.fillStyle = gray(rand(170, 252)); g.fillRect(wx, wy, 2, 2); }
       }
       x += w + rand(0, 6);
     }

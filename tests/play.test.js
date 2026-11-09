@@ -119,13 +119,48 @@ test("ledger, exit door and the next scene", async () => {
   await context.close();
 });
 
-test("taking out the Don and leaving rolls THE END", async () => {
+test("the penthouse Dons are doubles, and the exit leads to the roof", async () => {
   const { page, context, errors } = await startedGame();
   await goTo(page, HOTEL);
-  await game(page, () => { for (const e of window.__mobber.enemies) { e.hp = 0; e.state = "dead"; } });
+  assert.ok(await game(page, () => window.__mobber.enemies.filter(e => e.type.name === "double").length) >= 1);
+  await faceExit(page);
+  await page.keyboard.down("w"); await page.waitForTimeout(600); await page.keyboard.up("w"); // the exit stays shut with doubles standing
+  assert.equal(await game(page, () => window.__mobber.state), "play");
+  await clearEnemies(page);
   await faceExit(page);
   await holdUntil(page, "w", () => window.__mobber.state === "card");
-  assert.equal(await game(page, () => window.__mobber.card.kind), "end");
+  assert.equal(await game(page, () => window.__mobber.card.kind), "chapter");
+  await clickCard(page);
+  assert.equal(await game(page, () => window.__mobber.level.title), "The Roof");
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test("on the roof, the Don runs for the autogiro and escapes if you let him", async () => {
+  const { page, context } = await startedGame();
+  await goTo(page, "The Roof");
+  const don = () => game(page, () => { const d = window.__mobber.enemies.find(e => e.type.name === "boss"); return { x: d.x, state: d.state }; });
+  const start = await don();
+  // Stay out of sight behind him: everyone else is gone, and the Don can't see us
+  await game(page, () => { const M = window.__mobber; for (const e of M.enemies) if (e.type.name !== "boss") { e.hp = 0; e.state = "dead"; } M.player.hp = 1e9; });
+  await page.waitForFunction(() => window.__mobber.state === "card", null, { timeout: 60000 });
+  assert.equal(await game(page, () => window.__mobber.card.kind), "escaped", "letting him reach the autogiro shows HE GOT AWAY");
+  assert.ok(start.x < 15, "he starts well short of the autogiro");
+  await clickCard(page);
+  assert.equal(await game(page, () => window.__mobber.level.title), "The Roof", "and the scene rolls again");
+  await context.close();
+});
+
+test("taking out the real Don ends the picture: epilogue, then THE END", async () => {
+  const { page, context, errors } = await startedGame();
+  await goTo(page, "The Roof");
+  await game(page, () => { const M = window.__mobber, d = M.enemies.find(e => e.type.name === "boss"); for (const e of M.enemies) if (e !== d) { e.hp = 0; e.state = "dead"; } const P = M.player; P.x = d.x - 1.5; P.y = d.y; P.a = 0; d.hp = 1; d.cd = 99; });
+  await holdUntil(page, " ", () => window.__mobber.enemies.find(e => e.type.name === "boss").hp <= 0);
+  await page.waitForFunction(() => window.__mobber.state === "card", null, { timeout: 10000 });
+  assert.equal(await game(page, () => window.__mobber.card.kind), "epilogue");
+  await page.waitForFunction(() => window.__mobber.fade >= 0.6);
+  await page.mouse.click(200, 200);
+  await page.waitForFunction(() => window.__mobber.card && window.__mobber.card.kind === "end");
   assert.deepEqual(errors, []);
   await context.close();
 });
@@ -286,7 +321,7 @@ test("the street scene ends at the Blue Note's front door", async () => {
 
 test("every level loads and renders without errors", async () => {
   const { page, context, errors } = await startedGame();
-  for (const i of [1, 2, 3, 4, 5]) {
+  for (const i of [1, 2, 3, 4, 5, 6]) {
     await game(page, n => window.__mobber.startLevel(n), i);
     await page.waitForTimeout(400);
     assert.equal(await game(page, () => window.__mobber.state), "play");

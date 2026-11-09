@@ -12,7 +12,7 @@ import { partialBox, secretTex } from "../doors.js";
 import { cam, camera, project, zbuf } from "./camera.js";
 import { luma } from "./film.js";
 
-const SKY = makeSky(2048, HALF);
+const NIGHT_SKY = makeSky(2048, HALF), DAWN_SKY = makeSky(2048, HALF, true);
 // Each screen column's angle from the view direction, for wrapping the sky around
 const COL_ANGLE = Float32Array.from({ length: W }, (_, x) => Math.atan((2 * x / W - 1) * PLANE));
 
@@ -25,7 +25,8 @@ export function renderWorld(t) {
   const wallH = lvl.wallHeight || 1;
   const exitTex = lvl.entrance ? ENTRANCES[lvl.entrance] : TEX.door;
 
-  // Outdoors: the night sky, which turns with you
+  // Outdoors: the sky, which turns with you
+  const SKY = lvl.sky === "dawn" ? DAWN_SKY : NIGHT_SKY;
   if (ce === null) {
     for (let x = 0; x < W; x++) {
       const a = (p.a + COL_ANGLE[x]) / (Math.PI * 2);

@@ -40,13 +40,13 @@ function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
   resizeIfChanged();
   const paused = game.state === "play" && input.wasLocked && !input.locked && !isTouch;
-  if ((game.state === "play" && !paused) || game.state === "dying") update(dt);
+  if ((game.state === "play" && !paused) || game.state === "dying" || game.state === "won") update(dt);
   tickFade(dt);
   const { vw, vh, film } = view;
   ctx.fillStyle = "#000"; ctx.fillRect(0, 0, vw, vh);
   const flicker = 0.93 + Math.random() * 0.07;
   const jitter = Math.random() < 0.03 ? rand(-2, 2) : 0;
-  if ((game.state === "play" || game.state === "dying") && game.level) {
+  if ((game.state === "play" || game.state === "dying" || game.state === "won") && game.level) {
     const p = game.player;
     renderWorld(t);
     let bright = flicker * game.fade * (p.flash > 0 ? 1.25 : 1) * (1 - p.hurt * 1.2);

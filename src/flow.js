@@ -15,11 +15,13 @@ export function showCard(kind, idx) {
 
 // A click, tap or Enter on a card
 export function advance() {
-  if (game.state === "title") { showCard("chapter", 0); return; }
+  if (game.state === "title") { showCard("prologue"); return; }
   if (game.state !== "card" || game.fade < 0.6) return;
   const c = game.card;
-  if (c.kind === "chapter") startLevel(c.idx);
-  else if (c.kind === "dead") startLevel(c.idx, true);
+  if (c.kind === "prologue") showCard("chapter", 0);
+  else if (c.kind === "chapter") startLevel(c.idx);
+  else if (c.kind === "dead" || c.kind === "escaped") startLevel(c.idx, true);
+  else if (c.kind === "epilogue") showCard("end");
   else if (c.kind === "end") { resetStats(); game.player = null; showCard("chapter", 0); }
 }
 

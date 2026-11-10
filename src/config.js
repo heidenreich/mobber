@@ -21,6 +21,7 @@ export const CREAM = "#ece6da";
 
 export const PLAYER = {
   maxHp: 100,
+  minStartHp: 50,           // health carries over between scenes, but you never start one with less than this
   radius: 0.22,
   walkSpeed: 3.2,
   runSpeed: 4.2,            // while holding Shift
@@ -50,15 +51,17 @@ export const AIM_ASSIST = {
 
 // Ammo is limited: you start with a loaded revolver and a few spare rounds, and
 // find more on the floor or on the gangsters you put down.
+// Measured with scripts/playthrough.js: a scene should give back roughly what it costs.
 export const AMMO = {
   startRevolverReserve: 12,
-  revolverBox: 12,          // a box of rounds found lying around (r on the map)
-  drum: 50,                 // a tommy gun drum (a on the map); the first one gives you the gun
-  goonRounds: 6,            // a downed goon usually has revolver rounds on him...
-  goonRoundsChance: 0.6,
-  goonTommyRounds: 20,      // ...sometimes his tommy gun, with a part-used drum...
-  goonTommyChance: 0.25,    // ...and otherwise some cash
-  heavyRounds: 10,
+  maxReserve: [36, 100],    // how many spare rounds you can carry for each gun; extra stays on the floor
+  revolverBox: 6,           // a box of rounds found lying around (r on the map)
+  drum: 30,                 // a tommy gun drum (a on the map); the first one gives you the gun
+  goonRounds: 3,            // a downed goon often has a few revolver rounds on him...
+  goonRoundsChance: 0.5,
+  goonTommyRounds: 12,      // ...sometimes his tommy gun, with what's left in the drum...
+  goonTommyChance: 0.15,    // ...and otherwise some cash
+  heavyRounds: 6,
   bossCash: 1000,
 };
 
@@ -77,13 +80,13 @@ export const ENEMY_TYPES = {
   // Body doubles dressed as the Don, waiting in the penthouse
   v: { name: "double", art: "boss", hp: 120, speed: 1.05, dmg: [6, 10], cd: [1.1, 1.8], range: 13, aim: 0.45, burst: 3, scale: 1.05 },
   // The real Don runs for his getaway along the level's `route`, stopping to fire
-  V: { name: "boss", art: "boss", hp: 480, speed: 1.7, dmg: [7, 12], cd: [1.0, 1.7], range: 14, aim: 0.45, burst: 3, scale: 1.05, flees: true },
+  V: { name: "boss", art: "boss", hp: 480, speed: 1.7, dmg: [7, 12], cd: [2.0, 2.8], range: 14, aim: 0.45, burst: 3, scale: 1.05, flees: true, noStagger: true },
 };
 
 export const DOORS = {
-  reach: 1.3,               // doors open when someone is this close to their center
+  reach: 2.2,               // doors open when someone is this close to their center (far enough to walk through without stopping)
   holdOpen: 3,              // seconds a door stays open after everyone leaves
-  speed: 1.6,               // fraction of the door per second
+  speed: 2.2,               // fraction of the door per second
   passableAt: 0.85,         // how open a door must be to walk or see through
   thickness: 0.12,
   secretTravel: 2,          // squares a secret wall slides back
@@ -92,6 +95,8 @@ export const DOORS = {
 
 export const ENEMY_AI = {
   sightRange: 16,
+  repath: 0.4,              // seconds between route recalculations while hunting
+  staggerCooldown: 0.7,     // after flinching from a hit, a gangster can't flinch again for this long
   hearingRange: 12,         // gunshots alert enemies this close
   keepDistance: 2.6,        // stop approaching when this close and in sight
   accuracyNear: 0.82,       // hit chance up close...

@@ -22,11 +22,11 @@ export function startReload() {
   const p = game.player, w = WEAPONS[p.weapon];
   if (p.reload > 0 || p.mag[p.weapon] >= w.mag) return;
   if (p.reserve[p.weapon] <= 0) return;
-  p.reload = w.reload; SND.reload();
+  p.reload = w.reload; p.reloadW = p.weapon; SND.reload();
 }
 
 function finishReload() {
-  const p = game.player, i = p.weapon;
+  const p = game.player, i = p.reloadW ?? p.weapon; // the gun that was being reloaded, even if you've picked up another
   const n = Math.min(WEAPONS[i].mag - p.mag[i], p.reserve[i]);
   p.mag[i] += n; p.reserve[i] -= n;
 }
@@ -78,13 +78,16 @@ function damage(t, dmg) {
         fadeOut(() => showCard("epilogue"), 3);
       } else say("Don Vitale is finished. Get to the exit.", 4);
     }
-  } else if (t.state !== "aim" || Math.random() < 0.4) { t.state = "hurt"; t.t = 0.18; }
+  } else if (!t.type.noStagger && t.staggerCd <= 0 && (t.state !== "aim" || Math.random() < 0.4)) {
+    // Flinch, but not again straight away: a fast gun can't keep someone pinned
+    t.state = "hurt"; t.t = 0.18; t.staggerCd = ENEMY_AI.staggerCooldown;
+  }
 }
 
 // Out of bullets: crack whoever's in arm's reach with the butt of the gun
 function pistolWhip() {
   const p = game.player;
-  p.fireCd = MELEE.rate; p.recoil = 1.6;
+  p.fireCd = MELEE.rate; p.recoil = 1.6; stats.shots++;
   const t = hitscan(W / 2, MELEE.range);
   SND.whip(!!t);
   if (t) damage(t, MELEE.dmg * rand(0.85, 1.15));
@@ -103,7 +106,8 @@ function fire() {
   }
   p.mag[p.weapon]--; p.fireCd = w.rate; p.recoil = 1; p.flash = 0.06; stats.shots++;
   p.weapon === 0 ? SND.rev() : SND.tommy();
-  for (const e of game.enemies) if (e.hp > 0 && Math.hypot(e.x - p.x, e.y - p.y) < ENEMY_AI.hearingRange) e.alert = true;
+  // Gunfire carries: anyone in earshot now knows where you are, and comes looking
+  for (const e of game.enemies) if (e.hp > 0 && Math.hypot(e.x - p.x, e.y - p.y) < ENEMY_AI.hearingRange) { e.alert = true; e.lx = p.x; e.ly = p.y; }
   const spread = w.spread * (p.moving ? 1.6 : 1);
   const col = clamp((W / 2 + rand(-spread, spread)) | 0, 0, W - 1);
   const t = hitscan(col);
@@ -127,7 +131,7 @@ function aimAssist(dt) {
 }
 function autoFire() {
   const p = game.player;
-  if (!isTouch || p.reload > 0) return false;
+  if (!isTouch || p.reload > 0 || !input.touched) return false; // not before you've laid a finger on the screen
   const dry = !p.has.some((h, i) => h && ammoLeft(p, i) > 0);
   const e = hitscan(W / 2, dry ? MELEE.range : AIM_ASSIST.autoFireRange); // with no ammo, only swing at someone close
   return !!e && e.state !== "dying";
@@ -138,7 +142,11 @@ function checkExit() {
   for (const [dx, dy] of [[0.45, 0], [-0.45, 0], [0, 0.45], [0, -0.45]]) {
     const x = (p.x + dx) | 0, y = (p.y + dy) | 0;
     if (lvl.map[y] && lvl.map[y][x] === "E") {
-      if (objectiveDone()) { fadeOut(() => game.levelIdx + 1 < LEVELS.length ? showCard("chapter", game.levelIdx + 1) : showCard("end")); return; }
+      if (objectiveDone()) {
+        game.state = "leaving"; // you made it: no more hits, pickups or deaths during the fade
+        fadeOut(() => game.levelIdx + 1 < LEVELS.length ? showCard("chapter", game.levelIdx + 1) : showCard("end"));
+        return;
+      }
       if (game.msg.t <= 0) say(lvl.objective === "ledger" ? "Not without the ledger." : "Not while Don Vitale still breathes.");
     }
   }
@@ -199,18 +207,19 @@ export function collectPickups() {
     else if (o.pick === "cash") { const v = o.amount || Math.round(rand(1, 5)) * 100; stats.cash += v; say(`+$${v.toLocaleString()}`); }
     else if (o.pick === "rounds") {
       const w = o.weapon;
+      if (p.has[w] && p.reserve[w] >= AMMO.maxReserve[w]) continue; // pockets full: leave it for later
       if (w === 1 && !p.has[1]) {
-        p.has[1] = true; p.weapon = 1; p.mag[1] = Math.min(WEAPONS[1].mag, o.amount); p.reserve[1] += Math.max(0, o.amount - WEAPONS[1].mag);
-        say("A Tommy gun. Now we're talking.  [1/2 or Q to swap]", 3.5);
+        p.has[1] = true; p.weapon = 1; p.mag[1] = Math.min(WEAPONS[1].mag, o.amount); p.reserve[1] = Math.min(AMMO.maxReserve[1], p.reserve[1] + Math.max(0, o.amount - WEAPONS[1].mag));
+        say(isTouch ? "A Tommy gun. Now we're talking. Tap SWAP to change guns." : "A Tommy gun. Now we're talking.  [1/2 or Q to swap]", 3.5);
       } else {
-        p.reserve[w] += o.amount;
+        p.reserve[w] = Math.min(AMMO.maxReserve[w], p.reserve[w] + o.amount);
         say(`+${o.amount} ${w === 0 ? "revolver rounds" : "tommy gun rounds"}`);
         if (p.mag[p.weapon] === 0 && p.weapon === w) startReload();
       }
     }
     else if (o.pick === "ledger") {
       p.ledger = true; say("Got the ledger. Now find the EXIT.", 3.5);
-      for (const e of game.enemies) e.alert = true;
+      for (const e of game.enemies) { e.alert = true; e.lx = p.x; e.ly = p.y; }
     }
     objs.splice(i, 1); SND.pickup();
   }

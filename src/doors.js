@@ -11,7 +11,8 @@ import { clamp } from "./util.js";
 import { game, stats, say } from "./state.js";
 import { SND } from "./audio.js";
 
-const WALL_CHARS = "#WPBTEFHUR!";
+import { WALL_CHARS as WALLS, SIDE_WALL_CHARS } from "./tiles.js";
+const WALL_CHARS = WALLS + "!";
 const key = (x, y) => y * game.width + x;
 
 // Called by loadLevel with the original map rows, before entities are cleared
@@ -25,7 +26,7 @@ export function setupDoors(rows) {
       game.doors.set(key(x, y), { x, y, axis, open: 0, opening: false, hold: 0 });
     } else if (c === "!") {
       // Borrow the texture of a neighboring wall so the secret blends in
-      const tex = [at(x - 1, y), at(x + 1, y), at(x, y - 1), at(x, y + 1)].find(n => "#WPBTFHU".includes(n)) || "W";
+      const tex = [at(x - 1, y), at(x + 1, y), at(x, y - 1), at(x, y + 1)].find(n => SIDE_WALL_CHARS.includes(n)) || "W";
       game.secrets.set(key(x, y), { x, y, tex });
     }
   }));

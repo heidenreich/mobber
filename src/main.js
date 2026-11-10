@@ -4,7 +4,8 @@ import { rand } from "./util.js";
 import { game, input, stats } from "./state.js";
 import { LEVELS } from "./levels.js";
 import { ctx, view, watchScreen, resizeIfChanged } from "./screen.js";
-import { wallAt } from "./world.js";
+import { wallAt, los, SPAWNS } from "./world.js";
+import { WALL_CHARS, SIDE_WALL_CHARS } from "./tiles.js";
 import { updatePlayer, collectPickups, tickPlayerEffects } from "./player.js";
 import { updateEnemy, hurtPlayer } from "./enemies.js";
 import { updateDoors, updateSecrets } from "./doors.js";
@@ -40,13 +41,13 @@ function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
   resizeIfChanged();
   const paused = game.state === "play" && input.wasLocked && !input.locked && !isTouch;
-  if ((game.state === "play" && !paused) || game.state === "dying" || game.state === "won") update(dt);
+  if ((game.state === "play" && !paused) || game.state === "dying" || game.state === "won" || game.state === "leaving") update(dt);
   tickFade(dt);
   const { vw, vh, film } = view;
   ctx.fillStyle = "#000"; ctx.fillRect(0, 0, vw, vh);
   const flicker = 0.93 + Math.random() * 0.07;
   const jitter = Math.random() < 0.03 ? rand(-2, 2) : 0;
-  if ((game.state === "play" || game.state === "dying" || game.state === "won") && game.level) {
+  if (["play", "dying", "won", "leaving"].includes(game.state) && game.level) {
     const p = game.player;
     renderWorld(t);
     let bright = flicker * game.fade * (p.flash > 0 ? 1.25 : 1) * (1 - p.hurt * 1.2);
@@ -71,5 +72,6 @@ requestAnimationFrame(frame);
 // Hook for the automated tests in tests/
 window.__mobber = {
   get state() { return game.state; }, get player() { return game.player; }, get enemies() { return game.enemies; },
-  get objs() { return game.objs; }, get level() { return game.level; }, get card() { return game.card; }, get map() { return game.map; }, get doors() { return game.doors; }, get fade() { return game.fade; }, stats, LEVELS, startLevel, wallAt, hurtPlayer,
+  get objs() { return game.objs; }, get level() { return game.level; }, get card() { return game.card; }, get map() { return game.map; }, get doors() { return game.doors; }, get fade() { return game.fade; }, stats, LEVELS, startLevel, wallAt, los, hurtPlayer,
+  TILES: { walls: WALL_CHARS, sideWalls: SIDE_WALL_CHARS, blockers: Object.keys(SPAWNS).filter(k => SPAWNS[k].block).join("") },
 };

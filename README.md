@@ -22,7 +22,9 @@ Your brother Eddie kept the books at the Blue Note, and kept them honest. The Vi
 
 Doors open by themselves as you walk up to them. Some walls hide rooms: look for faint scrape marks near the floor.
 
-Ammo is limited. You start with a loaded revolver and 12 spare rounds. Boxes of rounds and tommy gun drums are lying around, and gangsters you put down leave something behind: usually revolver rounds, sometimes their tommy gun, sometimes cash. With both guns empty, a click swings the gun at anyone in arm's reach.
+Ammo is limited, and so is what you can carry. You start with a loaded revolver and 12 spare rounds. Boxes of rounds and tommy gun drums are lying around, and gangsters you put down leave something behind: a few revolver rounds, sometimes their tommy gun, sometimes cash. With both guns empty, a click swings the gun at anyone in arm's reach. Your health carries over from scene to scene, so first-aid kits matter.
+
+Gangsters who hear gunfire come looking for you, finding their way around walls and through doors. Crates, cars, water towers and other solid props are cover: they block bullets and sight both ways.
 
 ## Running it locally
 
@@ -46,6 +48,8 @@ npm test
 
 GitHub Actions runs them on every push and pull request (`.github/workflows/test.yml`).
 
+To check balance, `npm run playthrough` has a bot play the whole game in real time (several minutes) and report time, damage taken, shots, kills and ammo for each scene. `npm run playthrough -- poor` plays it as a weaker player.
+
 ## How the code is organized
 
 ```
@@ -57,7 +61,8 @@ src/
   levels.js           the story cards and the seven scenes (three streets, three locations, the roof) as plain data
   state.js            the game's shared state (one object, read and updated by the modules)
   screen.js           canvas sizing, landscape vs. portrait layout
-  world.js            loading a map, walls, line of sight, the light map, collision
+  tiles.js            which map letters are walls (the one list everything uses)
+  world.js            loading a map, walls, line of sight and cover, the light map, collision, enemy pathfinding
   doors.js            sliding doors and secret walls
   player.js           moving, shooting, reloading, pickups, the exit
   enemies.js          gangster behavior: idle -> chase -> aim -> fire
@@ -78,7 +83,7 @@ src/
   input/
     desktop.js        keyboard, mouse, pointer lock
     touch.js          floating stick, drag-to-aim, FIRE and SWAP
-scripts/              the local server
+scripts/              the local server, and the playthrough bot
 tests/                browser tests
 ```
 

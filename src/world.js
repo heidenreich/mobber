@@ -7,14 +7,14 @@ import { LEVELS } from "./levels.js";
 import { OBJ } from "./art/sprites.js";
 import { setupDoors, partialSolid } from "./doors.js";
 
-const WALLS = "#WPBTEFHUR";
+import { WALL_CHARS as WALLS, DOOR, SECRET } from "./tiles.js";
 
 // Map letter -> what gets placed there. `light` is [intensity, radius] for lamps.
-const SPAWNS = {
+export const SPAWNS = {
   c: { art: "table", scale: 0.75, block: true, light: [0.8, 3.6] },
-  k: { art: "crate", scale: 0.85, block: true },
-  p: { art: "piano", scale: 0.9, block: true },
-  o: { art: "barrel", scale: 0.7, block: true },
+  k: { art: "crate", scale: 0.85, block: true, cover: true },
+  p: { art: "piano", scale: 0.9, block: true, cover: true },
+  o: { art: "barrel", scale: 0.7, block: true, cover: true },
   l: { art: "lamp", scale: 1.0, block: true, glow: true, light: [1.2, 5.5] },
   "*": { art: "hanging", scale: 0.6, hang: true, glow: true, light: [1.25, 6] },
   $: { art: "cash", scale: 0.6, pick: "cash" },
@@ -23,16 +23,16 @@ const SPAWNS = {
   r: { art: "rounds", scale: 0.6, pick: "rounds", weapon: 0, amount: AMMO.revolverBox },
   L: { art: "ledger", scale: 0.6, pick: "ledger", bob: true },
   // Street furniture. `size` is how far the solid part reaches from the center.
-  C: { art: "car", scale: 0.8, block: true, size: 0.8 },
+  C: { art: "car", scale: 0.8, block: true, size: 0.8, cover: true },
   m: { art: "lamppost", scale: 1.8, block: true, size: 0.15, glow: true, light: [1.3, 6] },
   h: { art: "hydrant", scale: 0.6, block: true, size: 0.2 },
   t: { art: "trash", scale: 0.7, block: true, size: 0.25 },
-  n: { art: "newsstand", scale: 0.9, block: true, size: 0.45 },
+  n: { art: "newsstand", scale: 0.9, block: true, size: 0.45, cover: true },
   // The hotel roof
-  w: { art: "watertower", scale: 2.6, block: true, size: 0.8 },
-  q: { art: "chimney", scale: 1.1, block: true, size: 0.3 },
-  N: { art: "regentSign", scale: 1.5, block: true, size: 0.6, glow: true },
-  A: { art: "autogiro", scale: 1.3, block: true, size: 1.0 },
+  w: { art: "watertower", scale: 2.6, block: true, size: 0.8, cover: true },
+  q: { art: "chimney", scale: 1.1, block: true, size: 0.3, cover: true },
+  N: { art: "regentSign", scale: 1.5, block: true, size: 0.6, glow: true, cover: true },
+  A: { art: "autogiro", scale: 1.3, block: true, size: 1.0, cover: true },
 };
 
 // Blocks movement and sight: walls, closed doors and moving secret walls
@@ -52,10 +52,70 @@ function solidAt(x, y) {
   return c !== "." && c !== "D";
 }
 
+// Clear line of sight (and of fire) between two points. Walls and closed doors
+// block it, and so do solid props (cars, crates, water towers...): they're cover.
+// Lamplight passes its own test (walls only) and ignores props.
 export function los(x0, y0, x1, y1, blocks = wallAt) {
   const d = Math.hypot(x1 - x0, y1 - y0), n = Math.ceil(d / 0.15);
   for (let i = 1; i < n; i++) if (blocks(x0 + (x1 - x0) * i / n, y0 + (y1 - y0) * i / n)) return false;
+  if (blocks === wallAt) for (const o of game.objs) if (o.cover && segmentHitsBox(x0, y0, x1, y1, o)) return false;
   return true;
+}
+function segmentHitsBox(x0, y0, x1, y1, o) {
+  const h = (o.size || 0.28) * 0.9, bx0 = o.x - h, bx1 = o.x + h, by0 = o.y - h, by1 = o.y + h;
+  const inside = (x, y) => x > bx0 && x < bx1 && y > by0 && y < by1;
+  if (inside(x0, y0) || inside(x1, y1)) return false; // someone right up against it can see past
+  const dx = x1 - x0, dy = y1 - y0;
+  let t0 = 0, t1 = 1;
+  for (const [p, q] of [[-dx, x0 - bx0], [dx, bx1 - x0], [-dy, y0 - by0], [dy, by1 - y0]]) {
+    if (p === 0) { if (q < 0) return false; continue; }
+    const r = q / p;
+    if (p < 0) { if (r > t1) return false; if (r > t0) t0 = r; } else { if (r < t0) return false; if (r < t1) t1 = r; }
+  }
+  return true;
+}
+
+// Grid pathfinding for gangsters: the center of the next square to walk to on the
+// way to (tx, ty), going around walls and furniture and through doors. Returns null
+// if there's no way there. `avoid` is a point whose square counts as blocked.
+export function nextStep(fx, fy, tx, ty, avoid) {
+  const W = game.width, H = game.height, start = (fy | 0) * W + (fx | 0), goal = (ty | 0) * W + (tx | 0);
+  if (start === goal) return { x: tx, y: ty };
+  const free = i => {
+    const c = game.map[(i / W) | 0][i % W];
+    if (c !== "." && c !== "D") return false;
+    if (game.navBlocked[i]) return false;
+    return !(avoid && i === (avoid.y | 0) * W + (avoid.x | 0) && i !== goal);
+  };
+  const prev = new Int32Array(W * H).fill(-1), queue = [goal];
+  prev[goal] = goal;
+  // Search back from the goal so the answer is simply "the neighbor nearest the goal"
+  for (let qi = 0; qi < queue.length; qi++) {
+    const i = queue[qi], x = i % W, y = (i / W) | 0;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = x + dx, ny = y + dy, j = ny * W + nx;
+      if (nx < 0 || ny < 0 || nx >= W || ny >= H || prev[j] !== -1) continue;
+      if (j !== start && !free(j)) continue;
+      prev[j] = i;
+      if (j === start) { const k = prev[start]; return k === goal ? { x: tx, y: ty } : { x: (k % W) + 0.5, y: ((k / W) | 0) + 0.5 }; }
+      queue.push(j);
+    }
+  }
+  return null;
+}
+// Squares furniture fills, for pathfinding (built once per scene; furniture doesn't move)
+function buildNav() {
+  const W = game.width, H = game.height;
+  game.navBlocked = new Uint8Array(W * H);
+  for (const o of game.objs) {
+    if (!o.block) continue;
+    const r = (o.size || 0.28) + 0.2;
+    for (let y = Math.floor(o.y - r); y <= Math.floor(o.y + r); y++) for (let x = Math.floor(o.x - r); x <= Math.floor(o.x + r); x++) {
+      if (x < 0 || y < 0 || x >= W || y >= H) continue;
+      // Block the square if the prop covers its middle
+      if (Math.abs(x + 0.5 - o.x) < r && Math.abs(y + 0.5 - o.y) < r) game.navBlocked[y * W + x] = 1;
+    }
+  }
 }
 
 export function loadLevel(i) {
@@ -68,23 +128,24 @@ export function loadLevel(i) {
   // Guns and ammo carry over from the previous scene (flow.js passes the right loadout on a retry)
   const prev = game.player;
   const player = game.player = {
-    x: 2, y: 2, a: 0, hp: PLAYER.maxHp, weapon: prev ? prev.weapon : 0, has: prev ? prev.has.slice() : [true, false],
+    x: 2, y: 2, a: 0, hp: prev ? Math.max(prev.hp, PLAYER.minStartHp) : PLAYER.maxHp, weapon: prev ? prev.weapon : 0, has: prev ? prev.has.slice() : [true, false],
     mag: prev ? prev.mag.slice() : [6, 0], reserve: prev ? prev.reserve.slice() : [AMMO.startRevolverReserve, 0],
     fireCd: 0, reload: 0, recoil: 0, flash: 0, bob: 0, moving: false, hurt: 0, ledger: false,
   };
   for (let y = 0; y < game.height; y++) for (let x = 0; x < game.width; x++) {
     const ch = game.map[y][x], cx = x + 0.5, cy = y + 0.5;
-    if (WALLS.includes(ch) || ch === "D" || ch === "!") continue; // doors and secrets stay in the map
+    if (WALLS.includes(ch) || ch === DOOR || ch === SECRET) continue; // doors and secrets stay in the map
     game.map[y][x] = ".";
     if (ch === "S") { player.x = cx; player.y = cy; player.a = facingOpen(x, y); }
     else if (ENEMY_TYPES[ch]) {
       const type = ENEMY_TYPES[ch];
       // A fleeing Don is already on the run when the scene opens
-      game.enemies.push({ x: cx, y: cy, type, hp: type.hp, state: "idle", t: 0, cd: rand(0.5, 1.5), alert: !!type.flees, lx: cx, ly: cy, burstLeft: 0, step: 0, wp: 0 });
+      game.enemies.push({ x: cx, y: cy, type, hp: type.hp, state: "idle", t: 0, cd: rand(0.5, 1.5), alert: !!type.flees, lx: cx, ly: cy, burstLeft: 0, step: 0, wp: 0, wp2: null, repath: 0, staggerCd: 0 });
     }
     else if (SPAWNS[ch]) game.objs.push({ x: cx, y: cy, ...SPAWNS[ch], art: OBJ[SPAWNS[ch].art] });
   }
   buildLight();
+  buildNav();
   game.timer = 0;
   say(lvl.goal || (lvl.objective === "ledger" ? "Find the ledger." : "Find Don Vitale."), 3);
 }

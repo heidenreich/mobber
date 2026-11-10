@@ -52,8 +52,12 @@ test("aim assist pulls onto a nearby goon and auto-fires", async () => {
   await game(g.page, () => {
     const M = window.__mobber, P = M.player, e = M.enemies[0];
     P.x = 6.5; P.y = 8.5; P.a = 0; P.hp = 100;
-    Object.assign(e, { hp: 40, state: "idle", alert: false, x: 11.5, y: 9.1 });
+    Object.assign(e, { hp: 40, state: "idle", alert: false, x: 11.5, y: 9.1, cd: 99 });
   });
+  // Auto-fire waits until you've touched the screen in this scene
+  await g.page.waitForTimeout(800);
+  assert.equal(await game(g.page, () => window.__mobber.enemies[0].hp), 40, "no shooting before the first touch");
+  await g.touch("touchStart", [{ x: 700, y: 120, id: 3 }]); await g.touch("touchEnd", []);
   await g.page.waitForFunction(() => window.__mobber.enemies[0].hp <= 0, null, { timeout: 5000 });
   await g.context.close();
 });

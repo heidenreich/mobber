@@ -42,9 +42,9 @@ export function startLevel(i, retry) {
   } else if (i === 0) game.player = null; // a fresh run starts with just the revolver
   loadLevel(i);
   if (!retry || !checkpoint) checkpoint = { player: structuredClone(game.player), stats: copyStats() };
-  game.state = "play"; game.fade = 0; game.fadeDir = 1;
+  game.state = "play"; game.fade = 0; game.fadeDir = 1; input.touched = false;
   requestLock();
-  if (isTouch) { fireBtn.style.display = "block"; swapBtn.style.display = "block"; }
+  if (isTouch) fireBtn.style.display = "block"; // SWAP appears once you have a second gun (hud.js)
 }
 
 export function fadeOut(fn, dur = 0.8) { game.fadeDir = -1 / dur; game.afterFade = fn; }

@@ -15,6 +15,7 @@ export function installTouchInput() {
   cv.addEventListener("touchstart", e => {
     initAudio();
     if (game.state !== "play") { advance(); e.preventDefault(); return; }
+    input.touched = true;
     for (const t of e.changedTouches) {
       if (t.clientX < view.vw * TOUCH.joystickArea && !touch.move) touch.move = { id: t.identifier, x: t.clientX, y: t.clientY, kx: t.clientX, ky: t.clientY, dx: 0, dy: 0 };
       else if (!touch.look) touch.look = { id: t.identifier, x: t.clientX };
@@ -48,7 +49,7 @@ export function installTouchInput() {
   // FIRE fires while held, and dragging on it aims
   let fireTouch = null;
   fireBtn.addEventListener("touchstart", e => {
-    e.preventDefault(); initAudio(); input.firing = true;
+    e.preventDefault(); initAudio(); input.firing = true; input.touched = true;
     const t = e.changedTouches[0]; fireTouch = { id: t.identifier, x: t.clientX };
   }, { passive: false });
   fireBtn.addEventListener("touchmove", e => {

@@ -58,8 +58,23 @@ function solidAt(x, y) {
 // block it, and so do props taller than a person (water towers, chimneys...): cover.
 // Lamplight passes its own test (walls only) and ignores props.
 export function los(x0, y0, x1, y1, blocks = wallAt) {
-  const d = Math.hypot(x1 - x0, y1 - y0), n = Math.ceil(d / 0.15);
-  for (let i = 1; i < n; i++) if (blocks(x0 + (x1 - x0) * i / n, y0 + (y1 - y0) * i / n)) return false;
+  // Walk every square the line passes through, exactly as the renderer's rays do, so
+  // nobody can see (or shoot) through the corner of a wall. Each square is tested at
+  // the middle of the stretch of line inside it, which also handles part-open doors.
+  const dx = x1 - x0, dy = y1 - y0;
+  let cx = Math.floor(x0), cy = Math.floor(y0);
+  const ex = Math.floor(x1), ey = Math.floor(y1);
+  const sx = dx > 0 ? 1 : -1, sy = dy > 0 ? 1 : -1;
+  const tdx = dx ? Math.abs(1 / dx) : Infinity, tdy = dy ? Math.abs(1 / dy) : Infinity;
+  let tmx = dx ? (dx > 0 ? cx + 1 - x0 : x0 - cx) * tdx : Infinity;
+  let tmy = dy ? (dy > 0 ? cy + 1 - y0 : y0 - cy) * tdy : Infinity;
+  let t = 0;
+  for (let n = 0; n < 256; n++) {
+    const tNext = Math.min(tmx, tmy, 1), tm = (t + tNext) / 2;
+    if (n > 0 && blocks(x0 + dx * tm, y0 + dy * tm)) return false; // the starting square is never in the way
+    if ((cx === ex && cy === ey) || tNext >= 1) break;
+    if (tmx < tmy) { cx += sx; t = tmx; tmx += tdx; } else { cy += sy; t = tmy; tmy += tdy; }
+  }
   if (blocks === wallAt) for (const o of game.objs) if (o.cover && segmentHitsBox(x0, y0, x1, y1, o)) return false;
   return true;
 }
@@ -130,7 +145,7 @@ export function loadLevel(i) {
   // Guns and ammo carry over from the previous scene (flow.js passes the right loadout on a retry)
   const prev = game.player;
   const player = game.player = {
-    x: 2, y: 2, a: 0, hp: prev ? Math.max(prev.hp, PLAYER.minStartHp) : PLAYER.maxHp, weapon: prev ? prev.weapon : 0, has: prev ? prev.has.slice() : [true, false],
+    x: 2, y: 2, a: 0, hp: !prev || lvl.fullHealth ? PLAYER.maxHp : Math.max(prev.hp, PLAYER.minStartHp), weapon: prev ? prev.weapon : 0, has: prev ? prev.has.slice() : [true, false],
     mag: prev ? prev.mag.slice() : [6, 0], reserve: prev ? prev.reserve.slice() : [AMMO.startRevolverReserve, 0],
     fireCd: 0, reload: 0, recoil: 0, flash: 0, bob: 0, moving: false, hurt: 0, ledger: false,
   };

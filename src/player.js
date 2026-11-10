@@ -111,7 +111,7 @@ function fire() {
   const spread = w.spread * (p.moving ? 1.6 : 1);
   const col = clamp((W / 2 + rand(-spread, spread)) | 0, 0, W - 1);
   const t = hitscan(col);
-  if (t) damage(t, w.dmg * rand(0.85, 1.15));
+  if (t) damage(t, w.dmg * rand(0.85, 1.15) * (p.weapon === 1 ? t.type.tommyResist ?? 1 : 1));
   if (p.mag[p.weapon] === 0) startReload();
 }
 

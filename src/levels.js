@@ -11,6 +11,7 @@
 // V) or "reach" (just get to the exit; street scenes use it). `goal`, if set, is
 // the on-screen objective. With `endOnBoss`, the V's death ends the picture, and
 // a fleeing V runs along `route` (a list of [x, y] points) and escapes at its end.
+// Health carries over between scenes; `fullHealth` restores it on arrival (the finale).
 //
 // Street scenes also set: sky (true for night, "dawn" for the morning sky)
 // instead of a ceiling, wallHeight (2 for two-story buildings, 0.5 for the roof's
@@ -184,7 +185,7 @@ export const LEVELS = [
       "P.l........l.......l...P",
       "PPPPPPPPPPPPPPPPPPPPPEPP",
     ] },
-  { chapter: "EXT. HOTEL REGENT ROOF — DAWN", title: "The Roof", floor: "tar", sky: "dawn", wallHeight: 0.5, ambient: 0.62, objective: "boss", endOnBoss: true,
+  { chapter: "EXT. HOTEL REGENT ROOF — DAWN", title: "The Roof", floor: "tar", sky: "dawn", wallHeight: 0.5, ambient: 0.62, objective: "boss", endOnBoss: true, fullHealth: true,
     goal: "Stop Don Vitale before he reaches the autogiro",
     route: [[13.5, 6.5], [18.5, 9.5], [24.5, 6.5], [29.2, 8.5]],   // zigzagging between the water towers
     card: ["It was a double. The real Don is running for the roof,", "where an autogiro is warming up to fly him out of town.", "Don't let him reach it."],

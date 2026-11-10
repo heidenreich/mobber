@@ -62,7 +62,8 @@ function installBot(skill) {
     }
     hold(" ", false);
     // navigate
-    const lvl = M.level, want = o => o.pick === "rounds" || (o.pick === "med" && P.hp <= 65);
+    // Go for pickups it can actually take: rounds only with room in its pockets
+    const lvl = M.level, want = o => (o.pick === "rounds" && (!P.has[o.weapon] || P.reserve[o.weapon] < M.AMMO.maxReserve[o.weapon])) || (o.pick === "med" && P.hp <= 65);
     let path = bfs(P, (x, y) => M.objs.some(o => want(o) && (o.x | 0) === x && (o.y | 0) === y));
     if (path && path.length > 14) path = null;
     let exitFace = null;

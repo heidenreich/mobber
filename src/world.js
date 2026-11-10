@@ -10,11 +10,13 @@ import { setupDoors, partialSolid } from "./doors.js";
 import { WALL_CHARS as WALLS, DOOR, SECRET } from "./tiles.js";
 
 // Map letter -> what gets placed there. `light` is [intensity, radius] for lamps.
+// `cover` props are taller than a person, so they block sight and bullets; you can
+// see (and shoot) a gangster's head and shoulders over a car or a crate.
 export const SPAWNS = {
   c: { art: "table", scale: 0.75, block: true, light: [0.8, 3.6] },
-  k: { art: "crate", scale: 0.85, block: true, cover: true },
-  p: { art: "piano", scale: 0.9, block: true, cover: true },
-  o: { art: "barrel", scale: 0.7, block: true, cover: true },
+  k: { art: "crate", scale: 0.85, block: true },
+  p: { art: "piano", scale: 0.9, block: true },
+  o: { art: "barrel", scale: 0.7, block: true },
   l: { art: "lamp", scale: 1.0, block: true, glow: true, light: [1.2, 5.5] },
   "*": { art: "hanging", scale: 0.6, hang: true, glow: true, light: [1.25, 6] },
   $: { art: "cash", scale: 0.6, pick: "cash" },
@@ -23,11 +25,11 @@ export const SPAWNS = {
   r: { art: "rounds", scale: 0.6, pick: "rounds", weapon: 0, amount: AMMO.revolverBox },
   L: { art: "ledger", scale: 0.6, pick: "ledger", bob: true },
   // Street furniture. `size` is how far the solid part reaches from the center.
-  C: { art: "car", scale: 0.8, block: true, size: 0.8, cover: true },
+  C: { art: "car", scale: 0.8, block: true, size: 0.8 },
   m: { art: "lamppost", scale: 1.8, block: true, size: 0.15, glow: true, light: [1.3, 6] },
   h: { art: "hydrant", scale: 0.6, block: true, size: 0.2 },
   t: { art: "trash", scale: 0.7, block: true, size: 0.25 },
-  n: { art: "newsstand", scale: 0.9, block: true, size: 0.45, cover: true },
+  n: { art: "newsstand", scale: 0.9, block: true, size: 0.45 },
   // The hotel roof
   w: { art: "watertower", scale: 2.6, block: true, size: 0.8, cover: true },
   q: { art: "chimney", scale: 1.1, block: true, size: 0.3, cover: true },
@@ -53,7 +55,7 @@ function solidAt(x, y) {
 }
 
 // Clear line of sight (and of fire) between two points. Walls and closed doors
-// block it, and so do solid props (cars, crates, water towers...): they're cover.
+// block it, and so do props taller than a person (water towers, chimneys...): cover.
 // Lamplight passes its own test (walls only) and ignores props.
 export function los(x0, y0, x1, y1, blocks = wallAt) {
   const d = Math.hypot(x1 - x0, y1 - y0), n = Math.ceil(d / 0.15);

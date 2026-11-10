@@ -340,14 +340,16 @@ test("standing in the Don's way doesn't stop him", async () => {
   await context.close();
 });
 
-test("crates, cars and other solid props are cover", async () => {
+test("tall props are cover; you can shoot over a parked car", async () => {
   const { page, context } = await startedGame();
-  await goTo(page, CLUB);
-  const r = await game(page, () => {
-    const M = window.__mobber, c = M.objs.find(o => o.cover && !M.wallAt(o.x - 1.2, o.y) && !M.wallAt(o.x + 1.2, o.y));
-    return { blocked: M.los(c.x - 1.2, c.y, c.x + 1.2, c.y), clear: M.los(c.x - 1.2, c.y - 0.9, c.x + 1.2, c.y - 0.9) };
-  });
-  assert.deepEqual(r, { blocked: false, clear: true });
+  const across = (M, o) => ({ blocked: !M.los(o.x - 1.2, o.y, o.x + 1.2, o.y), beside: !M.los(o.x - 1.2, o.y - 1.1, o.x + 1.2, o.y - 1.1) });
+  // A parked car on Mulberry Street: shorter than a man, so it doesn't stop a bullet
+  const car = await game(page, () => { const M = window.__mobber, c = M.objs.find(o => o.art === M.objs.find(p => p.size === 0.8).art); return !M.los(c.x - 1.2, c.y, c.x + 1.2, c.y); });
+  assert.equal(car, false, "a car doesn't block the shot");
+  // A water tower on the roof does
+  await goTo(page, "The Roof");
+  const tower = await game(page, () => { const M = window.__mobber, w = M.objs.find(o => o.cover && o.size === 0.8 && o.scale > 2); return { blocked: !M.los(w.x - 1.2, w.y, w.x + 1.2, w.y), beside: !M.los(w.x - 1.2, w.y - 1.1, w.x + 1.2, w.y - 1.1) }; });
+  assert.deepEqual(tower, { blocked: true, beside: false });
   await context.close();
 });
 

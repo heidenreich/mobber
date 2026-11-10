@@ -15,12 +15,12 @@ function installBot(skill) {
   const key = (k, down) => window.dispatchEvent(new KeyboardEvent(down ? "keydown" : "keyup", { key: k }));
   const held = new Set();
   const hold = (k, on) => { if (on && !held.has(k)) { held.add(k); key(k, true); } else if (!on && held.has(k)) { held.delete(k); key(k, false); } };
-  const los = (x0, y0, x1, y1) => { const d = Math.hypot(x1 - x0, y1 - y0), n = Math.ceil(d / 0.15); for (let i = 1; i < n; i++) if (M.wallAt(x0 + (x1 - x0) * i / n, y0 + (y1 - y0) * i / n)) return false; return true; };
+  const los = (x0, y0, x1, y1) => M.los(x0, y0, x1, y1); // the game's own line of sight, cover included
   const rec = window.__rec = []; let cur = null, lastP = null, seen = new Map(), jit = 0, jitT = 0, stuckT = 0, stuckPos = [0, 0], jig = 0, jigKey = "a", lastHp = 100;
   let last = performance.now();
   function bfs(P, goalFn) {
-    const map = M.map, H = map.length, W = map[0].length, blockedCell = new Set();
-    for (const o of M.objs) if (o.block) { const r = (o.size || 0.28) > 0.5 ? 1 : 0; for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) if (dy === 0 || r === 0 || true) blockedCell.add(((o.y | 0) + (r ? 0 : dy)) * W + (o.x | 0) + dx); }
+    const map = M.map, H = map.length, W = map[0].length, nav = M.navBlocked; // the squares furniture fills, as the game's own pathfinding sees them
+    const blockedCell = { has: k => !!nav[k] };
     const sx = P.x | 0, sy = P.y | 0, prev = new Map([[sy * W + sx, -1]]), q = [[sx, sy]];
     while (q.length) {
       const [x, y] = q.shift();

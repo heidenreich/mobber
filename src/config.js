@@ -54,7 +54,7 @@ export const AIM_ASSIST = {
 // Measured with scripts/playthrough.js: a scene should give back roughly what it costs.
 export const AMMO = {
   startRevolverReserve: 12,
-  maxReserve: [36, 100],    // how many spare rounds you can carry for each gun; extra stays on the floor
+  maxReserve: [36, 60],     // how many spare rounds you can carry for each gun; extra stays on the floor
   revolverBox: 6,           // a box of rounds found lying around (r on the map)
   drum: 30,                 // a tommy gun drum (a on the map); the first one gives you the gun
   goonRounds: 3,            // a downed goon often has a few revolver rounds on him...
@@ -80,7 +80,8 @@ export const ENEMY_TYPES = {
   // Body doubles dressed as the Don, waiting in the penthouse
   v: { name: "double", art: "boss", hp: 120, speed: 1.05, dmg: [6, 10], cd: [1.1, 1.8], range: 13, aim: 0.45, burst: 3, scale: 1.05 },
   // The real Don runs for his getaway along the level's `route`, stopping to fire
-  V: { name: "boss", art: "boss", hp: 480, speed: 1.7, dmg: [7, 12], cd: [2.0, 2.8], range: 14, aim: 0.45, burst: 3, scale: 1.05, flees: true, noStagger: true },
+  // He wears a vest under the pinstripes: tommy gun rounds do only `tommyResist` of their damage
+  V: { name: "boss", art: "boss", hp: 420, speed: 1.7, dmg: [7, 12], cd: [2.0, 2.8], range: 14, aim: 0.45, burst: 3, scale: 1.05, flees: true, noStagger: true, tommyResist: 0.6 },
 };
 
 export const DOORS = {

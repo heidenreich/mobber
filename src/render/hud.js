@@ -2,13 +2,14 @@
 // the pause screen. Drawn at full screen resolution on top of the film.
 import { isTouch, FONTS, CREAM, TOUCH, WEAPONS } from "../config.js";
 import { game, stats, input } from "../state.js";
-import { ctx, view } from "../screen.js";
+import { ctx, view, swapBtn } from "../screen.js";
 import { objectiveDone } from "../world.js";
 
 const { deco: DECO, serif: SERIF, type: TYPE } = FONTS;
 
 export function drawHUD() {
   const p = game.player, f = view.hudRect, film = view.film, s = f.s;
+  if (isTouch) swapBtn.style.display = game.state === "play" && p.has[1] ? "block" : "none";
   const fs = n => Math.max(10, n * s);
   // Crosshair
   const cx = film.x + film.w / 2, cy = film.y + film.h / 2, g = 4 + p.recoil * 6;

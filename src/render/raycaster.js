@@ -126,7 +126,8 @@ export function renderWorld(t) {
     if (e.state === "aim") art = A.aim; else if (e.state === "fire") art = e.t > 0.07 ? A.fire : A.aim;
     else if (e.state === "hurt") art = A.hurt; else if (e.state === "dying") art = e.t > 0.25 ? A.hurt : A.fall;
     else if (e.state === "dead") art = A.dead;
-    list.push({ x: e.x, y: e.y, art, scale: e.type.scale, bob: e.moving ? Math.abs(Math.sin(e.step * 9)) * 0.02 : 0, muzzle: e.state === "fire" && e.t > 0.07 });
+    // Gangsters stay readable in the dark: they're never lit below a floor brightness
+    list.push({ x: e.x, y: e.y, art, scale: e.type.scale, bob: e.moving ? Math.abs(Math.sin(e.step * 9)) * 0.02 : 0, muzzle: e.state === "fire" && e.t > 0.07, minLit: e.hp > 0 ? 0.6 : 0 });
   }
   for (const s of list) s.d = (s.x - px) ** 2 + (s.y - py) ** 2;
   list.sort((a, b) => b.d - a.d);
@@ -156,6 +157,7 @@ function drawSprite(s) {
   const x0 = Math.max(0, left | 0), x1 = Math.min(W, (left + wpx) | 0);
   let lit = lightAt(s.x, s.y) * Math.exp(-tY * FOG);
   if (s.glow) lit = Math.max(lit, 1.05);
+  if (s.minLit) lit = Math.max(lit, s.minLit);
   if (s.muzzle) lit = Math.max(lit, 0.9);
   const y0 = Math.max(0, top | 0), y1 = Math.min(H, (top + size) | 0), stepY = bm.h / size;
   for (let x = x0; x < x1; x++) {

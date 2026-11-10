@@ -11,12 +11,15 @@ export function installDesktopInput() {
   window.addEventListener("keydown", e => {
     const k = e.key.toLowerCase(), p = game.player; input.keys.add(k);
     if (k === " ") { e.preventDefault(); input.firing = true; }
-    if (k === "1" && p) switchWeapon(0);
-    if (k === "2" && p) switchWeapon(1);
-    if (k === "q" && p) switchWeapon(1 - p.weapon);
-    if (k === "r" && p) startReload();
-    if (k === "e") use();
     if (k === "enter") advance();
+    // One press, one action (no key-repeat), and nothing while paused or between scenes
+    const paused = input.wasLocked && !input.locked;
+    if (e.repeat || !p || game.state !== "play" || paused) return;
+    if (k === "1") switchWeapon(0);
+    if (k === "2") switchWeapon(1);
+    if (k === "q") switchWeapon(1 - p.weapon);
+    if (k === "r") startReload();
+    if (k === "e") use();
   });
   window.addEventListener("keyup", e => { const k = e.key.toLowerCase(); input.keys.delete(k); if (k === " ") input.firing = false; });
   window.addEventListener("blur", () => { input.keys.clear(); input.firing = false; });

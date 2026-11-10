@@ -6,17 +6,17 @@ const { test, before, after } = require("node:test");
 const assert = require("node:assert/strict");
 const { serve, openGame, chromium } = require("./helpers");
 
-let srv, browser, levels;
+let srv, browser, levels, WALLS, BLOCKERS, SIDE_WALLS;
 before(async () => {
   srv = await serve();
   browser = await chromium.launch();
   const { page, context } = await openGame(browser, srv.url);
+  ({ walls: WALLS, blockers: BLOCKERS, sideWalls: SIDE_WALLS } = await page.evaluate(() => window.__mobber.TILES)); // the game's own lists
   levels = await page.evaluate(() => window.__mobber.LEVELS.map(l => ({ title: l.title, objective: l.objective, map: l.map, endOnBoss: !!l.endOnBoss, route: l.route })));
   await context.close();
 });
 after(async () => { await browser.close(); srv.server.close(); });
 
-const WALLS = "#WPBTEFHUR", BLOCKERS = "ckpolChmtnwqNA";
 const STEPS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 
 function flood(map, start, throughSecrets) {
@@ -81,7 +81,7 @@ for (let i = 0; i < 7; i++) {
       }
     }
     for (const d of cells.filter(k => k.c === "D")) {
-      const wall = c => "#WPBTEFHU!".includes(c); // the same set doors.js uses
+      const wall = c => (WALLS + "!").includes(c); // the same set doors.js uses
       const ew = wall(at(d.x - 1, d.y)) && wall(at(d.x + 1, d.y)) && !wall(at(d.x, d.y - 1)) && !wall(at(d.x, d.y + 1));
       const ns = wall(at(d.x, d.y - 1)) && wall(at(d.x, d.y + 1)) && !wall(at(d.x - 1, d.y)) && !wall(at(d.x + 1, d.y));
       assert.ok(ew || ns, `${title}: door at ${d.x},${d.y} must sit between two walls with floor on the other sides`);

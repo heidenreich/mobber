@@ -2,7 +2,7 @@
 // update their fields; nothing else holds game state.
 
 export const game = {
-  state: "title",       // title | card | play | dying | won
+  state: "title",       // title | card | play | dying (killed) | won (Don down) | leaving (reached the exit)
   card: null,           // { kind: "chapter" | "dead" | "end", idx } while state is "card"
   levelIdx: 0,
   level: null,          // the current entry from LEVELS
@@ -21,6 +21,7 @@ export const game = {
   secrets: new Map(),
   movers: [],
   moverCells: new Map(),
+  navBlocked: null,     // squares furniture fills, for enemy pathfinding (world.js)
 };
 
 export const stats = { kills: 0, cash: 0, shots: 0, hits: 0, deaths: 0, time: 0, secretsFound: new Set() };
@@ -32,6 +33,7 @@ export const input = {
   locked: false,        // pointer lock is active
   wasLocked: false,     // pointer lock was active this chapter (so losing it means "paused")
   dragLook: false,
+  touched: false,       // the player has touched the screen this scene (phone auto-fire waits for it)
   touch: { move: null, look: null },
 };
 

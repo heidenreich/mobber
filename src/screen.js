@@ -33,6 +33,10 @@ export function resize() {
   } else {
     view.film = view.cardRect; view.hudRect = view.film;
   }
+  // Phone buttons sit just above the health/ammo bar so they never cover it
+  const lift = view.portrait ? 26 : Math.round(vh - (view.film.y + view.film.h) + 40 * view.film.s + 8);
+  fireBtn.style.bottom = lift + "px";
+  swapBtn.style.bottom = lift + 4 + "px";
 }
 
 export function watchScreen() {

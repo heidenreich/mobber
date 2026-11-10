@@ -62,7 +62,7 @@ function personSet(o) {
 }
 // Enemy sprite sets, keyed by the `art` name in config.js ENEMY_TYPES
 export const PEOPLE = {};
-PEOPLE.goon = personSet({ coat: 74, hat: 34, band: 14, pants: 48, tie: 28, skin: 168, weapon: "tommy" });
+PEOPLE.goon = personSet({ coat: 104, hat: 34, band: 14, pants: 66, tie: 28, skin: 168, weapon: "tommy" });
 PEOPLE.heavy = personSet({ coat: 182, hat: 200, band: 40, pants: 66, tie: 40, skin: 160, weapon: "shotgun", wide: true });
 PEOPLE.boss = personSet({ coat: 30, hat: 232, band: 18, pants: 30, tie: 232, skin: 172, weapon: "pistol", stripes: true, cigar: true, wide: true });
 

@@ -297,13 +297,113 @@ test("ammo runs out, gangsters drop more, and an empty gun still swings", async 
   await context.close();
 });
 
+test("gangsters who hear you come looking, around walls and through doors", async () => {
+  const { page, context } = await startedGame();
+  await goTo(page, CLUB);
+  // Everyone alerted while you're out of sight in the cloak room
+  const start = await game(page, () => {
+    const M = window.__mobber, P = M.player; P.hp = 1e9;
+    for (const e of M.enemies) { e.alert = true; e.lx = P.x; e.ly = P.y; e.cd = 99; }
+    return M.enemies.map(e => [e.x, e.y]);
+  });
+  await page.waitForFunction(s => window.__mobber.enemies.filter((e, i) => Math.hypot(e.x - s[i][0], e.y - s[i][1]) > 1.5).length >= s.length * 0.7, start, { timeout: 15000 });
+  // Someone actually makes it to the cloak room, which means coming through its door
+  await page.waitForFunction(() => { const M = window.__mobber, P = M.player; return M.enemies.some(e => Math.hypot(e.x - P.x, e.y - P.y) < 4); }, null, { timeout: 20000 });
+  await context.close();
+});
+
+test("the Don can't be pinned down with a tommy gun", async () => {
+  const { page, context } = await startedGame();
+  await goTo(page, "The Roof");
+  await game(page, () => {
+    const M = window.__mobber, d = M.enemies.find(e => e.type.name === "boss"), P = M.player;
+    for (const e of M.enemies) if (e !== d) { e.hp = 0; e.state = "dead"; }
+    P.hp = 1e9; P.has[1] = true; P.weapon = 1; P.mag[1] = 50; P.reserve[1] = 100; P.x = d.x - 2; P.y = d.y; P.a = 0;
+    window.__flinched = false;
+    (function watch() { if (d.state === "hurt") window.__flinched = true; if (d.hp > 0) requestAnimationFrame(watch); })();
+  });
+  await page.keyboard.down(" "); await page.waitForTimeout(1500); await page.keyboard.up(" ");
+  assert.ok(await game(page, () => window.__mobber.enemies.find(e => e.type.name === "boss").hp < 480), "he should have been hit");
+  assert.equal(await game(page, () => window.__flinched), false, "the Don never flinches");
+  await context.close();
+});
+
+test("standing in the Don's way doesn't stop him", async () => {
+  const { page, context } = await startedGame();
+  await goTo(page, "The Roof");
+  await game(page, () => {
+    const M = window.__mobber, d = M.enemies.find(e => e.type.name === "boss"), P = M.player, [x, y] = M.level.route[1];
+    for (const e of M.enemies) if (e !== d) { e.hp = 0; e.state = "dead"; }
+    d.cd = 1e9; P.hp = 1e9; P.x = x; P.y = y; // right on his route
+  });
+  await page.waitForFunction(() => window.__mobber.card && window.__mobber.card.kind === "escaped", null, { timeout: 60000 });
+  await context.close();
+});
+
+test("tall props are cover; you can shoot over a parked car", async () => {
+  const { page, context } = await startedGame();
+  const across = (M, o) => ({ blocked: !M.los(o.x - 1.2, o.y, o.x + 1.2, o.y), beside: !M.los(o.x - 1.2, o.y - 1.1, o.x + 1.2, o.y - 1.1) });
+  // A parked car on Mulberry Street: shorter than a man, so it doesn't stop a bullet
+  const car = await game(page, () => { const M = window.__mobber, c = M.objs.find(o => o.art === M.objs.find(p => p.size === 0.8).art); return !M.los(c.x - 1.2, c.y, c.x + 1.2, c.y); });
+  assert.equal(car, false, "a car doesn't block the shot");
+  // A water tower on the roof does
+  await goTo(page, "The Roof");
+  const tower = await game(page, () => { const M = window.__mobber, w = M.objs.find(o => o.cover && o.size === 0.8 && o.scale > 2); return { blocked: !M.los(w.x - 1.2, w.y, w.x + 1.2, w.y), beside: !M.los(w.x - 1.2, w.y - 1.1, w.x + 1.2, w.y - 1.1) }; });
+  assert.deepEqual(tower, { blocked: true, beside: false });
+  await context.close();
+});
+
+test("nothing can kill you once you've reached the exit", async () => {
+  const { page, context } = await startedGame();
+  await clearEnemies(page);
+  await faceExit(page);
+  await holdUntil(page, "w", () => window.__mobber.state !== "play");
+  await game(page, () => window.__mobber.hurtPlayer(1000));
+  await page.waitForFunction(() => window.__mobber.state === "card");
+  assert.equal(await game(page, () => window.__mobber.card.kind), "chapter");
+  await context.close();
+});
+
+test("holding Q swaps guns once, not on every key-repeat", async () => {
+  const { page, context } = await startedGame();
+  await game(page, () => { const P = window.__mobber.player; P.has[1] = true; P.mag[1] = 30; P.weapon = 0; });
+  await page.keyboard.down("q"); await page.keyboard.down("q"); await page.keyboard.down("q"); await page.keyboard.up("q");
+  assert.equal(await game(page, () => window.__mobber.player.weapon), 1);
+  await context.close();
+});
+
+test("full pockets leave the rounds on the floor", async () => {
+  const { page, context } = await startedGame();
+  await clearEnemies(page);
+  const box = await game(page, () => { const M = window.__mobber, b = M.objs.find(o => o.pick === "rounds" && o.weapon === 0); M.player.reserve[0] = 36; return b; });
+  await game(page, b => { const P = window.__mobber.player; P.x = b.x; P.y = b.y; }, box);
+  await page.waitForTimeout(400); // a fixed wait is right here: nothing should happen
+  assert.equal(await game(page, () => window.__mobber.player.reserve[0]), 36);
+  assert.ok(await game(page, b => window.__mobber.objs.some(o => o.x === b.x && o.y === b.y), box), "the box should still be there");
+  await context.close();
+});
+
+test("health carries over between scenes, with a floor", async () => {
+  const { page, context } = await startedGame();
+  for (const [hp, expect] of [[72, 72], [20, 50]]) {
+    await goTo(page, "Mulberry Street");
+    await clearEnemies(page);
+    await game(page, h => { window.__mobber.player.hp = h; }, hp);
+    await faceExit(page);
+    await holdUntil(page, "w", () => window.__mobber.state === "card");
+    await clickCard(page);
+    assert.equal(await game(page, () => Math.round(window.__mobber.player.hp)), expect);
+  }
+  await context.close();
+});
+
 test("a box of rounds tops up the revolver", async () => {
   const { page, context } = await startedGame();
   await clearEnemies(page);
   const box = await game(page, () => window.__mobber.objs.find(o => o.pick === "rounds" && o.weapon === 0));
   assert.ok(box, "Mulberry Street should have a box of revolver rounds");
   await game(page, b => { const P = window.__mobber.player; P.x = b.x; P.y = b.y; }, box);
-  await page.waitForFunction(() => window.__mobber.player.reserve[0] === 24);
+  await page.waitForFunction(() => window.__mobber.player.reserve[0] === 18); // 12 to start + a box of 6
   await context.close();
 });
 

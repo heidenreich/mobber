@@ -18,7 +18,7 @@
 // waist-high parapet), rain, and `entrance`, the facade drawn on the E square
 // ("bluenote", "pier" or "hotel").
 //
-// # brick  W wallpaper  P wood panel  B bar shelves  T deco tile  E exit door
+// # brick  W wallpaper  P wood panel  B bar shelves  T deco tile  I corrugated iron  E exit door
 // F storefront  H tenement  U the Blue Note's front   (two-story facades for streets)
 // D sliding door: put it between two walls, with open floor on the other two sides
 // ! secret wall: looks like the wall next to it; walking into it slides it back up
@@ -114,26 +114,26 @@ export const LEVELS = [
   { chapter: "CHAPTER TWO", title: "Pier 9", floor: "concrete", ceil: "beams", ambient: 0.42, objective: "ledger",
     card: ["A warehouse full of Canadian rye and Vitale muscle.", "The foreman's shipping book will show", "who signed off on Eddie."],
     map: [
-      "########################",
-      "#S...r.#....*k.k.......#",
-      "#......#..g..........G.#",
-      "#..k...#.....k.k...*...#",
-      "#...*..###.######..o...#",
-      "#..a..............o....#",
-      "####.###..k..k..k......#",
-      "#......#.....*........g#",
-      "#..g...#..k..k..k......#",
-      "#..*...#..r............#",
-      "#.o....####.#####PPPP.PP",
-      "#.......g...#...Pl.....P",
-      "#..$........#.G.P..L...P",
-      "####.####.*.#...P......P",
-      "#.......#...#...PPP.PPPP",
-      "#..+.*..#..g........r..#",
-      "#.......#....k.k...$*..#",
-      "#..g....#.............aE",
-      "#.......#....*.........#",
-      "########################",
+      "IIIIIIIIIIIIIIIIIIIIIIII",
+      "IS...r.I....*k.k.......I",
+      "I......I..g..........G.I",
+      "I..k...I.....k.k...*...I",
+      "I...*..III.IIIIII..o...I",
+      "I..a..............o....I",
+      "IIII.III..k..k..k......I",
+      "I......I.....*........gI",
+      "I..g...I..k..k..k......I",
+      "I..*...I..r............I",
+      "I.o....IIII.IIIIIPPPP.PP",
+      "I.......g...I...Pl.....P",
+      "I..$........I.G.P..L...P",
+      "IIII.IIII.*.I...P......P",
+      "I.......I...I...PPP.PPPP",
+      "I..+.*..I..g........r..I",
+      "I.......I....k.k...$*..I",
+      "I..g....I.............aE",
+      "I.......I....*.........I",
+      "IIIIIIIIIIIIIIIIIIIIIIII",
     ] },
   { chapter: "EXT. REGENT SQUARE — NIGHT", title: "Regent Square", ambient: 0.32, goal: "Get into the Hotel Regent", entrance: "hotel",
     card: ["Every page of the shipping book is signed the same way.", "Don Vitale. He keeps the penthouse at the Hotel Regent,", "and his men are watching the square."],

@@ -7,6 +7,23 @@ import { objectiveDone } from "../world.js";
 
 const { deco: DECO, serif: SERIF, type: TYPE } = FONTS;
 
+// Held upright, the space under the picture is where your thumbs go: a framed
+// panel marks the two halves, so it reads as part of the set instead of dead screen.
+function thumbDeck(top) {
+  const { vw, vh } = view, m = 12, bottom = vh - m, split = vw * TOUCH.joystickArea;
+  if (bottom - top < 120) return;
+  ctx.strokeStyle = "rgba(236,230,218,0.4)"; ctx.lineWidth = 1.5; ctx.strokeRect(m, top, vw - m * 2, bottom - top);
+  ctx.lineWidth = 0.7; ctx.strokeRect(m + 5, top + 5, vw - m * 2 - 10, bottom - top - 10);
+  ctx.beginPath(); ctx.moveTo(split, top + 26); ctx.lineTo(split, bottom - 26); ctx.stroke();
+  ctx.fillStyle = "rgba(236,230,218,0.5)"; ctx.textAlign = "center";
+  const label = (big, small, x) => {
+    ctx.font = `15px ${DECO}`; ctx.fillText(big, x, top + 38);
+    ctx.font = `11px ${TYPE}`; ctx.fillText(small, x, top + 56);
+  };
+  label("WALK · TURN", "left thumb, anywhere here", (m + split) / 2);
+  label("AIM", "drag with your right thumb", (split + vw - m) / 2);
+}
+
 export function drawHUD() {
   const p = game.player, f = view.hudRect, film = view.film, s = f.s;
   if (isTouch) swapBtn.style.display = game.state === "play" && p.has[1] ? "block" : "none";
@@ -39,8 +56,13 @@ export function drawHUD() {
     : o === "doubles" ? (objectiveDone() ? "IT WAS A DOUBLE — GET TO THE ROOF" : "FIND DON VITALE")
     : o === "ledger" ? (p.ledger ? "LEDGER IN HAND — FIND THE EXIT" : "FIND THE LEDGER")
     : (objectiveDone() ? "THE DON IS DOWN — FIND THE EXIT" : "FIND DON VITALE");
+  // On a narrow screen a long objective would run into the cash and ammo: shrink it to fit between them
+  const room = f.w - 250 * s;
+  for (let size = fs(10); size > 6 && ctx.measureText(obj).width > room; size -= 0.5) ctx.font = `${size}px ${TYPE}`;
   ctx.fillText(obj, f.x + f.w / 2, base - 12 * s);
-  ctx.font = `italic 700 ${fs(10)}px ${SERIF}`; ctx.fillText(`${left} of the Vitale outfit remain`, f.x + f.w / 2, base);
+  // Under it: how many are left, or just where you are when the job is only to get through
+  ctx.font = `italic 700 ${fs(10)}px ${SERIF}`;
+  ctx.fillText(o === "reach" ? game.level.title : left === 0 ? "The Vitale outfit is finished here" : `${left} of the Vitale outfit ${left === 1 ? "remains" : "remain"}`, f.x + f.w / 2, base);
   ctx.textAlign = "right"; ctx.font = `${fs(9)}px ${TYPE}`;
   ctx.fillText(WEAPONS[p.weapon].name + (p.has[1] && p.has[0] ? "   [Q]" : ""), f.x + f.w - 18 * s, base - 13 * s);
   ctx.font = `${fs(17)}px ${DECO}`;
@@ -64,12 +86,14 @@ export function drawHUD() {
     ctx.fillStyle = "rgba(236,230,218,0.08)"; ctx.fill();
     const kd = Math.min(R, Math.hypot(m.kx - m.x, m.ky - m.y)), ka = Math.atan2(m.ky - m.y, m.kx - m.x);
     ctx.fillStyle = "rgba(236,230,218,0.5)"; ctx.beginPath(); ctx.arc(m.x + Math.cos(ka) * kd, m.y + Math.sin(ka) * kd, 24, 0, 6.283); ctx.fill();
-  } else if (isTouch && game.timer < 8) {
-    const { portrait, vw, vh } = view;
-    ctx.fillStyle = "rgba(236,230,218,0.5)"; ctx.textAlign = "center"; ctx.font = `${fs(10)}px ${TYPE}`;
-    ctx.fillText("thumb here to walk & turn", portrait ? vw * 0.25 : f.x + f.w * 0.2, portrait ? vh * 0.72 : f.y + f.h * 0.72);
-    ctx.fillText("drag here to aim", portrait ? vw * 0.7 : f.x + f.w * 0.72, portrait ? vh * 0.62 : f.y + f.h * 0.5);
+  } else if (isTouch && !view.portrait && game.timer < 8) {
+    ctx.textAlign = "center"; ctx.font = `${Math.max(13, 11 * s)}px ${TYPE}`;
+    for (const [txt, x, y] of [["left thumb: walk & turn", 0.22, 0.72], ["right thumb: drag to aim", 0.7, 0.5]]) {
+      ctx.fillStyle = "rgba(0,0,0,0.75)"; ctx.fillText(txt, f.x + f.w * x + 1.5, f.y + f.h * y + 1.5);
+      ctx.fillStyle = "rgba(236,230,218,0.9)"; ctx.fillText(txt, f.x + f.w * x, f.y + f.h * y);
+    }
   }
+  if (isTouch && view.portrait) thumbDeck(f.y + f.h + 12);
   if (input.wasLocked && !input.locked && !isTouch) {
     ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(f.x, f.y, f.w, f.h);
     ctx.fillStyle = CREAM; ctx.textAlign = "center"; ctx.font = `${fs(22)}px ${DECO}`; ctx.fillText("INTERMISSION", f.x + f.w / 2, f.y + f.h / 2);

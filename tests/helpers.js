@@ -16,7 +16,7 @@ async function openGame(browser, url, contextOptions = { viewport: { width: 1280
   return { context, page, errors };
 }
 
-// Click (or tap) through the title, prologue and chapter cards into play.
+// Click (or tap) through the title, prologue, controls and chapter cards into play.
 async function rollFilm(page, touch = false) {
   const go = async () => {
     if (touch) {
@@ -26,7 +26,7 @@ async function rollFilm(page, touch = false) {
     } else await page.mouse.click(200, 200);
   };
   await go();
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 5; i++) {
     // Each card must fade in before it accepts a click
     await page.waitForFunction(() => window.__mobber.state === "play" || (window.__mobber.state === "card" && window.__mobber.fade >= 0.6));
     if (await page.evaluate(() => window.__mobber.state === "play")) return;

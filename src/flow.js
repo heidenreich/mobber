@@ -18,7 +18,8 @@ export function advance() {
   if (game.state === "title") { showCard("prologue"); return; }
   if (game.state !== "card" || game.fade < 0.6) return;
   const c = game.card;
-  if (c.kind === "prologue") showCard("chapter", 0);
+  if (c.kind === "prologue") showCard("controls");
+  else if (c.kind === "controls") showCard("chapter", 0);
   else if (c.kind === "chapter") startLevel(c.idx);
   else if (c.kind === "dead" || c.kind === "escaped") startLevel(c.idx, true);
   else if (c.kind === "epilogue") showCard("end");

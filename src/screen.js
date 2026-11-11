@@ -29,7 +29,9 @@ export function resize() {
     // Held upright: a bigger picture across the top (sides cropped), HUD under it, thumbs below
     const s = Math.min(vh * 0.42 / H, vw * 1.7 / W);
     view.film = { w: W * s, h: H * s, x: (vw - W * s) / 2, y: Math.max(10, vh * 0.05), s };
-    view.hudRect = { x: 0, y: view.film.y, w: vw, h: view.film.h + 40 * s, s };
+    // The picture is small here, so the bar under it is laid out at full size to stay readable
+    const hs = Math.max(s, 1);
+    view.hudRect = { x: 0, y: view.film.y, w: vw, h: view.film.h + 40 * hs, s: hs };
   } else {
     view.film = view.cardRect; view.hudRect = view.film;
   }

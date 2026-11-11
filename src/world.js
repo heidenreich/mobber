@@ -164,7 +164,6 @@ export function loadLevel(i) {
   buildLight();
   buildNav();
   game.timer = 0;
-  say(lvl.goal || (lvl.objective === "ledger" ? "Find the ledger." : "Find Don Vitale."), 3);
 }
 
 // Start facing down the longest open line of sight, looking through doors

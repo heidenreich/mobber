@@ -179,8 +179,10 @@ function drawGun(t) {
   // The muzzle kicks up round your wrist when you fire, and dips while you reload
   const ang = p.recoil * (p.weapon === 0 ? 0.2 : 0.05) - reloading * 0.38;
   const ox = (p.weapon === 0 ? W / 2 + 10 : W / 2 - 40) + bobX + p.recoil * 4;
-  const oy = H - art.h + 16 + bobY + p.recoil * 6 + reloading * 18;
-  const lit = Math.min(1.05, lightAt(p.x, p.y) * 0.5 + 0.6) + (p.flash > 0 ? 0.3 : 0);
+  const oy = H - art.h + (p.weapon === 0 ? 2 : 16) + bobY + p.recoil * 6 + reloading * 18;
+  const lit = Math.min(1.05, lightAt(p.x, p.y) * 0.5 + 0.6);
+  // The flash adds a fixed amount of light, so dark steel catches it and skin doesn't burn out
+  const flashAdd = p.flash > 0 ? 34 : 0;
   const [pvx, pvy] = art.pivot, cx = ox + pvx, cy = oy + pvy, cs = Math.cos(ang), sn = Math.sin(ang);
   // Screen box the turned bitmap covers, then map each screen pixel back into the bitmap
   let x0 = W, x1 = 0, y0 = H, y1 = 0;
@@ -195,7 +197,7 @@ function drawGun(t) {
       const rx = sx - cx, u = (pvx + rx * cs + ry * sn) | 0, v = (pvy - rx * sn + ry * cs) | 0;
       if (u < 0 || v < 0 || u >= art.w || v >= art.h) continue;
       const i = v * art.w + u;
-      if (art.A[i] > 110) luma[sy * W + sx] = art.L[i] * (art.L[i] > 245 ? 1.1 : lit);
+      if (art.A[i] > 110) luma[sy * W + sx] = art.L[i] > 245 ? art.L[i] * 1.1 : Math.min(225, art.L[i] * lit + flashAdd);
     }
   }
 }

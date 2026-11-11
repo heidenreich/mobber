@@ -39,23 +39,27 @@ function grain(g, x0, y0, x1, y1, n, v) {
 }
 
 function muzzleFlash(g, x, y, big) {
-  const halo = g.createRadialGradient(x, y, 0, x, y, big * 1.5);
-  halo.addColorStop(0, "rgba(255,255,255,0.85)"); halo.addColorStop(0.5, "rgba(255,255,255,0.35)"); halo.addColorStop(1, "rgba(255,255,255,0)");
-  g.fillStyle = halo; g.beginPath(); g.arc(x, y, big * 1.5, 0, 6.283); g.fill();
-  // A star of flame, longest along the barrel
-  g.fillStyle = gray(255); g.beginPath();
-  for (let i = 0; i < 22; i++) {
-    const a = Math.PI + (i - 11) * 0.15, along = Math.abs(Math.cos(a - Math.PI));
-    const r = i % 2 ? big * 0.28 : big * (0.55 + 0.45 * along);
-    g.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
+  // Bitmaps are cut out at a hard alpha edge, so no soft glow: a ragged star of
+  // flame thrown forward, a small white-hot core and a ring of gray smoke.
+  g.fillStyle = gray(92);
+  for (const [dx, dy, r] of [[-0.35, -0.3, 0.3], [-0.55, 0.22, 0.26], [-0.1, 0.32, 0.2], [-0.75, -0.08, 0.24]]) {
+    g.beginPath(); g.arc(x + dx * big, y + dy * big, r * big, 0, 6.283); g.fill();
+  }
+  const rays = 14;
+  g.fillStyle = gray(236); g.beginPath();
+  for (let i = 0; i < rays * 2; i++) {
+    const a = (i / (rays * 2)) * 6.283, forward = Math.max(0, -Math.cos(a));   // longest pointing away from the gun
+    const r = i % 2 ? big * 0.3 : big * (0.42 + 0.8 * forward ** 2) * (0.75 + 0.5 * ((i * 7919) % 13) / 13);
+    g.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r * 0.75);
   }
   g.closePath(); g.fill();
+  g.fillStyle = gray(255); g.beginPath(); g.ellipse(x - big * 0.12, y, big * 0.32, big * 0.22, 0, 0, 6.283); g.fill();
 }
 
 // A pinstriped suit sleeve and white shirt cuff running from (x, y) off the edge of the frame at angle `rot`
 function sleeve(g, x, y, rot, len, wid) {
   g.save(); g.translate(x, y); g.rotate(rot);
-  g.fillStyle = barGradient(g, -wid / 2, wid / 2, 70, 46, 24);
+  g.fillStyle = barGradient(g, -wid / 2, wid / 2, 104, 70, 34);
   g.beginPath(); g.moveTo(0, -wid / 2); g.lineTo(len, -wid / 2 - 6); g.lineTo(len, wid / 2 + 6); g.lineTo(0, wid / 2); g.closePath(); g.fill();
   g.strokeStyle = "rgba(200,200,200,0.22)"; g.lineWidth = 1;
   for (let k = -wid / 2 + 4; k < wid / 2; k += 6) { g.beginPath(); g.moveTo(12, k); g.lineTo(len, k * 1.15); g.stroke(); } // pinstripes
@@ -70,11 +74,11 @@ function capsule(g, x0, y0, x1, y1, w, v) {
   g.lineCap = "round";
   g.strokeStyle = gray(v - 70); g.lineWidth = w + 2; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
   g.strokeStyle = gray(v); g.lineWidth = w; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
-  g.strokeStyle = gray(Math.min(255, v + 34)); g.lineWidth = w * 0.3;
+  g.strokeStyle = gray(Math.min(255, v + 28)); g.lineWidth = w * 0.3;
   g.beginPath(); g.moveTo(x0, y0 - w * 0.2); g.lineTo(x1, y1 - w * 0.2); g.stroke();
 }
 // A finger along a chain of points, with knuckle creases
-function finger(g, pts, w, v = 182) {
+function finger(g, pts, w, v = 150) {
   for (let i = 0; i < pts.length - 1; i++) capsule(g, ...pts[i], ...pts[i + 1], w, v - i * 4);
   g.fillStyle = gray(v - 64);
   for (let i = 1; i < pts.length - 1; i++) { g.beginPath(); g.arc(pts[i][0], pts[i][1], 1.2, 0, 6.283); g.fill(); }
@@ -83,24 +87,29 @@ function finger(g, pts, w, v = 182) {
 // past the edge running from `top` to `bottom`; the back of the hand lies `palmFrom`..`depth`
 // behind that edge, on the side away from `dir` (dir 1: fingers point toward the muzzle).
 // `skipTop` leaves room at the top of the grip for a trigger finger. `wrist` is where the cuff is.
-function gripHand(g, { top, bottom, depth, palmFrom = 0, n = 3, skipTop = 0, wrist, dir = 1, v = 182 }) {
+function gripHand(g, { top, bottom, depth, palmFrom = 0, n = 3, skipTop = 0, wrist, dir = 1, v = 150 }) {
   const len = Math.hypot(bottom[0] - top[0], bottom[1] - top[1]);
   const ux = (bottom[0] - top[0]) / len, uy = (bottom[1] - top[1]) / len, fx = -uy * dir, fy = ux * dir;
   const P = (s, d) => [top[0] + ux * s - fx * d, top[1] + uy * s - fy * d];
   if (wrist) capsule(g, ...P(len * 0.55, (palmFrom + depth) / 2), ...wrist, depth - palmFrom + 4, v - 14);
   const pts = [P(skipTop - 3, palmFrom), P(skipTop - 4, depth), P(len + 4, depth), P(len + 3, palmFrom)];
   const ys = pts.map(q => q[1]);
-  g.fillStyle = barGradient(g, Math.min(...ys), Math.max(...ys), v + 24, v, v - 50);
+  g.fillStyle = barGradient(g, Math.min(...ys), Math.max(...ys), v + 30, v, v - 62);
   g.strokeStyle = g.fillStyle; g.lineWidth = 8; g.lineJoin = "round";
   g.beginPath(); pts.forEach(q => g.lineTo(...q)); g.closePath(); g.fill(); g.stroke();
   g.strokeStyle = gray(v - 40); g.lineWidth = 1;                     // tendons on the back of the hand
   for (let i = 0; i < n; i++) { const s = skipTop + (len - skipTop) * (i + 0.5) / n; g.beginPath(); g.moveTo(...P(s, depth - 3)); g.lineTo(...P(s, palmFrom + (depth - palmFrom) * 0.7)); g.stroke(); }
-  const w = (len - skipTop) / n;
-  for (let i = n - 1; i >= 0; i--) {                                  // bottom finger first, so each one above overlaps it
-    const s = skipTop + w * (i + 0.5), base = P(s, palmFrom + (depth - palmFrom) * 0.55), mid = P(s, palmFrom * 0.5 + 2), tip = P(s, -3);
-    capsule(g, ...base, ...mid, w * 0.95, v - i * 5);
-    capsule(g, ...mid, ...tip, w * 0.88, v - 6 - i * 5);
-    g.fillStyle = gray(v - 70); g.beginPath(); g.arc(...mid, 1.3, 0, 6.283); g.fill();
+  // Real fingers aren't a row of matching tubes: the middle one is longest, the little one thin and short
+  const SHAPES = { 3: [[1.05, 4], [1.0, 2.5], [0.82, 0.5]], 4: [[1.0, 3], [1.06, 4.5], [1.0, 3], [0.8, 0.5]] }[n];
+  const w = (len - skipTop) / SHAPES.reduce((a, [k]) => a + k, 0);
+  let s0 = skipTop;
+  const fingers = SHAPES.map(([k, reach], i) => { const fw = w * k, f = { s: s0 + fw / 2, fw, reach, i }; s0 += fw; return f; });
+  for (const { s, fw, reach, i } of fingers.reverse()) {             // bottom finger first, so each one above overlaps it
+    const base = P(s, palmFrom + (depth - palmFrom) * 0.55), mid = P(s, palmFrom * 0.5 + 2), tip = P(s, -reach);
+    capsule(g, ...base, ...mid, fw * 0.95, v - i * 6);
+    capsule(g, ...mid, ...tip, fw * 0.86, v - 8 - i * 6);
+    g.strokeStyle = gray(v - 66); g.lineWidth = 1.1; g.beginPath();     // knuckle crease
+    g.moveTo(mid[0] - ux * fw * 0.3, mid[1] - uy * fw * 0.3); g.lineTo(mid[0] + ux * fw * 0.3, mid[1] + uy * fw * 0.3); g.stroke();
   }
 }
 
@@ -153,7 +162,8 @@ function revolverArt(flash) {
     g.fillStyle = barGradient(g, -17, -10, 180, 120, 60); g.beginPath(); g.moveTo(-100, -10); g.lineTo(-98, -17); g.lineTo(-92, -17); g.lineTo(-91, -10); g.fill(); // front sight
     // your hand: three fingers round the grip, the index finger in the guard on the trigger
     gripHand(g, { top: [24, 8], bottom: [38, 54], depth: 26, n: 3, skipTop: 10, wrist: [72, 46] });
-    finger(g, [[42, 4], [24, 12], [12, 14], [9, 19]], 9);
+    finger(g, [[48, 14], [42, -2], [34, -9]], 10, 140);                 // thumb, curled over the top of the grip
+  finger(g, [[42, 4], [24, 12], [12, 14], [9, 19]], 9);
     if (flash) muzzleFlash(g, -110, -3, 42);
     g.restore();
   });
@@ -205,7 +215,8 @@ function tommyArt(flash) {
     g.fillStyle = barGradient(g, 6, 50, 140, 96, 46);
     g.beginPath(); g.moveTo(-64, 6); g.lineTo(-46, 6); g.lineTo(-44, 50); g.quadraticCurveTo(-54, 56, -62, 50); g.closePath(); g.fill();
     // left hand: the back of the hand in front of the foregrip, fingers wrapped round toward you
-    gripHand(g, { top: [-46, 10], bottom: [-44, 48], depth: 34, palmFrom: 16, n: 4, dir: -1, wrist: [-62, 70], v: 176 });
+    gripHand(g, { top: [-46, 10], bottom: [-44, 48], depth: 34, palmFrom: 16, n: 4, dir: -1, wrist: [-62, 70], v: 146 });
+    finger(g, [[-70, 8], [-56, 2], [-44, 4]], 9.5, 140);                 // left thumb over the top of the foregrip
     // right hand on the pistol grip, index finger on the trigger
     gripHand(g, { top: [36, 10], bottom: [42, 48], depth: 24, n: 3, skipTop: 6, wrist: [76, 44] });
     finger(g, [[54, 6], [38, 12], [27, 13], [24, 18]], 8.5);

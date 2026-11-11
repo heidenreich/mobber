@@ -15,6 +15,8 @@ import { luma } from "./film.js";
 const NIGHT_SKY = makeSky(2048, HALF), DAWN_SKY = makeSky(2048, HALF, true);
 // Each screen column's angle from the view direction, for wrapping the sky around
 const COL_ANGLE = Float32Array.from({ length: W }, (_, x) => Math.atan((2 * x / W - 1) * PLANE));
+// What each screen column's wall looked like this frame, kept for reflections in wet streets
+const colTex = new Array(W), colTx = new Uint8Array(W), colLit = new Float32Array(W);
 
 export function renderWorld(t) {
   camera();
@@ -106,6 +108,7 @@ export function renderWorld(t) {
     // Mirror where needed so textures (and the lettering on signs) read left to right
     if ((side === 0 && rdx < 0) || (side === 1 && rdy > 0)) tx = 63 - tx;
     const lit = lightAt(px + rdx * (perp - 0.06), py + rdy * (perp - 0.06)) * Math.exp(-perp * FOG) * (side ? 0.8 : 1);
+    colTex[x] = tex; colTx[x] = tx; colLit[x] = lit;
     const ys = Math.max(0, y0 | 0), ye = Math.min(H, Math.ceil(HALF + lineH / 2));
     // 64-high textures repeat once per story; taller ones (facades) stretch over the whole wall
     const texH = tex.h, L = tex.L, step = (texH === 64 ? 64 * wallH : texH) / (lineH * wallH);
@@ -117,12 +120,15 @@ export function renderWorld(t) {
     }
   }
 
+  const wet = !!lvl.rain;
+  if (wet) wetStreet(t, wallH);
+
   // Sprites, far to near
   const list = [];
   for (const o of game.objs) list.push({ x: o.x, y: o.y, art: o.art, scale: o.scale, hang: o.hang, glow: o.glow, bob: o.bob ? Math.sin(t * 3) * 0.03 : 0 });
   for (const e of game.enemies) {
     const A = PEOPLE[e.type.art];
-    let art = A.idle;
+    let art = e.moving ? A.walk[Math.sin(e.step * 9) > 0 ? 0 : 1] : A.idle;
     if (e.state === "aim") art = A.aim; else if (e.state === "fire") art = e.t > 0.07 ? A.fire : A.aim;
     else if (e.state === "hurt") art = A.hurt; else if (e.state === "dying") art = e.t > 0.25 ? A.hurt : A.fall;
     else if (e.state === "dead") art = A.dead;
@@ -131,9 +137,31 @@ export function renderWorld(t) {
   }
   for (const s of list) s.d = (s.x - px) ** 2 + (s.y - py) ** 2;
   list.sort((a, b) => b.d - a.d);
-  for (const s of list) drawSprite(s);
+  for (const s of list) drawSprite(s, wet);
 
   drawGun(t);
+}
+
+// Rain-slick pavement mirrors the buildings: each floor pixel adds a little of the
+// wall its reflected ray would reach, so lit windows and signs smear down the street.
+// The mirror is strongest at a glancing angle (far away) and wobbles with the rain.
+function wetStreet(t, wallH) {
+  for (let y = HALF + 2; y < H; y++) {
+    const r = (0.5 * K) / (y - HALF);                      // how far away this row of pavement is
+    const strength = 0.55 * (0.25 + 0.75 * Math.min(1, r / 5));
+    const wobble = Math.round(Math.sin(y * 0.8 + t * 5) * 1.5);
+    const row = y * W;
+    for (let x = 0; x < W; x++) {
+      const xs = clamp(x + wobble, 0, W - 1), perp = zbuf[xs];
+      if (r >= perp) continue;
+      const h = 0.5 * (perp - r) / r;                      // the height on the wall the reflection shows
+      if (h >= wallH) continue;
+      const tex = colTex[xs], texH = tex.h;
+      const ty = ((wallH - h) * (texH === 64 ? 64 : texH / wallH)) | 0;
+      const v = tex.L[((ty % texH) << 6) | colTx[xs]];
+      luma[row + x] += (v > GLOW ? v : v * colLit[xs]) * strength;
+    }
+  }
 }
 
 // Where a ray first enters an axis-aligned box, and which kind of face it hit
@@ -147,7 +175,7 @@ function rayBox(px, py, rdx, rdy, b) {
   return { t: tn, side: txn > tyn ? 0 : 1 };
 }
 
-function drawSprite(s) {
+function drawSprite(s, wet) {
   const [, tY, sx] = project(s.x, s.y);
   if (tY < 0.12) return;
   const bm = s.art, size = (K / tY) * s.scale;
@@ -169,6 +197,14 @@ function drawSprite(s) {
       if (bm.A[i] > 110) luma[y * W + x] = bm.L[i] * (bm.L[i] > 245 ? 1.1 : lit);
       ty += stepY;
     }
+    // On wet pavement, a dim upside-down copy under the feet
+    if (wet && !s.hang) {
+      const r1 = Math.min(H, (floorY + size * 0.9) | 0);
+      for (let y = Math.max(0, Math.ceil(floorY)); y < r1; y++) {
+        const i = (((floorY - y + size) * stepY) | 0) * bm.w + tx;
+        if (i >= 0 && bm.A[i] > 110) { const v = bm.L[i] * (bm.L[i] > 245 ? 1.1 : lit); luma[y * W + x] = luma[y * W + x] * 0.72 + v * 0.28; }
+      }
+    }
   }
 }
 
@@ -181,7 +217,7 @@ function drawGun(t) {
     : set.kick[Math.min(set.kick.length - 1, Math.round(p.recoil * (set.kick.length - 1)))];
   const bobX = p.moving ? Math.cos(p.bob) * 5 : 0, bobY = p.moving ? Math.abs(Math.sin(p.bob)) * 5 : Math.sin(t * 1.5) * 1.5;
   const ox = Math.round(set.x + bobX), oy = Math.round(set.y + bobY + reloading * 26);
-  const lit = Math.min(1.05, lightAt(p.x, p.y) * 0.5 + 0.6);
+  const lit = clamp(lightAt(p.x, p.y) * 0.9 + 0.12, 0.36, 1.05);   // the gun takes the light of where you stand
   // The flash adds a fixed amount of light, so dark steel catches it and skin doesn't burn out
   const flashAdd = p.flash > 0 ? 20 : 0;
   for (let y = Math.max(0, -oy); y < art.h; y++) {
@@ -189,7 +225,7 @@ function drawGun(t) {
     for (let x = Math.max(0, -ox); x < art.w; x++) {
       const sx = ox + x; if (sx >= W) break;
       const i = y * art.w + x;
-      if (art.A[i] > 110) luma[sy * W + sx] = art.L[i] > 245 ? art.L[i] * 1.1 : Math.min(225, art.L[i] * lit + flashAdd);
+      if (art.A[i] > 110) luma[sy * W + sx] = flashAdd && art.L[i] > 245 ? art.L[i] * 1.1 : Math.min(225, art.L[i] * lit + flashAdd);   // only the flash itself glows
     }
   }
 }

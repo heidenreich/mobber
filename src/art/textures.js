@@ -63,6 +63,16 @@ export const TEX = {
     g.fillStyle = gray(250); g.font = "bold 8px monospace"; g.textAlign = "center"; g.fillText("EXIT", 32, 15);
   }),
 };
+// Corrugated iron sheeting for the warehouse: ribs, a riveted seam, rust running down from it
+TEX.iron = bitmap(64, 64, g => {
+  for (let x = 0; x < 64; x++) { g.fillStyle = gray(92 + Math.sin(x / 8 * Math.PI * 2) * 34); g.fillRect(x, 0, 1, 64); }
+  g.fillStyle = "rgba(0,0,0,0.35)"; g.fillRect(0, 20, 64, 2); g.fillStyle = "rgba(255,255,255,0.22)"; g.fillRect(0, 22, 64, 1);   // where two sheets overlap
+  g.fillStyle = gray(190); for (let x = 4; x < 64; x += 8) { g.fillRect(x, 17, 2, 2); }                                           // rivets
+  for (let i = 0; i < 9; i++) { const x = rand(0, 62), h = rand(8, 30); g.fillStyle = `rgba(20,16,12,${rand(0.18, 0.4)})`; g.fillRect(x, 22, rand(1, 3), h); }   // rust streaks
+  const foot = g.createLinearGradient(0, 46, 0, 64); foot.addColorStop(0, "rgba(0,0,0,0)"); foot.addColorStop(1, "rgba(0,0,0,0.55)");
+  g.fillStyle = foot; g.fillRect(0, 46, 64, 18);                                                                                   // grime along the floor
+  speckle(g, 64, 64, 500, 0.25);
+});
 export const FLOORS = {
   checker: bitmap(64, 64, g => {
     for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) { g.fillStyle = gray((x + y) % 2 ? 36 : 196); g.fillRect(x * 16, y * 16, 16, 16); }
@@ -70,9 +80,10 @@ export const FLOORS = {
     speckle(g, 64, 64, 400, 0.3);
   }),
   concrete: bitmap(64, 64, g => {
-    g.fillStyle = gray(96); g.fillRect(0, 0, 64, 64); speckle(g, 64, 64, 1600, 0.35);
-    g.strokeStyle = gray(60); g.beginPath(); g.moveTo(5, 10); g.lineTo(20, 22); g.lineTo(26, 40); g.stroke();
-    g.fillStyle = gray(70); g.fillRect(0, 0, 64, 1); g.fillRect(0, 0, 1, 64);
+    g.fillStyle = gray(104); g.fillRect(0, 0, 64, 64); speckle(g, 64, 64, 1600, 0.35);
+    for (const [x, y, r] of [[18, 44, 9], [47, 16, 6], [40, 50, 4]]) { g.fillStyle = "rgba(0,0,0,0.22)"; g.beginPath(); g.ellipse(x, y, r, r * 0.7, 0.4, 0, 6.283); g.fill(); }   // oil stains
+    g.strokeStyle = gray(58); g.beginPath(); g.moveTo(5, 10); g.lineTo(20, 22); g.lineTo(26, 40); g.lineTo(23, 52); g.stroke();                                              // a crack
+    g.fillStyle = gray(60); g.fillRect(0, 0, 64, 2); g.fillRect(0, 0, 2, 64); g.fillStyle = gray(132); g.fillRect(2, 2, 62, 1); g.fillRect(2, 2, 1, 62);                    // slab joints
   }),
   carpet: bitmap(64, 64, g => {
     g.fillStyle = gray(58); g.fillRect(0, 0, 64, 64);
@@ -106,10 +117,13 @@ export const CEILS = {
       g.fillStyle = gray(80); g.fillRect(x + 2, y + 12, 12, 2); g.fillRect(x + 12, y + 2, 2, 12);
     }
   }),
+  // The warehouse roof: dark boards, heavy timbers one way, lighter purlins across them
   beams: bitmap(64, 64, g => {
-    g.fillStyle = gray(40); g.fillRect(0, 0, 64, 64);
-    g.fillStyle = gray(78); g.fillRect(0, 0, 64, 10); g.fillRect(0, 32, 64, 10);
-    g.fillStyle = gray(25); g.fillRect(0, 10, 64, 2); g.fillRect(0, 42, 64, 2);
+    g.fillStyle = gray(34); g.fillRect(0, 0, 64, 64);
+    g.fillStyle = gray(22); for (let x = 0; x < 64; x += 8) g.fillRect(x, 0, 1, 64);                 // gaps between boards
+    for (const y of [20, 52]) { g.fillStyle = gray(62); g.fillRect(0, y, 64, 4); g.fillStyle = gray(84); g.fillRect(0, y, 64, 1); }   // purlins
+    g.fillStyle = gray(84); g.fillRect(26, 0, 12, 64); g.fillStyle = gray(118); g.fillRect(26, 0, 2, 64); g.fillStyle = gray(40); g.fillRect(36, 0, 2, 64);   // a main timber
+    g.fillStyle = gray(150); for (const y of [22, 54]) { g.fillRect(29, y, 2, 2); g.fillRect(33, y, 2, 2); }   // bolt heads
     speckle(g, 64, 64, 300, 0.3);
   }),
   plaster: bitmap(64, 64, g => {
@@ -119,7 +133,7 @@ export const CEILS = {
 };
 
 // Map letter -> wall texture (see levels.js for the legend)
-export const WALL_TEXTURES = { "#": TEX.brick, W: TEX.paper, P: TEX.panel, B: TEX.bar, T: TEX.deco, E: TEX.door, ...FACADES };
+export const WALL_TEXTURES = { "#": TEX.brick, W: TEX.paper, P: TEX.panel, B: TEX.bar, T: TEX.deco, I: TEX.iron, E: TEX.door, ...FACADES };
 
 // Sliding door: wood with a frosted glass panel and a brass pull
 export const DOOR_TEX = bitmap(64, 64, g => {

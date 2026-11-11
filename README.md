@@ -79,7 +79,7 @@ src/
     textures.js       wall, floor and ceiling textures
     sprites.js        gangsters, furniture, lamps, pickups and street props
     streets.js        the night sky, two-story building fronts and entrances
-    guns.js           the revolver and the tommy gun
+    guns.js           the revolver and the tommy gun: small 3D models drawn from your point of view
   input/
     desktop.js        keyboard, mouse, pointer lock
     touch.js          floating stick, drag-to-aim, FIRE and SWAP

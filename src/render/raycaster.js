@@ -173,30 +173,22 @@ function drawSprite(s) {
 }
 
 function drawGun(t) {
-  const p = game.player, art = GUN_ART[p.weapon][p.flash > 0 ? 1 : 0];
-  const bobX = p.moving ? Math.cos(p.bob) * 6 : 0, bobY = p.moving ? Math.abs(Math.sin(p.bob)) * 6 : Math.sin(t * 1.5) * 1.5;
+  const p = game.player, set = GUN_ART[p.weapon];
   const reloading = p.reload > 0 ? Math.sin(Math.min(1, p.reload / WEAPONS[p.weapon].reload) * Math.PI) : 0;
-  // The muzzle kicks up round your wrist when you fire, and dips while you reload
-  const ang = p.recoil * (p.weapon === 0 ? 0.2 : 0.05) - reloading * 0.38;
-  const ox = (p.weapon === 0 ? W / 2 + 10 : W / 2 - 40) + bobX + p.recoil * 4;
-  const oy = H - art.h + (p.weapon === 0 ? 2 : 16) + bobY + p.recoil * 6 + reloading * 18;
+  // Pick the pose: mid-reload, mid-shot with the flash, or somewhere along the recoil
+  const art = reloading > 0.25 ? set.reload[reloading > 0.6 ? 1 : 0]
+    : p.flash > 0 ? set.flash
+    : set.kick[Math.min(set.kick.length - 1, Math.round(p.recoil * (set.kick.length - 1)))];
+  const bobX = p.moving ? Math.cos(p.bob) * 5 : 0, bobY = p.moving ? Math.abs(Math.sin(p.bob)) * 5 : Math.sin(t * 1.5) * 1.5;
+  const ox = Math.round(set.x + bobX), oy = Math.round(set.y + bobY + reloading * 26);
   const lit = Math.min(1.05, lightAt(p.x, p.y) * 0.5 + 0.6);
   // The flash adds a fixed amount of light, so dark steel catches it and skin doesn't burn out
-  const flashAdd = p.flash > 0 ? 34 : 0;
-  const [pvx, pvy] = art.pivot, cx = ox + pvx, cy = oy + pvy, cs = Math.cos(ang), sn = Math.sin(ang);
-  // Screen box the turned bitmap covers, then map each screen pixel back into the bitmap
-  let x0 = W, x1 = 0, y0 = H, y1 = 0;
-  for (const [ax, ay] of [[0, 0], [art.w, 0], [0, art.h], [art.w, art.h]]) {
-    const dx = ax - pvx, dy = ay - pvy, X = cx + dx * cs - dy * sn, Y = cy + dx * sn + dy * cs;
-    x0 = Math.min(x0, X); x1 = Math.max(x1, X); y0 = Math.min(y0, Y); y1 = Math.max(y1, Y);
-  }
-  x0 = Math.max(0, x0 | 0); x1 = Math.min(W - 1, Math.ceil(x1)); y0 = Math.max(0, y0 | 0); y1 = Math.min(H - 1, Math.ceil(y1));
-  for (let sy = y0; sy <= y1; sy++) {
-    const ry = sy - cy;
-    for (let sx = x0; sx <= x1; sx++) {
-      const rx = sx - cx, u = (pvx + rx * cs + ry * sn) | 0, v = (pvy - rx * sn + ry * cs) | 0;
-      if (u < 0 || v < 0 || u >= art.w || v >= art.h) continue;
-      const i = v * art.w + u;
+  const flashAdd = p.flash > 0 ? 20 : 0;
+  for (let y = Math.max(0, -oy); y < art.h; y++) {
+    const sy = oy + y; if (sy >= H) break;
+    for (let x = Math.max(0, -ox); x < art.w; x++) {
+      const sx = ox + x; if (sx >= W) break;
+      const i = y * art.w + x;
       if (art.A[i] > 110) luma[sy * W + sx] = art.L[i] > 245 ? art.L[i] * 1.1 : Math.min(225, art.L[i] * lit + flashAdd);
     }
   }

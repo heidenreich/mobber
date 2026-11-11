@@ -55,9 +55,10 @@ export function startLevel(i, retry) {
 
 export function fadeOut(fn, dur = 0.8) { game.fadeDir = -1 / dur; game.afterFade = fn; }
 
+// A scene's iris opens a little slower than a card fades in
 export function tickFade(dt) {
   if (!game.fadeDir) return;
-  game.fade = clamp(game.fade + game.fadeDir * dt * (game.fadeDir > 0 ? (game.state === "card" ? 1.6 : 1.1) : 1)   // a scene's iris opens a little slower than a card fades in, 0, 1);
+  game.fade = clamp(game.fade + game.fadeDir * dt * (game.fadeDir > 0 ? (game.state === "card" ? 1.6 : 1.1) : 1), 0, 1);
   if (game.fadeDir < 0 && game.fade <= 0) { game.fadeDir = 0; const fn = game.afterFade; game.afterFade = null; if (fn) fn(); }
   else if (game.fadeDir > 0 && game.fade >= 1) game.fadeDir = 0;
 }

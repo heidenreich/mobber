@@ -173,18 +173,23 @@ function drawSprite(s) {
 }
 
 function drawGun(t) {
-  const p = game.player, art = GUN_ART[p.weapon][p.flash > 0 ? 1 : 0];
-  const bobX = p.moving ? Math.cos(p.bob) * 6 : 0, bobY = p.moving ? Math.abs(Math.sin(p.bob)) * 6 : Math.sin(t * 1.5) * 1.5;
-  const reloadDrop = p.reload > 0 ? Math.sin(Math.min(1, p.reload / WEAPONS[p.weapon].reload) * Math.PI) * 70 : 0;
-  const ox = (p.weapon === 0 ? W / 2 + 10 : W / 2 - 40) + bobX + p.recoil * 6;
-  const oy = H - art.h - 4 + bobY + p.recoil * 10 + reloadDrop;
-  const lit = Math.min(1.05, lightAt(p.x, p.y) * 0.5 + 0.6) + (p.flash > 0 ? 0.3 : 0);
-  for (let y = 0; y < art.h; y++) {
-    const sy = (oy + y) | 0; if (sy < 0 || sy >= H) continue;
-    for (let x = 0; x < art.w; x++) {
-      const sx = (ox + x) | 0; if (sx < 0 || sx >= W) continue;
+  const p = game.player, set = GUN_ART[p.weapon];
+  const reloading = p.reload > 0 ? Math.sin(Math.min(1, p.reload / WEAPONS[p.weapon].reload) * Math.PI) : 0;
+  // Pick the pose: mid-reload, mid-shot with the flash, or somewhere along the recoil
+  const art = reloading > 0.25 ? set.reload[reloading > 0.6 ? 1 : 0]
+    : p.flash > 0 ? set.flash
+    : set.kick[Math.min(set.kick.length - 1, Math.round(p.recoil * (set.kick.length - 1)))];
+  const bobX = p.moving ? Math.cos(p.bob) * 5 : 0, bobY = p.moving ? Math.abs(Math.sin(p.bob)) * 5 : Math.sin(t * 1.5) * 1.5;
+  const ox = Math.round(set.x + bobX), oy = Math.round(set.y + bobY + reloading * 26);
+  const lit = Math.min(1.05, lightAt(p.x, p.y) * 0.5 + 0.6);
+  // The flash adds a fixed amount of light, so dark steel catches it and skin doesn't burn out
+  const flashAdd = p.flash > 0 ? 20 : 0;
+  for (let y = Math.max(0, -oy); y < art.h; y++) {
+    const sy = oy + y; if (sy >= H) break;
+    for (let x = Math.max(0, -ox); x < art.w; x++) {
+      const sx = ox + x; if (sx >= W) break;
       const i = y * art.w + x;
-      if (art.A[i] > 110) luma[sy * W + sx] = art.L[i] * (art.L[i] > 245 ? 1.1 : lit);
+      if (art.A[i] > 110) luma[sy * W + sx] = art.L[i] > 245 ? art.L[i] * 1.1 : Math.min(225, art.L[i] * lit + flashAdd);
     }
   }
 }

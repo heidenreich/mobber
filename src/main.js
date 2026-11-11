@@ -13,10 +13,11 @@ import { updateDoors, updateSecrets } from "./doors.js";
 import { startLevel, tickFade } from "./flow.js";
 import { installDesktopInput } from "./input/desktop.js";
 import { installTouchInput } from "./input/touch.js";
-import { buf, develop, projector, rain } from "./render/film.js";
+import { buf, develop, projector, rain, iris } from "./render/film.js";
 import { renderWorld } from "./render/raycaster.js";
 import { drawHUD } from "./render/hud.js";
 import { drawCard } from "./render/cards.js";
+import { music } from "./music.js";
 
 watchScreen();
 installDesktopInput();
@@ -42,16 +43,27 @@ function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
   resizeIfChanged();
   const paused = game.state === "play" && input.wasLocked && !input.locked && !isTouch;
-  if ((game.state === "play" && !paused) || game.state === "dying" || game.state === "won" || game.state === "leaving") update(dt);
-  tickFade(dt);
+  // A dialogue card stops the action (and any fade) while it holds the screen
+  const it = game.intertitle;
+  if (it) { if (!paused) it.t -= dt; if (it.t <= 0) game.intertitle = null; }
+  else {
+    if ((game.state === "play" && !paused) || game.state === "dying" || game.state === "won" || game.state === "leaving") update(dt);
+    tickFade(dt);
+  }
   const { vw, vh, film } = view;
   ctx.fillStyle = "#000"; ctx.fillRect(0, 0, vw, vh);
   const flicker = 0.93 + Math.random() * 0.07;
   const jitter = Math.random() < 0.03 ? rand(-2, 2) : 0;
-  if (["play", "dying", "won", "leaving"].includes(game.state) && game.level) {
+  if (it) {
+    ctx.save(); ctx.globalAlpha = Math.min(1, (it.dur - it.t) / 0.12, it.t / 0.12) * flicker;
+    drawCard(t);
+    ctx.restore();
+    projector(0.8);
+  } else if (["play", "dying", "won", "leaving"].includes(game.state) && game.level) {
     const p = game.player;
     renderWorld(t);
-    let bright = flicker * game.fade * (p.flash > 0 ? 1.25 : 1) * (1 - p.hurt * 1.2);
+    // Scenes open and close with an iris (below); the picture itself only dims a little
+    let bright = flicker * (0.5 + 0.5 * game.fade) * (p.flash > 0 ? 1.25 : 1) * (1 - p.hurt * 1.2);
     if (game.state === "dying") bright *= 0.7;
     develop(Math.max(0.05, bright));
     const shake = p.hurt > 0 ? rand(-4, 4) * p.hurt * 3 : 0;
@@ -59,7 +71,8 @@ function frame(now) {
     ctx.drawImage(buf, film.x + shake, film.y + jitter + shake, film.w, film.h);
     if (game.level.rain) rain(dt);
     projector();
-    drawHUD();
+    if (game.fade < 1) iris(game.fade);
+    ctx.save(); ctx.globalAlpha = game.fade; drawHUD(); ctx.restore();
   } else {
     ctx.save(); ctx.globalAlpha = game.state === "card" ? game.fade * flicker : flicker;
     drawCard(t);
@@ -73,6 +86,6 @@ requestAnimationFrame(frame);
 // Hook for the automated tests in tests/
 window.__mobber = {
   get state() { return game.state; }, get player() { return game.player; }, get enemies() { return game.enemies; },
-  get objs() { return game.objs; }, get level() { return game.level; }, get card() { return game.card; }, get map() { return game.map; }, get doors() { return game.doors; }, get fade() { return game.fade; }, get navBlocked() { return game.navBlocked; }, stats, LEVELS, AMMO, startLevel, wallAt, los, hurtPlayer,
+  get objs() { return game.objs; }, get level() { return game.level; }, get card() { return game.card; }, get map() { return game.map; }, get doors() { return game.doors; }, get fade() { return game.fade; }, get navBlocked() { return game.navBlocked; }, get intertitle() { return game.intertitle; }, set dialogue(v) { game.dialogue = v; }, stats, LEVELS, AMMO, music, startLevel, wallAt, los, hurtPlayer,
   TILES: { walls: WALL_CHARS, sideWalls: SIDE_WALL_CHARS, blockers: Object.keys(SPAWNS).filter(k => SPAWNS[k].block).join("") },
 };

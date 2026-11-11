@@ -1,9 +1,10 @@
 // Keyboard and mouse. The mouse aims through pointer lock; if pointer lock isn't
 // available, dragging with the button held turns instead.
 import { isTouch, PLAYER } from "../config.js";
-import { game, input } from "../state.js";
+import { game, input, say } from "../state.js";
 import { cv } from "../screen.js";
 import { initAudio } from "../audio.js";
+import { music } from "../music.js";
 import { switchWeapon, startReload, use } from "../player.js";
 import { advance, requestLock } from "../flow.js";
 
@@ -12,6 +13,7 @@ export function installDesktopInput() {
     const k = e.key.toLowerCase(), p = game.player; input.keys.add(k);
     if (k === " ") { e.preventDefault(); input.firing = true; }
     if (k === "enter") advance();
+    if (k === "m" && !e.repeat) say(music.toggle() ? "The pianist takes a break." : "The pianist is back.");
     // One press, one action (no key-repeat), and nothing while paused or between scenes
     const paused = input.wasLocked && !input.locked;
     if (e.repeat || !p || game.state !== "play" || paused) return;

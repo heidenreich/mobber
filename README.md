@@ -2,7 +2,7 @@
 
 *A gangland picture in three reels.*
 
-A first-person shooter styled as a lost 1931 gangster film: black and white, film grain, projector flicker and silent-movie title cards.
+A first-person shooter styled as a lost 1931 gangster film: black and white, film grain, projector flicker, silent-movie title cards, scenes that open and close with an iris, and a piano playing along.
 
 Your brother Eddie kept the books at the Blue Note, and kept them honest. The Vitale family pulled him out of the river. Over one night you follow his ledger from the club to the docks to the Hotel Regent, walking the rainy streets between them, and the picture ends at dawn with a chase across the hotel roof: stop Don Vitale before his autogiro flies him out of town.
 
@@ -19,6 +19,7 @@ Your brother Eddie kept the books at the Blue Note, and kept them honest. The Vi
 | Swap guns | Q, 1/2 or the mouse wheel | SWAP |
 | Search for secret walls | Walk into a wall, or press E | Walk into a wall |
 | Pause | Esc | — |
+| Music on or off | M | — |
 
 Doors open by themselves as you walk up to them. Some walls hide rooms: look for faint scrape marks near the floor.
 
@@ -68,6 +69,7 @@ src/
   enemies.js          gangster behavior: idle -> chase -> aim -> fire
   flow.js             title card -> chapter card -> play -> death / next chapter / the end
   audio.js            synthesized gunshots and projector clatter
+  music.js            the piano accompaniment: three short tunes, synthesized note by note
   render/
     camera.js         the player's view and world-to-screen projection
     raycaster.js      walls, floors and ceilings, sprites, the gun in your hand

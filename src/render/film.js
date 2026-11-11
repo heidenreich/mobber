@@ -63,6 +63,21 @@ export function rain(dt) {
   ctx.stroke(); ctx.restore();
 }
 
+// An iris: the picture opens from a point and closes back to one, as silent films
+// began and ended their scenes. `open` runs from 0 (black) to 1 (the whole frame).
+export function iris(open) {
+  const film = view.film, w = Math.min(film.w, view.vw), cx = film.x + film.w / 2, cy = film.y + film.h / 2;
+  const e = open * open * (3 - 2 * open), R = Math.hypot(w, film.h) / 2 * 1.04 * e;
+  ctx.save(); ctx.beginPath(); ctx.rect(film.x, film.y, film.w, film.h); ctx.clip();
+  ctx.fillStyle = "#000"; ctx.beginPath(); ctx.rect(film.x - 2, film.y - 2, film.w + 4, film.h + 4); ctx.arc(cx, cy, R, 0, 6.2832, true); ctx.fill("evenodd");
+  if (R > 1) {   // a soft edge to the circle
+    const g = ctx.createRadialGradient(cx, cy, R * 0.8, cx, cy, R);
+    g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(1, "rgba(0,0,0,0.9)");
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R + 1, 0, 6.2832); ctx.fill();
+  }
+  ctx.restore();
+}
+
 // Projector artifacts on top of the frame
 const scratches = [];
 export function projector(intensity = 1) {

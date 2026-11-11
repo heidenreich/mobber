@@ -1,7 +1,7 @@
 // You: moving, shooting, reloading, looting and leaving through the exit.
 import { W, K, isTouch, PLAYER, TOUCH, AIM_ASSIST, WEAPONS, ENEMY_AI, AMMO, MELEE } from "./config.js";
 import { rand, clamp } from "./util.js";
-import { game, stats, input, say } from "./state.js";
+import { game, stats, input, say, intertitle } from "./state.js";
 import { LEVELS } from "./levels.js";
 import { OBJ } from "./art/sprites.js";
 import { SND } from "./audio.js";
@@ -68,13 +68,14 @@ function damage(t, dmg) {
     dropLoot(t);
     if (t.type.name === "double") {
       const left = game.enemies.filter(e => e.type.name === "double" && e.hp > 0).length;
-      say(left ? "That's not the Don. It's a double!" : "Another double! The real Don is making for the roof.", 4);
+      if (left) intertitle("double", null, ["“That's not the Don.", "It's a double!”"]) || say("That's not the Don. It's a double!", 4);
+      else intertitle("lastDouble", null, ["“Another double!", "The real Don is making for the roof.”"]) || say("Another double! The real Don is making for the roof.", 4);
     }
     if (t.type.name === "boss") {
       if (game.level.endOnBoss) {
         // The Don goes down and the picture ends: no exit to find
         game.state = "won";
-        say("That's for Eddie.", 4);
+        intertitle("eddie", null, ["“That's for Eddie.”"]) || say("That's for Eddie.", 4);
         fadeOut(() => showCard("epilogue"), 3);
       } else say("Don Vitale is finished. Get to the exit.", 4);
     }

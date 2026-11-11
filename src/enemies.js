@@ -3,7 +3,7 @@
 // They raise their gun ("aim") before firing, which gives you a moment to react.
 import { ENEMY_AI } from "./config.js";
 import { rand, clamp } from "./util.js";
-import { game, stats, say } from "./state.js";
+import { game, stats, say, intertitle } from "./state.js";
 import { SND } from "./audio.js";
 import { los, moveBy, nextStep } from "./world.js";
 import { fadeOut, showCard } from "./flow.js";
@@ -15,7 +15,14 @@ export function updateEnemy(e, dt) {
   e.cd -= dt; e.staggerCd = Math.max(0, (e.staggerCd || 0) - dt); e.repath = (e.repath || 0) - dt;
   const dx = p.x - e.x, dy = p.y - e.y, d = Math.hypot(dx, dy);
   const sees = d < ENEMY_AI.sightRange && los(e.x, e.y, p.x, p.y);
-  if (sees) { e.alert = true; e.lx = p.x; e.ly = p.y; }
+  if (sees) {
+    // The first gangster to get a good look at you, and later the Don himself, have something to say
+    if (!e.alert && d < 9) {
+      if (T.flees) intertitle("don", "DON VITALE", ["“You should have stayed", "out of it, kid.”"]);
+      else intertitle("spotted", "A VITALE GUNMAN", ["“It's Eddie's brother!", "Get him!”"]);
+    }
+    e.alert = true; e.lx = p.x; e.ly = p.y;
+  }
   e.moving = false;
   switch (e.state) {
     case "idle": if (e.alert) e.state = "chase"; break;

@@ -13,6 +13,8 @@ export const game = {
   enemies: [],
   objs: [],             // props, lamps and pickups
   msg: { text: "", t: 0 },
+  intertitle: null,     // { who, lines, t, dur } while a line of dialogue holds the screen
+  dialogue: true,       // set false to play without dialogue cards (the tests do)
   timer: 0,             // seconds since the chapter started
   fade: 1,              // 0..1 picture brightness during transitions
   fadeDir: 0,
@@ -38,3 +40,14 @@ export const input = {
 };
 
 export function say(text, dur = 2.2) { game.msg = { text, t: dur }; }
+
+// A line of dialogue, the way a silent picture does it: the action stops and a card
+// holds the screen for a moment. Each line (by `key`) is shown once per run.
+// Returns false if it wasn't shown, so the caller can fall back to a message.
+const spoken = new Set();
+export function intertitle(key, who, lines, dur = 2.4) {
+  if (!game.dialogue || spoken.has(key)) return false;
+  spoken.add(key); game.intertitle = { who, lines, t: dur, dur };
+  return true;
+}
+export function resetIntertitles() { spoken.clear(); game.intertitle = null; }

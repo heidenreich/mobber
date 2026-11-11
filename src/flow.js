@@ -5,12 +5,16 @@ import { clamp } from "./util.js";
 import { game, stats, input, resetStats } from "./state.js";
 import { cv, fireBtn, swapBtn } from "./screen.js";
 import { loadLevel } from "./world.js";
+import { resetIntertitles } from "./state.js";
+import { music } from "./music.js";
 
 export function showCard(kind, idx) {
   game.card = { kind, idx }; game.state = "card"; game.fade = 0; game.fadeDir = 1; game.afterFade = null;
   if (document.pointerLockElement) document.exitPointerLock();
   input.wasLocked = false; input.firing = false;
   fireBtn.style.display = swapBtn.style.display = "none";
+  // The pianist plays quietly under the cards, and stops dead on CUT!
+  if (kind === "dead" || kind === "escaped") music.stop(); else music.play("street", 0.6);
 }
 
 // A click, tap or Enter on a card
@@ -40,10 +44,11 @@ export function startLevel(i, retry) {
   if (retry && checkpoint) {
     game.player = structuredClone(checkpoint.player);
     Object.assign(stats, { ...checkpoint.stats, secretsFound: new Set(checkpoint.stats.secretsFound), deaths: stats.deaths });
-  } else if (i === 0) game.player = null; // a fresh run starts with just the revolver
+  } else if (i === 0) { game.player = null; resetIntertitles(); } // a fresh run starts with just the revolver
   loadLevel(i);
   if (!retry || !checkpoint) checkpoint = { player: structuredClone(game.player), stats: copyStats() };
   game.state = "play"; game.fade = 0; game.fadeDir = 1; input.touched = false;
+  music.play(game.level.endOnBoss ? "chase" : game.level.rain ? "street" : "joint");
   requestLock();
   if (isTouch) fireBtn.style.display = "block"; // SWAP appears once you have a second gun (hud.js)
 }
@@ -52,7 +57,7 @@ export function fadeOut(fn, dur = 0.8) { game.fadeDir = -1 / dur; game.afterFade
 
 export function tickFade(dt) {
   if (!game.fadeDir) return;
-  game.fade = clamp(game.fade + game.fadeDir * dt * (game.fadeDir > 0 ? 1.6 : 1), 0, 1);
+  game.fade = clamp(game.fade + game.fadeDir * dt * (game.fadeDir > 0 ? (game.state === "card" ? 1.6 : 1.1) : 1)   // a scene's iris opens a little slower than a card fades in, 0, 1);
   if (game.fadeDir < 0 && game.fade <= 0) { game.fadeDir = 0; const fn = game.afterFade; game.afterFade = null; if (fn) fn(); }
   else if (game.fadeDir > 0 && game.fade >= 1) game.fadeDir = 0;
 }

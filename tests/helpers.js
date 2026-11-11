@@ -13,6 +13,8 @@ async function openGame(browser, url, contextOptions = { viewport: { width: 1280
   await page.route(/fonts\.(googleapis|gstatic)\.com/, r => r.fulfill({ status: 200, contentType: "text/css", body: "" }));
   await page.goto(url);
   await page.waitForFunction(() => window.__mobber && window.__mobber.state === "title");
+  // Dialogue cards pause the action for a couple of seconds; the tests that want them turn them back on
+  await page.evaluate(() => { window.__mobber.dialogue = false; });
   return { context, page, errors };
 }
 

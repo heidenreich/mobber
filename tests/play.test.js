@@ -429,3 +429,39 @@ test("every level loads and renders without errors", async () => {
   assert.deepEqual(errors, []);
   await context.close();
 });
+
+test("a dialogue card stops the action, then the scene carries on", async () => {
+  const { page, errors } = await openGame(browser, srv.url);
+  await rollFilm(page);
+  // Stand a gangster in front of you with dialogue cards on: the first to see you speaks
+  await game(page, () => {
+    const M = window.__mobber, P = M.player, e = M.enemies[0];
+    M.dialogue = true;
+    for (const o of M.enemies) if (o !== e) { o.hp = 0; o.state = "dead"; }
+    e.x = P.x + Math.cos(P.a) * 3; e.y = P.y + Math.sin(P.a) * 3; e.alert = false; e.state = "idle";
+  });
+  await page.waitForFunction(() => window.__mobber.intertitle);
+  const before = await game(page, () => ({ lines: window.__mobber.intertitle.lines.join(" "), cd: window.__mobber.enemies[0].cd }));
+  assert.match(before.lines, /Eddie's brother/);
+  await page.waitForTimeout(400);
+  assert.equal(await game(page, () => window.__mobber.enemies[0].cd), before.cd, "the gangster waits while the card is up");
+  await page.waitForFunction(() => !window.__mobber.intertitle, null, { timeout: 6000 });
+  assert.equal(await game(page, () => window.__mobber.state), "play");
+  // Each line is spoken once: a second gangster seeing you doesn't repeat it
+  await game(page, () => { const e = window.__mobber.enemies[0]; e.alert = false; e.state = "idle"; });
+  await page.waitForTimeout(300);
+  assert.equal(await game(page, () => window.__mobber.intertitle), null);
+  assert.deepEqual(errors, []);
+});
+
+test("the pianist plays under the picture", async () => {
+  const { page, errors } = await openGame(browser, srv.url);
+  await rollFilm(page);
+  await page.waitForFunction(() => window.__mobber.music.playing, null, { timeout: 5000 });
+  assert.equal(await game(page, () => window.__mobber.music.playing), "street", "the first scene is a rainy street");
+  await game(page, () => window.__mobber.startLevel(1));
+  await page.waitForFunction(() => window.__mobber.music.playing === "joint", null, { timeout: 5000 });
+  await game(page, () => window.__mobber.startLevel(window.__mobber.LEVELS.length - 1));
+  await page.waitForFunction(() => window.__mobber.music.playing === "chase", null, { timeout: 5000 });
+  assert.deepEqual(errors, []);
+});

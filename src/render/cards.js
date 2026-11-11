@@ -20,14 +20,14 @@ const HOW_TO = isTouch
   ? [["Walk and turn", "left thumb, anywhere"], ["Aim", "drag with your right thumb"], ["Shoot", "hold FIRE, or put a gangster under the crosshair"],
      ["Swap guns", "SWAP"], ["Reload", "by itself"], ["Search a wall", "walk into it"]]
   : [["Move", "W A S D  (Shift to run)"], ["Aim", "mouse"], ["Shoot", "click or Space"], ["Reload", "R"],
-     ["Swap guns", "Q, or 1 and 2"], ["Search a wall", "E, or walk into it"], ["Pause", "Esc"]];
+     ["Swap guns", "Q, or 1 and 2"], ["Search a wall", "E, or walk into it"], ["Pause", "Esc"], ["Music on or off", "M"]];
 
 export function drawCard(t) {
-  const f = view.cardRect, s = f.s, card = game.card;
+  const f = view.cardRect, s = f.s, card = game.intertitle ? { kind: "intertitle" } : game.card || {};   // no card yet on the title
   ctx.fillStyle = "#0b0a09"; ctx.fillRect(f.x, f.y, f.w, f.h);
   const cx = f.x + f.w / 2, Y = v => f.y + v * s;
   // The big cards (title, CUT!, THE END) get a faint sunburst rising behind the lettering
-  const big = game.state === "title" || ["dead", "escaped", "end"].includes(card.kind);
+  const big = !game.intertitle && game.state === "title" || ["dead", "escaped", "end"].includes(card.kind);
   if (big) {
     ctx.save(); ctx.beginPath(); ctx.rect(f.x, f.y, f.w, f.h); ctx.clip();
     ctx.fillStyle = "rgba(236,230,218,0.035)";
@@ -53,7 +53,12 @@ export function drawCard(t) {
   };
   const blink = 0.6 + 0.3 * Math.sin(t * 3);
   const prompt = what => line(`— ${isTouch ? "tap" : "click"} to ${what} —`, 300, `${11 * s}px ${TYPE}`, blink);
-  if (game.state === "title") {
+  if (card.kind === "intertitle") {
+    // A line of dialogue in the middle of a scene
+    const it = game.intertitle, n = it.lines.length, y0 = 186 - (n - 1) * 17 + (it.who ? 8 : 0);
+    if (it.who) { line(it.who, y0 - 44, `${12 * s}px ${DECO}`, 0.8); rule(y0 - 30, 70); }
+    it.lines.forEach((c, i) => line(c, y0 + i * 34, `italic 700 ${26 * s}px ${SERIF}`));
+  } else if (game.state === "title") {
     line("A MOBBER PICTURE", 96, `${10 * s}px ${TYPE}`, 0.8);
     line("MOBBER", 174, `${76 * s}px ${DECO}`);
     rule(200, 150);
@@ -69,7 +74,7 @@ export function drawCard(t) {
   } else if (card.kind === "controls") {
     line("BEFORE THE PICTURE STARTS", 76, `${14 * s}px ${DECO}`, 0.85);
     rule(96);
-    const top = 128, gap = HOW_TO.length > 6 ? 21 : 24;
+    const gap = HOW_TO.length > 6 ? 20 : 24, top = HOW_TO.length > 6 ? 124 : 128;
     HOW_TO.forEach(([what, how], i) => {
       const y = Y(top + i * gap);
       ctx.fillStyle = CREAM; ctx.font = `italic 700 ${13 * s}px ${SERIF}`; ctx.textAlign = "right"; ctx.fillText(what, cx - 14 * s, y);

@@ -3,6 +3,9 @@ import { rand, clamp } from "./util.js";
 
 let actx = null, noise = null;
 
+// For music.js, which schedules its own notes. Null until the first click or tap.
+export const audioContext = () => actx;
+
 // Browsers only allow audio after a click or tap, so input handlers call this.
 export function initAudio() {
   if (actx) return;

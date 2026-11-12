@@ -5,7 +5,6 @@ import { game, stats, input } from "../state.js";
 import { ctx, view, swapBtn } from "../screen.js";
 import { objectiveDone } from "../world.js";
 import { liftFloor } from "../lift.js";
-import { settings } from "../settings.js";
 
 const { deco: DECO, serif: SERIF, type: TYPE } = FONTS;
 
@@ -22,7 +21,7 @@ function thumbDeck(top) {
     ctx.font = `15px ${DECO}`; ctx.fillText(big, x, top + 38);
     ctx.font = `11px ${TYPE}`; ctx.fillText(small, x, top + 56);
   };
-  label(settings.stick ? "WALK · SIDESTEP" : "WALK · TURN", "left thumb, anywhere here", (m + split) / 2);
+  label("WALK · TURN", "left thumb, anywhere here", (m + split) / 2);
   label("AIM", "drag with your right thumb", (split + vw - m) / 2);
 }
 
@@ -106,7 +105,7 @@ export function drawHUD() {
     ctx.fillStyle = "rgba(236,230,218,0.5)"; ctx.beginPath(); ctx.arc(m.x + Math.cos(ka) * kd, m.y + Math.sin(ka) * kd, 24, 0, 6.283); ctx.fill();
   } else if (isTouch && !view.portrait && game.timer < 8) {
     ctx.textAlign = "center"; ctx.font = `${Math.max(13, 11 * s)}px ${TYPE}`;
-    for (const [txt, x, y] of [[settings.stick ? "left thumb: walk & sidestep" : "left thumb: walk & turn", 0.22, 0.72], ["right thumb: drag to aim", 0.7, 0.5]]) {
+    for (const [txt, x, y] of [["left thumb: walk & turn", 0.22, 0.72], ["right thumb: drag to aim", 0.7, 0.5]]) {
       ctx.fillStyle = "rgba(0,0,0,0.75)"; ctx.fillText(txt, f.x + f.w * x + 1.5, f.y + f.h * y + 1.5);
       ctx.fillStyle = "rgba(236,230,218,0.9)"; ctx.fillText(txt, f.x + f.w * x, f.y + f.h * y);
     }

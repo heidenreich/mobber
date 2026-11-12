@@ -14,7 +14,6 @@ import { updateDoors, updateSecrets } from "./doors.js";
 import { startLevel, tickFade } from "./flow.js";
 import { installDesktopInput } from "./input/desktop.js";
 import { installTouchInput } from "./input/touch.js";
-import { pollGamepad } from "./input/gamepad.js";
 import { buf, develop, projector, rain, iris } from "./render/film.js";
 import { renderWorld } from "./render/raycaster.js";
 import { drawHUD } from "./render/hud.js";
@@ -50,7 +49,6 @@ let last = performance.now(), t = 0;
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
   resizeIfChanged();
-  pollGamepad();
   const paused = input.menu || (game.state === "play" && input.wasLocked && !input.locked && !isTouch);
   // A dialogue card stops the action (and any fade) while it holds the screen
   const it = game.intertitle;

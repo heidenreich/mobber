@@ -120,33 +120,3 @@ test("a hit can spin a man right round before he recovers", async () => {
   await page.waitForFunction(() => window.__mobber.enemies[0].state !== "hurt", null, { timeout: 4000 });   // and he comes out of it
   assert.deepEqual(errors, []);
 });
-
-test("a game controller walks, looks, fires and moves the cards along", async () => {
-  const { page, errors } = await openGame(browser, srv.url);
-  // A pretend controller: tests set its sticks and buttons
-  await game(page, () => {
-    const pad = window.__pad = { connected: true, mapping: "standard", axes: [0, 0, 0, 0], buttons: Array.from({ length: 17 }, () => ({ pressed: false, value: 0 })) };
-    navigator.getGamepads = () => [pad];
-  });
-  const press = async i => { await game(page, i => { window.__pad.buttons[i].pressed = true; }, i); await page.waitForTimeout(80); await game(page, i => { window.__pad.buttons[i].pressed = false; }, i); await page.waitForTimeout(80); };
-  // A (button 0) rolls the film and clicks through the cards
-  for (let n = 0; n < 6 && await game(page, () => window.__mobber.state) !== "play"; n++) {
-    await page.waitForFunction(() => window.__mobber.state === "title" || window.__mobber.fade >= 0.6);
-    await press(0);
-  }
-  assert.equal(await game(page, () => window.__mobber.state), "play");
-  await game(page, () => { const M = window.__mobber, P = M.player; for (const e of M.enemies) { e.hp = 0; e.state = "dead"; } P.x = 6.5; P.y = 6.5; P.a = 0; });
-  const before = await game(page, () => { const P = window.__mobber.player; return { x: P.x, y: P.y, a: P.a, shots: window.__mobber.stats.shots }; });
-  // Left stick forward, right stick to the right, trigger held
-  await game(page, () => { const g = window.__pad; g.axes[1] = -1; g.axes[2] = 1; g.buttons[7].value = 1; g.buttons[7].pressed = true; });
-  await page.waitForTimeout(500);
-  await game(page, () => { const g = window.__pad; g.axes[1] = 0; g.axes[2] = 0; g.buttons[7].value = 0; g.buttons[7].pressed = false; });
-  const after = await game(page, () => { const P = window.__mobber.player; return { x: P.x, y: P.y, a: P.a, shots: window.__mobber.stats.shots }; });
-  assert.ok(Math.hypot(after.x - before.x, after.y - before.y) > 0.5, "walked");
-  assert.ok(after.a - before.a > 0.5, "turned to the right");
-  assert.ok(after.shots > before.shots, "fired");
-  // RB leans right
-  await game(page, () => { window.__pad.buttons[5].pressed = true; });
-  await page.waitForFunction(() => window.__mobber.player.lean > 0.2, null, { timeout: 3000 });
-  assert.deepEqual(errors, []);
-});

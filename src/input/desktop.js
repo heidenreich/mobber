@@ -5,7 +5,7 @@ import { game, input, say } from "../state.js";
 import { cv } from "../screen.js";
 import { initAudio } from "../audio.js";
 import { settings, saveSettings, lookSpeed, clearGame } from "../settings.js";
-import { switchWeapon, startReload, use } from "../player.js";
+import { switchWeapon, nextWeapon, startReload, use } from "../player.js";
 import { advance, requestLock } from "../flow.js";
 
 export function installDesktopInput() {
@@ -21,7 +21,8 @@ export function installDesktopInput() {
     if (e.repeat || !p || game.state !== "play" || paused) return;
     if (k === "1") switchWeapon(0);
     if (k === "2") switchWeapon(1);
-    if (k === "q") switchWeapon(1 - p.weapon);
+    if (k === "3") switchWeapon(2);
+    if (k === "q") nextWeapon();
     if (k === "r") startReload();
     if (k === "e") use();
   });
@@ -41,6 +42,6 @@ export function installDesktopInput() {
     if (game.state !== "play" || !game.player) return;
     if (input.locked || (input.dragLook && !isTouch)) game.player.a += e.movementX * PLAYER.mouseSensitivity * lookSpeed();
   });
-  cv.addEventListener("wheel", () => { if (game.player && game.state === "play") switchWeapon(1 - game.player.weapon); });
+  cv.addEventListener("wheel", () => { if (game.player && game.state === "play") nextWeapon(); });
   cv.addEventListener("click", () => { initAudio(); if (game.state !== "play" && !input.menu) advance(); });
 }

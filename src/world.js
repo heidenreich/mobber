@@ -17,8 +17,8 @@ export const SPAWNS = {
   k: { art: "crate", scale: 0.85, block: true },
   p: { art: "piano", scale: 0.9, block: true },
   o: { art: "barrel", scale: 0.7, block: true },
-  l: { art: "lamp", scale: 1.0, block: true, glow: true, light: [1.2, 5.5] },
-  "*": { art: "hanging", scale: 0.6, hang: true, glow: true, light: [1.25, 6] },
+  l: { art: "lamp", scale: 1.0, block: true, glow: true, light: [1.2, 5.5], lampWidth: 0.16 },
+  "*": { art: "hanging", scale: 0.6, hang: true, glow: true, light: [1.25, 6], lampWidth: 0.12 },
   $: { art: "cash", scale: 0.6, pick: "cash" },
   "+": { art: "medkit", scale: 0.6, pick: "med" },
   a: { art: "ammo", scale: 0.6, pick: "rounds", weapon: 1, amount: AMMO.drum },
@@ -26,7 +26,7 @@ export const SPAWNS = {
   L: { art: "ledger", scale: 0.6, pick: "ledger", bob: true },
   // Street furniture. `size` is how far the solid part reaches from the center.
   C: { art: "car", scale: 0.8, block: true, size: 0.8 },
-  m: { art: "lamppost", scale: 1.8, block: true, size: 0.15, glow: true, light: [1.3, 6] },
+  m: { art: "lamppost", scale: 1.8, block: true, size: 0.15, glow: true, light: [1.3, 6], lampWidth: 0.14 },
   h: { art: "hydrant", scale: 0.6, block: true, size: 0.2 },
   t: { art: "trash", scale: 0.7, block: true, size: 0.25 },
   n: { art: "newsstand", scale: 0.9, block: true, size: 0.45 },
@@ -135,18 +135,21 @@ function buildNav() {
   }
 }
 
+// One slot per gun: revolver, tommy gun, sawn-off. A loadout carried in from an older save may have only two.
+const three = (have, fresh) => fresh.map((v, i) => (have ? have[i] ?? (typeof v === "boolean" ? false : 0) : v));
+
 export function loadLevel(i) {
   const lvl = LEVELS[i];
   game.levelIdx = i; game.level = lvl;
   game.height = lvl.map.length; game.width = lvl.map[0].length;
   game.map = lvl.map.map(r => r.split(""));
-  game.objs = []; game.enemies = [];
+  game.objs = []; game.enemies = []; game.smashed = new Set();
   setupDoors(lvl.map);
   // Guns and ammo carry over from the previous scene (flow.js passes the right loadout on a retry)
   const prev = game.player;
   const player = game.player = {
-    x: 2, y: 2, a: 0, hp: !prev || lvl.fullHealth ? PLAYER.maxHp : Math.max(prev.hp, PLAYER.minStartHp), weapon: prev ? prev.weapon : 0, has: prev ? prev.has.slice() : [true, false],
-    mag: prev ? prev.mag.slice() : [6, 0], reserve: prev ? prev.reserve.slice() : [AMMO.startRevolverReserve, 0],
+    x: 2, y: 2, a: 0, hp: !prev || lvl.fullHealth ? PLAYER.maxHp : Math.max(prev.hp, PLAYER.minStartHp), weapon: prev ? prev.weapon : 0, has: three(prev && prev.has, [true, false, false]),
+    mag: three(prev && prev.mag, [6, 0, 0]), reserve: three(prev && prev.reserve, [AMMO.startRevolverReserve, 0, 0]),
     fireCd: 0, reload: 0, recoil: 0, flash: 0, bob: 0, moving: false, hurt: 0, ledger: false,
   };
   for (let y = 0; y < game.height; y++) for (let x = 0; x < game.width; x++) {
@@ -179,7 +182,8 @@ function facingOpen(x, y) {
 
 // Light map: lamps throw pools of light, blocked by walls. Sampled at 4x4 per square.
 export const lightMap = { data: null, w: 0, h: 0, sub: 4 };
-function buildLight() {
+// Called again when a lamp is shot out
+export function buildLight() {
   const sub = lightMap.sub, ambient = game.level.ambient;
   const w = lightMap.w = game.width * sub, h = lightMap.h = game.height * sub;
   const data = lightMap.data = new Float32Array(w * h).fill(ambient);

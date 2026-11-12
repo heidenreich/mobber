@@ -26,7 +26,7 @@ function thumbDeck(top) {
 
 export function drawHUD() {
   const p = game.player, f = view.hudRect, film = view.film, s = f.s;
-  if (isTouch) swapBtn.style.display = game.state === "play" && p.has[1] ? "block" : "none";
+  if (isTouch) swapBtn.style.display = game.state === "play" && p.has.filter(Boolean).length > 1 ? "block" : "none";
   const fs = n => Math.max(10, n * s);
   // Crosshair
   const cx = film.x + film.w / 2, cy = film.y + film.h / 2, g = 4 + p.recoil * 6;
@@ -64,7 +64,7 @@ export function drawHUD() {
   ctx.font = `italic 700 ${fs(10)}px ${SERIF}`;
   ctx.fillText(o === "reach" ? game.level.title : left === 0 ? "The Vitale outfit is finished here" : `${left} of the Vitale outfit ${left === 1 ? "remains" : "remain"}`, f.x + f.w / 2, base);
   ctx.textAlign = "right"; ctx.font = `${fs(9)}px ${TYPE}`;
-  ctx.fillText(WEAPONS[p.weapon].name + (p.has[1] && p.has[0] ? "   [Q]" : ""), f.x + f.w - 18 * s, base - 13 * s);
+  ctx.fillText(WEAPONS[p.weapon].name + (p.has.filter(Boolean).length > 1 ? "   [Q]" : ""), f.x + f.w - 18 * s, base - 13 * s);
   ctx.font = `${fs(17)}px ${DECO}`;
   const ammo = p.reload > 0 ? "RELOADING" : `${p.mag[p.weapon]} / ${p.reserve[p.weapon]}`;
   if (!p.reload && p.mag[p.weapon] + p.reserve[p.weapon] === 0) ctx.fillStyle = Math.floor(game.timer * 3) % 2 ? "#ffffff" : CREAM;

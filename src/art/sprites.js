@@ -35,6 +35,14 @@ function longGun(g, kind) {
   }
 }
 
+// A fedora: a wide brim, a pinched crown, a band. Drawn on a head, or lying where it fell.
+function fedora(g, o, cx, y = 0) {
+  g.fillStyle = across(g, cx - 10, cx + 10, o.hat, 30, 30); g.beginPath(); g.ellipse(cx, y + 8.8, 10, 2.1, -0.04, 0, 6.283); g.fill();
+  poly(g, [[cx - 6, y + 8.4], [cx - 5.2, y + 2.2], [cx - 1.6, y + 1], [cx, y + 1.9], [cx + 1.8, y + 1], [cx + 5.2, y + 2.2], [cx + 6, y + 8.4]], across(g, cx - 6, cx + 6, o.hat, 30, 34));
+  g.fillStyle = gray(o.band); g.fillRect(cx - 5.9, y + 5.8, 11.8, 2.3);
+  g.fillStyle = gray(o.hat - 40); g.fillRect(cx - 0.3, y + 1.9, 0.7, 3.6);
+}
+
 // One figure. `pose` is idle, walk1, walk2, aim, fire or hurt.
 function person(g, o, pose) {
   const cx = 32, aiming = pose === "aim" || pose === "fire";
@@ -80,17 +88,20 @@ function person(g, o, pose) {
   g.fillStyle = across(g, cx - 5.2, cx + 5.2, o.skin, 26, 62);
   g.beginPath(); g.moveTo(cx - 5, 9); g.lineTo(cx + 5, 9); g.quadraticCurveTo(cx + 5.4, 15, cx + 2.4, 18); g.lineTo(cx - 2.4, 18); g.quadraticCurveTo(cx - 5.4, 15, cx - 5, 9); g.fill();
   g.fillStyle = gray(o.skin - 30); g.fillRect(cx - 5.9, 11.6, 1.1, 2.6); g.fillStyle = gray(o.skin - 80); g.fillRect(cx + 4.8, 11.6, 1.1, 2.6);
-  g.fillStyle = "rgba(0,0,0,0.62)"; g.fillRect(cx - 5.2, 9, 10.4, 3.6);                // brim shadow over the eyes
-  g.fillStyle = gray(o.skin + 34); g.fillRect(cx - 2.6, 10.8, 1.5, 0.7); g.fillRect(cx + 1.0, 10.8, 1.5, 0.7);   // a glint in each eye
+  if (o.hatless) {                                                                      // eyes and brows, now you can see them
+    g.fillStyle = gray(24); g.fillRect(cx - 3, 10.6, 2, 1.1); g.fillRect(cx + 1, 10.6, 2, 1.1); g.fillRect(cx - 3.4, 9.2, 2.8, 0.7); g.fillRect(cx + 0.6, 9.2, 2.8, 0.7);
+  } else {
+    g.fillStyle = "rgba(0,0,0,0.62)"; g.fillRect(cx - 5.2, 9, 10.4, 3.6);              // brim shadow over the eyes
+    g.fillStyle = gray(o.skin + 34); g.fillRect(cx - 2.6, 10.8, 1.5, 0.7); g.fillRect(cx + 1.0, 10.8, 1.5, 0.7);   // a glint in each eye
+  }
   g.fillStyle = gray(o.skin + 30); g.fillRect(cx - 0.9, 11.6, 1.1, 2.8);                // nose
   g.fillStyle = gray(o.skin - 86); g.fillRect(cx - 2, 15.4, 4, 0.7);                   // mouth
   if (o.moustache) { g.fillStyle = gray(30); g.fillRect(cx - 2.4, 14.3, 4.8, 1); }
   if (o.cigar) { g.fillStyle = gray(78); g.fillRect(cx + 1, 15.1, 5.4, 1.5); g.fillStyle = gray(255); g.fillRect(cx + 6.2, 14.8, 1.6, 2.1); }
-  // fedora: a wide brim, a pinched crown, a band
-  g.fillStyle = across(g, cx - 10, cx + 10, o.hat, 30, 30); g.beginPath(); g.ellipse(cx, 8.8, 10, 2.1, -0.04, 0, 6.283); g.fill();
-  poly(g, [[cx - 6, 8.4], [cx - 5.2, 2.2], [cx - 1.6, 1], [cx, 1.9], [cx + 1.8, 1], [cx + 5.2, 2.2], [cx + 6, 8.4]], across(g, cx - 6, cx + 6, o.hat, 30, 34));
-  g.fillStyle = gray(o.band); g.fillRect(cx - 5.9, 5.8, 11.8, 2.3);
-  g.fillStyle = gray(o.hat - 40); g.fillRect(cx - 0.3, 1.9, 0.7, 3.6);                 // the pinch
+  if (o.hatless) {                                                                      // slicked-back hair
+    g.fillStyle = across(g, cx - 5.4, cx + 5.4, 34, 60, 20);
+    g.beginPath(); g.moveTo(cx - 5.4, 10); g.quadraticCurveTo(cx - 5.6, 3.6, cx, 3.4); g.quadraticCurveTo(cx + 5.6, 3.6, cx + 5.4, 10); g.lineTo(cx + 4.2, 8.2); g.quadraticCurveTo(cx, 6.4, cx - 4.2, 8.2); g.closePath(); g.fill();
+  } else fedora(g, o, cx);
 
   // arms and the gun
   const sleeve = (x, y, w, h, shade) => { g.fillStyle = across(g, x, x + w, o.coat - shade, 26, 30); g.beginPath(); g.roundRect(x, y, w, h, 2); g.fill(); };
@@ -143,16 +154,21 @@ function personSet(o) {
       g.fillStyle = across(g, 8, 16, o.skin, 20, 50); g.beginPath(); g.ellipse(12.4, 57, 3.9, 3.4, 0, 0, 6.283); g.fill();
       g.fillStyle = gray(o.coat - 14); g.save(); g.translate(26, 60.4); g.rotate(0.25); g.fillRect(-8, -1.5, 13, 3); g.restore();
       g.fillStyle = gray(o.skin - 10); g.beginPath(); g.ellipse(17, 62, 2, 1.5, 0, 0, 6.283); g.fill();
-      g.fillStyle = gray(o.hat); g.beginPath(); g.ellipse(4.6, 61.4, 5.2, 1.7, 0, 0, 6.283); g.fill(); g.beginPath(); g.ellipse(4.6, 60.2, 3, 2, 0, Math.PI, 0); g.fill();
-      g.fillStyle = gray(o.band); g.fillRect(1.8, 60.2, 5.6, 0.9);
+      if (!o.hatless) {
+        g.fillStyle = gray(o.hat); g.beginPath(); g.ellipse(4.6, 61.4, 5.2, 1.7, 0, 0, 6.283); g.fill(); g.beginPath(); g.ellipse(4.6, 60.2, 3, 2, 0, Math.PI, 0); g.fill();
+        g.fillStyle = gray(o.band); g.fillRect(1.8, 60.2, 5.6, 0.9);
+      }
     }),
   };
 }
 // Enemy sprite sets, keyed by the `art` name in config.js ENEMY_TYPES
 export const PEOPLE = {};
-PEOPLE.goon = personSet({ coat: 112, hat: 44, band: 16, pants: 60, tie: 30, skin: 172, weapon: "tommy", belt: true });
-PEOPLE.heavy = personSet({ coat: 178, hat: 196, band: 44, pants: 70, tie: 44, skin: 164, weapon: "shotgun", wide: true, moustache: true });
-PEOPLE.boss = personSet({ coat: 40, hat: 232, band: 20, pants: 36, tie: 228, skin: 176, weapon: "pistol", stripes: true, cigar: true, wide: true, spats: true });
+const LOOKS = {};
+LOOKS.goon = ({ coat: 112, hat: 44, band: 16, pants: 60, tie: 30, skin: 172, weapon: "tommy", belt: true });
+LOOKS.heavy = ({ coat: 178, hat: 196, band: 44, pants: 70, tie: 44, skin: 164, weapon: "shotgun", wide: true, moustache: true });
+LOOKS.boss = ({ coat: 40, hat: 232, band: 20, pants: 36, tie: 228, skin: 176, weapon: "pistol", stripes: true, cigar: true, wide: true, spats: true });
+// Each kind of gangster, with his hat on and (after a near miss) with it knocked off
+for (const [k, look] of Object.entries(LOOKS)) { PEOPLE[k] = personSet(look); PEOPLE[k + "Bare"] = personSet({ ...look, hatless: true }); }
 
 export const OBJ = {
   table: bitmap(64, 64, g => {
@@ -342,3 +358,25 @@ OBJ.autogiro = bitmap(128, 96, g => {
   g.fillStyle = gray(30); g.fillRect(40, 66, 2, 16); g.fillRect(82, 64, 2, 18);
   for (const x of [41, 83]) { g.fillStyle = gray(15); g.beginPath(); g.arc(x, 84, 7, 0, 6.283); g.fill(); g.fillStyle = gray(150); g.beginPath(); g.arc(x, 84, 2.5, 0, 6.283); g.fill(); }
 });
+
+// A sawn-off shotgun dropped by a heavy, and a box of shells for it
+OBJ.sawnoff = bitmap(64, 64, g => {
+  g.save(); g.translate(30, 57); g.scale(1.25, 1.25); longGun(g, "shotgun"); g.restore();
+});
+OBJ.shells = bitmap(64, 64, g => {
+  g.fillStyle = gray(120); g.fillRect(21, 51, 22, 12); g.fillStyle = gray(70); g.fillRect(21, 51, 22, 3);
+  for (let i = 0; i < 4; i++) { g.fillStyle = gray(60); g.fillRect(23.5 + i * 5, 44, 4, 8); g.fillStyle = gray(215); g.fillRect(23.5 + i * 5, 43, 4, 2.5); }   // shells standing in the box
+  g.fillStyle = gray(24); g.font = "bold 5px monospace"; g.textAlign = "center"; g.fillText("12 GA", 32, 60.5);
+});
+// Hats knocked off by a near thing, lying where they fell
+OBJ.hats = Object.fromEntries(Object.entries(LOOKS).map(([k, look]) => [k, bitmap(64, 64, g => {
+  g.fillStyle = gray(8); g.beginPath(); g.ellipse(32, 62.4, 12, 1.4, 0, 0, 6.283); g.fill();
+  g.translate(32, 62.5); g.scale(1.15, 1.15); g.rotate(0.12); g.translate(-32, -11); fedora(g, look, 32);
+})]));
+
+// A lamp that's been shot out: the same picture with its light gone
+const dark = new Map();
+export function dimmed(bm) {
+  if (!dark.has(bm)) dark.set(bm, { w: bm.w, h: bm.h, A: bm.A, L: bm.L.map(v => (v > 190 ? 44 : v)) });
+  return dark.get(bm);
+}

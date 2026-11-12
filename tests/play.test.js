@@ -265,7 +265,7 @@ test("ammo runs out, gangsters drop more, and an empty gun still swings", async 
   const { page, context, errors } = await startedGame();
   await goTo(page, CLUB);
   assert.deepEqual(await game(page, () => ({ mag: window.__mobber.player.mag, reserve: window.__mobber.player.reserve, has: window.__mobber.player.has })),
-    { mag: [6, 0], reserve: [12, 0], has: [true, false] }, "a fresh start is a loaded revolver and 12 spare rounds");
+    { mag: [6, 0, 0], reserve: [12, 0, 0], has: [true, false, false] }, "a fresh start is a loaded revolver and 12 spare rounds");
   // Shoot a goon standing right in front of us, until he drops
   const setup = await game(page, () => {
     const M = window.__mobber, P = M.player;
@@ -512,5 +512,66 @@ test("the settings panel stops the picture and its choices stick", async () => {
   await page.reload();
   await page.waitForFunction(() => window.__mobber && window.__mobber.state === "title");
   assert.deepEqual(await game(page, () => [window.__mobber.settings.difficulty, window.__mobber.settings.music]), [2, false], "settings survive a reload");
+  assert.deepEqual(errors, []);
+});
+
+test("a heavy gives up his sawn-off, and it settles things up close", async () => {
+  const { page, errors } = await openGame(browser, srv.url);
+  await rollFilm(page);
+  await game(page, () => { const M = window.__mobber; M.startLevel(M.LEVELS.findIndex(l => l.title === "Pier 9")); });
+  // Put a heavy down in front of you: he drops the sawn-off
+  const dropped = await game(page, () => {
+    const M = window.__mobber, P = M.player;
+    for (const e of M.enemies) { e.hp = 0; e.state = "dead"; }
+    const heavy = M.enemies.find(e => e.type.name === "heavy"), goon = M.enemies.find(e => e.type.name === "goon");
+    P.x = 2.5; P.y = 2.5; P.a = 0; P.hp = 1e9;   // open floor by the start
+    heavy.hp = 1; heavy.state = "idle"; heavy.x = P.x + 1.6; heavy.y = P.y;
+    goon.x = 20.5; goon.y = 8.5;   // parked out of the way for later
+    return true;
+  });
+  assert.ok(dropped);
+  await page.keyboard.down(" "); await page.waitForFunction(() => window.__mobber.enemies.find(e => e.type.name === "heavy").hp <= 0); await page.keyboard.up(" ");
+  assert.ok(await game(page, () => window.__mobber.objs.some(o => o.pick === "rounds" && o.weapon === 2)), "the sawn-off is on the floor");
+  await game(page, () => { const M = window.__mobber, o = M.objs.find(o => o.weapon === 2); M.player.x = o.x; M.player.y = o.y; });
+  await page.waitForFunction(() => window.__mobber.player.has[2]);
+  assert.deepEqual(await game(page, () => { const P = window.__mobber.player; return [P.weapon, P.mag[2], P.reserve[2]]; }), [2, 2, 2]);
+  // One barrel at arm's length drops a fresh goon
+  await game(page, () => { const M = window.__mobber, P = M.player, g = M.enemies.find(e => e.type.name === "goon"); g.hp = g.type.hp; g.state = "idle"; g.x = P.x + 1.5; g.y = P.y; P.a = 0; P.fireCd = 0; });
+  await page.keyboard.down(" "); await page.waitForTimeout(120); await page.keyboard.up(" ");
+  await page.waitForFunction(() => window.__mobber.enemies.find(e => e.type.name === "goon").hp <= 0, null, { timeout: 5000 });
+  assert.deepEqual(errors, []);
+});
+
+test("shooting out a lamp darkens the room, and a stray shot breaks the bottles", async () => {
+  const { page, errors } = await openGame(browser, srv.url);
+  await rollFilm(page);
+  await game(page, () => window.__mobber.startLevel(1));
+  const before = await game(page, () => {
+    const M = window.__mobber, P = M.player;
+    for (const e of M.enemies) { e.hp = 0; e.state = "dead"; }
+    const lamp = M.objs.find(o => o.light && o.lampWidth);
+    // Stand two squares from a lamp with a clear line to it, looking at it
+    for (let a = 0; a < 6.28; a += 0.2) { const x = lamp.x + Math.cos(a) * 2, y = lamp.y + Math.sin(a) * 2; if (!M.wallAt(x, y) && M.los(x, y, lamp.x, lamp.y)) { P.x = x; P.y = y; P.a = Math.atan2(lamp.y - y, lamp.x - x); break; } }
+    P.mag[0] = 6; P.fireCd = 0;
+    return { lit: M.lightAt(lamp.x + 0.3, lamp.y + 0.3), x: lamp.x, y: lamp.y };
+  });
+  await page.keyboard.down(" "); await page.waitForTimeout(100); await page.keyboard.up(" ");
+  await page.waitForFunction(({ x, y }) => { const l = window.__mobber.objs.find(o => o.x === x && o.y === y); return l && !l.light; }, before, { timeout: 5000 });
+  assert.ok(await game(page, ({ x, y }) => window.__mobber.lightAt(x + 0.3, y + 0.3), before) < before.lit, "it is darker where the lamp was");
+  // Now put a round into the bar shelves
+  const bar = await game(page, () => {
+    const M = window.__mobber, P = M.player, map = M.level.map;
+    for (let y = 1; y < map.length - 1; y++) for (let x = 1; x < map[y].length - 1; x++) {
+      if (map[y][x] !== "B") continue;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (map[y + dy][x + dx] !== "." && !M.wallAt(x + 0.5 + dx, y + 0.5 + dy)) {
+        P.x = x + 0.5 + dx * 1.2; P.y = y + 0.5 + dy * 1.2; P.a = Math.atan2(-dy, -dx); P.mag[0] = 6; P.fireCd = 0; return y * map[0].length + x;
+      }
+    }
+    return -1;
+  });
+  if (bar >= 0) {
+    await page.keyboard.down(" "); await page.waitForTimeout(100); await page.keyboard.up(" ");
+    await page.waitForFunction(k => window.__mobber.smashed.has(k), bar, { timeout: 5000 });
+  }
   assert.deepEqual(errors, []);
 });

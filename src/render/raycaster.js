@@ -3,7 +3,7 @@
 import { W, H, HALF, K, PLANE, FOG, GLOW, WEAPONS } from "../config.js";
 import { clamp } from "../util.js";
 import { game } from "../state.js";
-import { FLOORS, CEILS, TEX, WALL_TEXTURES, DOOR_TEX, SECRET_TEXTURES } from "../art/textures.js";
+import { FLOORS, CEILS, TEX, WALL_TEXTURES, DOOR_TEX, SECRET_TEXTURES, SMASHED_TEXTURES } from "../art/textures.js";
 import { PEOPLE } from "../art/sprites.js";
 import { ENTRANCES, makeSky } from "../art/streets.js";
 import { GUN_ART } from "../art/guns.js";
@@ -99,6 +99,7 @@ export function renderWorld(t) {
       wallX = side === 0 ? py + perp * rdy : px + perp * rdx;
       wallX -= Math.floor(wallX);
       tex = c === "!" ? SECRET_TEXTURES[secretTex(mx, my)] : c === "E" ? exitTex : WALL_TEXTURES[c] || TEX.brick;
+      if (SMASHED_TEXTURES[c] && game.smashed.has(my * MW + mx)) tex = SMASHED_TEXTURES[c];   // shot-out bottles or shop window
     }
     perp = Math.max(0.01, perp);
     zbuf[x] = perp;
@@ -127,7 +128,7 @@ export function renderWorld(t) {
   const list = [];
   for (const o of game.objs) list.push({ x: o.x, y: o.y, art: o.art, scale: o.scale, hang: o.hang, glow: o.glow, bob: o.bob ? Math.sin(t * 3) * 0.03 : 0 });
   for (const e of game.enemies) {
-    const A = PEOPLE[e.type.art];
+    const A = PEOPLE[e.type.art + (e.hatless ? "Bare" : "")];
     let art = e.moving ? A.walk[Math.sin(e.step * 9) > 0 ? 0 : 1] : A.idle;
     if (e.state === "aim") art = A.aim; else if (e.state === "fire") art = e.t > 0.07 ? A.fire : A.aim;
     else if (e.state === "hurt") art = A.hurt; else if (e.state === "dying") art = e.t > 0.25 ? A.hurt : A.fall;

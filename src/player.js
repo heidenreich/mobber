@@ -1,21 +1,27 @@
 // You: moving, shooting, reloading, looting and leaving through the exit.
-import { W, K, isTouch, PLAYER, TOUCH, AIM_ASSIST, WEAPONS, ENEMY_AI, AMMO, MELEE } from "./config.js";
+import { W, K, isTouch, PLAYER, TOUCH, AIM_ASSIST, WEAPONS, ROUND_NAMES, ENEMY_AI, AMMO, MELEE } from "./config.js";
 import { rand, clamp } from "./util.js";
 import { game, stats, input, say, intertitle } from "./state.js";
 import { LEVELS } from "./levels.js";
-import { OBJ } from "./art/sprites.js";
+import { OBJ, dimmed } from "./art/sprites.js";
 import { SND } from "./audio.js";
-import { los, moveBy, objectiveDone } from "./world.js";
+import { los, moveBy, objectiveDone, wallAt, buildLight } from "./world.js";
 import { tryPush } from "./doors.js";
 import { cam, camera, project, zbuf } from "./render/camera.js";
 import { fadeOut, showCard } from "./flow.js";
 
-const ammoLeft = (p, i) => p.mag[i] + p.reserve[i];
+const ammoLeft = (p, i) => (p.mag[i] || 0) + (p.reserve[i] || 0);
 
 export function switchWeapon(i) {
   const p = game.player;
   if (!p.has[i] || p.weapon === i) return;
   p.weapon = i; p.reload = 0; p.fireCd = 0.25; SND.click();
+}
+
+// Q, the mouse wheel and SWAP: on to the next gun you're carrying
+export function nextWeapon() {
+  const p = game.player;
+  for (let k = 1; k < WEAPONS.length; k++) { const i = (p.weapon + k) % WEAPONS.length; if (p.has[i]) return switchWeapon(i); }
 }
 
 export function startReload() {
@@ -51,7 +57,11 @@ function hitscan(col, maxDist = Infinity) {
 function dropLoot(e) {
   const at = (pick, art, extra) => game.objs.push({ x: e.x, y: e.y, art: OBJ[art], scale: 0.6, pick, ...extra });
   if (e.type.name === "boss") return at("cash", "cash", { amount: AMMO.bossCash });
-  if (e.type.name === "heavy") return at("rounds", "rounds", { weapon: 0, amount: AMMO.heavyRounds });
+  if (e.type.name === "heavy") {
+    // The first heavy you put down gives up his sawn-off; after that, shells or revolver rounds
+    if (!game.player.has[2] || Math.random() < 0.5) return at("rounds", game.player.has[2] ? "shells" : "sawnoff", { weapon: 2, amount: AMMO.heavyShells });
+    return at("rounds", "rounds", { weapon: 0, amount: AMMO.heavyRounds });
+  }
   const r = Math.random();
   if (r < AMMO.goonTommyChance) at("rounds", "tommy", { weapon: 1, amount: AMMO.goonTommyRounds });
   else if (r < AMMO.goonTommyChance + AMMO.goonRoundsChance) at("rounds", "rounds", { weapon: 0, amount: AMMO.goonRounds });
@@ -66,6 +76,11 @@ function damage(t, dmg) {
   if (t.hp <= 0) {
     t.state = "dying"; t.t = 0.5; stats.kills++; SND.down();
     dropLoot(t);
+    // The last man standing, if he's only a hired gun, loses his nerve
+    const alive = game.enemies.filter(e => e.hp > 0);
+    if (alive.length === 1 && game.enemies.length >= 3 && alive[0].type.name === "goon" && !alive[0].cornered) {
+      alive[0].panic = true; say("The last of them is running for it.", 3);
+    }
     if (t.type.name === "double") {
       const left = game.enemies.filter(e => e.type.name === "double" && e.hp > 0).length;
       if (left) intertitle("double", null, ["“That's not the Don.", "It's a double!”"]) || say("That's not the Don. It's a double!", 4);
@@ -82,6 +97,11 @@ function damage(t, dmg) {
   } else if (!t.type.noStagger && t.staggerCd <= 0 && (t.state !== "aim" || Math.random() < 0.4)) {
     // Flinch, but not again straight away: a fast gun can't keep someone pinned
     t.state = "hurt"; t.t = 0.18; t.staggerCd = ENEMY_AI.staggerCooldown;
+  }
+  // Sometimes a hit takes his hat off
+  if (t.hp > 0 && !t.hatless && Math.random() < ENEMY_AI.hatChance) {
+    t.hatless = true;
+    game.objs.push({ x: t.x + rand(-0.35, 0.35), y: t.y + rand(-0.35, 0.35), art: OBJ.hats[t.type.art], scale: 0.6 });
   }
 }
 
@@ -101,19 +121,56 @@ function fire() {
   if (p.mag[p.weapon] <= 0) {
     if (p.reserve[p.weapon] > 0) { startReload(); return; }
     // This gun is dry: swap to the other one if it has rounds, otherwise go hand to hand
-    const other = 1 - p.weapon;
-    if (p.has[other] && ammoLeft(p, other) > 0) { switchWeapon(other); say(`${WEAPONS[p.weapon].name} is empty.`); return; }
+    const other = WEAPONS.findIndex((_, i) => i !== p.weapon && p.has[i] && ammoLeft(p, i) > 0);
+    if (other >= 0) { const was = WEAPONS[p.weapon].name; switchWeapon(other); say(`${was} is empty.`); return; }
     pistolWhip(); return;
   }
-  p.mag[p.weapon]--; p.fireCd = w.rate; p.recoil = 1; p.flash = 0.06; stats.shots++;
-  p.weapon === 0 ? SND.rev() : SND.tommy();
+  p.mag[p.weapon]--; p.fireCd = w.rate; p.recoil = w.pellets ? 1.5 : 1; p.flash = 0.06; stats.shots++;
+  [SND.rev, SND.tommy, SND.sawn][p.weapon]();
   // Gunfire carries: anyone in earshot now knows where you are, and comes looking
   for (const e of game.enemies) if (e.hp > 0 && Math.hypot(e.x - p.x, e.y - p.y) < ENEMY_AI.hearingRange) { e.alert = true; e.lx = p.x; e.ly = p.y; }
   const spread = w.spread * (p.moving ? 1.6 : 1);
-  const col = clamp((W / 2 + rand(-spread, spread)) | 0, 0, W - 1);
-  const t = hitscan(col);
-  if (t) damage(t, w.dmg * rand(0.85, 1.15) * (p.weapon === 1 ? t.type.tommyResist ?? 1 : 1));
+  let hitAnyone = false;
+  for (let n = 0; n < (w.pellets || 1); n++) {
+    const col = clamp((W / 2 + rand(-spread, spread)) | 0, 0, W - 1);
+    const t = hitscan(col);
+    if (!t || t.hp <= 0) continue;
+    hitAnyone = true;
+    // Buckshot loses its punch with distance; the Don's vest shrugs off some of a tommy gun
+    const reach = w.pellets ? clamp(1.25 - Math.hypot(t.x - p.x, t.y - p.y) * 0.12, 0.2, 1) : 1;
+    damage(t, w.dmg * rand(0.85, 1.15) * reach * (p.weapon === 1 ? t.type.tommyResist ?? 1 : 1));
+    if (n > 0) stats.hits--;   // a blast counts as one shot on target, however many pellets land
+  }
+  if (!hitAnyone) smash();
   if (p.mag[p.weapon] === 0) startReload();
+}
+
+// A shot that hits nobody may still hit something: a lamp, the bottles behind the
+// bar, a shop window. Lamps go dark (and so does the room around them).
+function smash() {
+  const p = game.player;
+  camera();
+  // How far the shot flies before a wall stops it
+  let far = 0, tile = null;
+  for (; far < 30; far += 0.05) {
+    const x = p.x + cam.dirX * far, y = p.y + cam.dirY * far;
+    if (wallAt(x, y)) { tile = { x: x | 0, y: y | 0 }; break; }
+  }
+  // A lit lamp in the line of fire, nearer than the wall
+  let lamp = null, lampD = far;
+  for (const o of game.objs) {
+    if (!o.light || !o.lampWidth) continue;
+    const [, tY, sx] = project(o.x, o.y);
+    if (tY > 0.2 && tY < lampD && Math.abs(sx - W / 2) < (K / tY) * o.lampWidth && los(p.x, p.y, o.x, o.y)) { lamp = o; lampD = tY; }
+  }
+  if (lamp) {
+    lamp.light = null; lamp.glow = false; lamp.art = dimmed(lamp.art);
+    buildLight(); SND.glass();
+    return;
+  }
+  if (!tile) return;
+  const c = (game.map[tile.y] || [])[tile.x], key = tile.y * game.width + tile.x;
+  if ((c === "B" || c === "F") && !game.smashed.has(key)) { game.smashed.add(key); SND.glass(); }
 }
 
 // On touch screens the view drifts onto a gangster near the crosshair, and fires when one is under it.
@@ -212,12 +269,14 @@ export function collectPickups() {
     else if (o.pick === "rounds") {
       const w = o.weapon;
       if (p.has[w] && p.reserve[w] >= AMMO.maxReserve[w]) continue; // pockets full: leave it for later
-      if (w === 1 && !p.has[1]) {
-        p.has[1] = true; p.weapon = 1; p.mag[1] = Math.min(WEAPONS[1].mag, o.amount); p.reserve[1] = Math.min(AMMO.maxReserve[1], p.reserve[1] + Math.max(0, o.amount - WEAPONS[1].mag));
-        say(isTouch ? "A Tommy gun. Now we're talking. Tap SWAP to change guns." : "A Tommy gun. Now we're talking.  [1/2 or Q to swap]", 3.5);
+      if (w > 0 && !p.has[w]) {
+        // A new gun: loaded with what it came with, the rest in your pocket
+        p.has[w] = true; p.weapon = w; p.reload = 0; p.mag[w] = Math.min(WEAPONS[w].mag, o.amount); p.reserve[w] = Math.min(AMMO.maxReserve[w], (p.reserve[w] || 0) + Math.max(0, o.amount - WEAPONS[w].mag));
+        const how = isTouch ? "Tap SWAP to change guns." : "[1, 2, 3 or Q to change guns]";
+        say(`${w === 1 ? "A Tommy gun. Now we're talking." : "A sawn-off. For close work."}  ${how}`, 3.5);
       } else {
         p.reserve[w] = Math.min(AMMO.maxReserve[w], p.reserve[w] + o.amount);
-        say(`+${o.amount} ${w === 0 ? "revolver rounds" : "tommy gun rounds"}`);
+        say(`+${o.amount} ${ROUND_NAMES[w]}`);
         if (p.mag[p.weapon] === 0 && p.weapon === w) startReload();
       }
     }

@@ -4,7 +4,7 @@ import { rand } from "./util.js";
 import { game, input, stats } from "./state.js";
 import { LEVELS } from "./levels.js";
 import { ctx, view, watchScreen, resizeIfChanged } from "./screen.js";
-import { wallAt, los, SPAWNS } from "./world.js";
+import { wallAt, los, lightAt, SPAWNS } from "./world.js";
 import { WALL_CHARS, SIDE_WALL_CHARS } from "./tiles.js";
 import { AMMO } from "./config.js";
 import { updatePlayer, collectPickups, tickPlayerEffects } from "./player.js";
@@ -89,6 +89,6 @@ requestAnimationFrame(frame);
 // Hook for the automated tests in tests/
 window.__mobber = {
   get state() { return game.state; }, get player() { return game.player; }, get enemies() { return game.enemies; },
-  get objs() { return game.objs; }, get level() { return game.level; }, get card() { return game.card; }, get map() { return game.map; }, get doors() { return game.doors; }, get fade() { return game.fade; }, get navBlocked() { return game.navBlocked; }, get intertitle() { return game.intertitle; }, set dialogue(v) { game.dialogue = v; }, stats, LEVELS, AMMO, music, settings, startLevel, wallAt, los, hurtPlayer,
+  get objs() { return game.objs; }, get level() { return game.level; }, get card() { return game.card; }, get map() { return game.map; }, get doors() { return game.doors; }, get fade() { return game.fade; }, get navBlocked() { return game.navBlocked; }, get intertitle() { return game.intertitle; }, get smashed() { return game.smashed; }, lightAt, set dialogue(v) { game.dialogue = v; }, stats, LEVELS, AMMO, music, settings, startLevel, wallAt, los, hurtPlayer,
   TILES: { walls: WALL_CHARS, sideWalls: SIDE_WALL_CHARS, blockers: Object.keys(SPAWNS).filter(k => SPAWNS[k].block).join("") },
 };

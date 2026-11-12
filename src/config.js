@@ -54,7 +54,7 @@ export const AIM_ASSIST = {
 // Measured with scripts/playthrough.js: a scene should give back roughly what it costs.
 export const AMMO = {
   startRevolverReserve: 12,
-  maxReserve: [36, 60],     // how many spare rounds you can carry for each gun; extra stays on the floor
+  maxReserve: [36, 60, 16], // how many spare rounds you can carry for each gun; extra stays on the floor
   revolverBox: 6,           // a box of rounds found lying around (r on the map)
   drum: 30,                 // a tommy gun drum (a on the map); the first one gives you the gun
   goonRounds: 3,            // a downed goon often has a few revolver rounds on him...
@@ -62,6 +62,7 @@ export const AMMO = {
   goonTommyRounds: 12,      // ...sometimes his tommy gun, with what's left in the drum...
   goonTommyChance: 0.15,    // ...and otherwise some cash
   heavyRounds: 6,
+  heavyShells: 4,           // a heavy drops his sawn-off the first time, then shells or revolver rounds
   bossCash: 1000,
 };
 
@@ -71,7 +72,10 @@ export const MELEE = { range: 1.4, dmg: 25, rate: 0.55 };
 export const WEAPONS = [
   { name: "REVOLVER", mag: 6, rate: 0.36, dmg: 34, spread: 1.5, reload: 1.3 },
   { name: "TOMMY GUN", mag: 50, rate: 0.085, dmg: 15, spread: 9, reload: 2.0 },
+  // Two barrels of buckshot: `pellets` separate shots spread wide, each weaker the further it flies
+  { name: "SAWN-OFF", mag: 2, rate: 0.55, dmg: 17, spread: 30, reload: 1.5, pellets: 7 },
 ];
+export const ROUND_NAMES = ["revolver rounds", "tommy gun rounds", "shells"];
 
 // Map letter -> enemy type. `art` names a sprite set in art/sprites.js.
 export const ENEMY_TYPES = {
@@ -99,6 +103,10 @@ export const ENEMY_AI = {
   repath: 0.4,              // seconds between route recalculations while hunting
   staggerCooldown: 0.7,     // after flinching from a hit, a gangster can't flinch again for this long
   hearingRange: 12,         // gunshots alert enemies this close
+  shoutRange: 6.5,          // the first to see you shouts, and anyone this close to him comes too
+  darkSight: 0.6,           // how much of sightRange they keep when you stand in the dark
+  coverChance: 0.5,         // how often a goon ducks out of sight between bursts
+  hatChance: 0.35,          // how often a hit knocks a man's hat off
   keepDistance: 2.6,        // stop approaching when this close and in sight
   accuracyNear: 0.82,       // hit chance up close...
   accuracyFalloff: 0.045,   // ...minus this much per unit of distance

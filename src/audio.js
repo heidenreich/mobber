@@ -68,6 +68,9 @@ export const SND = {
     metal(0.03, 0.02, 1900);
     tone(rand(3200, 4400), 0.07, "sine", 0.012, 0, rand(0.28, 0.45));
   },
+  sawn: () => { shot({ crack: 1000, body: 800, thump: 0.8, tail: 0.25, vol: 1.2 }); hiss("lowpass", 300, 0.5, 0.3, 0.02); },
+  // Someone has seen you and is calling the others: two barks
+  shout: d => { const v = clamp(0.09 - d * 0.006, 0.015, 0.09); tone(330, 0.12, "sawtooth", v, 250); tone(390, 0.16, "sawtooth", v, 280, 0.16); },
   // Other people's guns are duller the further off they are
   enemy: d => shot({ crack: clamp(1700 - d * 70, 500, 1700), body: clamp(1300 - d * 60, 350, 1300), thump: 0.15, vol: clamp(0.75 - d * 0.04, 0.12, 0.75) }),
   shotgun: d => shot({ crack: 900, body: clamp(900 - d * 30, 300, 900), thump: 0.5, tail: 0.18, vol: clamp(1 - d * 0.05, 0.16, 1) }),

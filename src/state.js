@@ -23,6 +23,7 @@ export const game = {
   secrets: new Map(),
   movers: [],
   moverCells: new Map(),
+  smashed: new Set(),   // wall squares whose bottles or shop window have been shot out (y * width + x)
   navBlocked: null,     // squares furniture fills, for enemy pathfinding (world.js)
 };
 

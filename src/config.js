@@ -32,6 +32,22 @@ export const PLAYER = {
   safeReach: 1.3,           // how close you must stand to work a safe's dial
   safeTime: 5,              // seconds of dial work to open it
   hitWidth: 0.22,           // how wide a target counts as "under the crosshair", desktop
+  bodyRadius: 0.3,          // how close a gangster's bullet must pass to hit you
+  headRadius: 0.17,         // ...or to hit your head, when you lean it out of cover
+  leanReach: 0.45,          // how far a lean moves your eyes sideways (Z and C)
+  leanTime: 0.16,           // seconds to lean all the way out, or back
+  leanTilt: 0.05,           // how far the picture tips with you, radians
+};
+
+// Gangsters' bullets fly, and you can step out of their way.
+export const BULLETS = {
+  speed: 11,                // squares per second (you walk at 3.2)
+  step: 0.08,               // how finely a bullet's flight is checked
+  range: 30,
+  scatter: 0.1,             // a gangster's aim is off by up to this much, radians either side
+  pellets: 5,               // a heavy's shotgun blast...
+  pelletSpread: 0.2,        // ...and how wide it spreads, so it hits hardest up close
+  whizz: 0.9,               // a miss this close is heard going past
 };
 
 export const TOUCH = {
@@ -66,6 +82,8 @@ export const AMMO = {
   heavyRounds: 6,
   heavyShells: 4,           // a heavy drops his sawn-off the first time, then shells or revolver rounds
   bossCash: 1000,
+  bagCash: 600,             // what the bagman was carrying
+  rifleRounds: 6,
 };
 
 // With both guns empty, clicking swings the gun at anyone in arm's reach
@@ -83,6 +101,13 @@ export const ROUND_NAMES = ["revolver rounds", "tommy gun rounds", "shells"];
 export const ENEMY_TYPES = {
   g: { name: "goon", art: "goon", hp: 40, speed: 1.5, dmg: [6, 11], cd: [1.3, 2.3], range: 13, aim: 0.5, burst: 1, scale: 0.95 },
   G: { name: "heavy", art: "heavy", hp: 95, speed: 1.15, dmg: [13, 22], cd: [1.7, 2.7], range: 7, aim: 0.6, burst: 1, scale: 1.0 },
+  // A knife man: no gun, but faster than you walk. He raises the blade before he strikes: step back
+  j: { name: "knife", art: "knife", hp: 28, speed: 3.5, dmg: [14, 20], cd: [0.7, 1.1], range: 1.0, aim: 0.32, burst: 1, scale: 0.92, melee: true },
+  // A rifleman at an upstairs window (put him on a street square beside a building). He never moves,
+  // takes his time, and his scope glints before a fast, well-aimed shot. `up` is how high his window is
+  y: { name: "rifleman", art: "rifle", hp: 30, speed: 0, dmg: [20, 28], cd: [2.6, 3.6], range: 16, aim: 1.1, burst: 1, scale: 0.95, up: 0.75, still: true, bulletSpeed: 17, scatter: 0.035 },
+  // The bagman doesn't fight: he runs for the nearest alarm bell (x on the map). Stop him before he rings it
+  b: { name: "bagman", art: "bagman", hp: 35, speed: 2.7, dmg: [5, 9], cd: [1.2, 2.0], range: 9, aim: 0.5, burst: 1, scale: 0.93, runner: true },
   // Body doubles dressed as the Don, waiting in the penthouse
   v: { name: "double", art: "boss", hp: 120, speed: 1.05, dmg: [6, 10], cd: [1.1, 1.8], range: 13, aim: 0.45, burst: 3, scale: 1.05 },
   // The real Don runs for his getaway along the level's `route`, stopping to fire
@@ -115,8 +140,4 @@ export const ENEMY_AI = {
   spinTime: 0.45,           // how long the spin takes (a plain flinch is 0.18)
   hatChance: 0.35,          // how often a hit knocks a man's hat off
   keepDistance: 2.6,        // stop approaching when this close and in sight
-  accuracyNear: 0.82,       // hit chance up close...
-  accuracyFalloff: 0.045,   // ...minus this much per unit of distance
-  accuracyMin: 0.18,
-  movingTargetPenalty: 0.72, // hit chance multiplier when you're on the move
 };

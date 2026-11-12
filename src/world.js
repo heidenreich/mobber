@@ -31,6 +31,7 @@ export const SPAWNS = {
   h: { art: "hydrant", scale: 0.6, block: true, size: 0.2 },
   t: { art: "trash", scale: 0.7, block: true, size: 0.25 },
   n: { art: "newsstand", scale: 0.9, block: true, size: 0.45 },
+  x: { art: "alarm", scale: 0.8, block: true, size: 0.2, alarm: true },
   // The hotel roof
   w: { art: "watertower", scale: 2.6, block: true, size: 0.8, cover: true },
   q: { art: "chimney", scale: 1.1, block: true, size: 0.3, cover: true },
@@ -144,7 +145,7 @@ export function loadLevel(i) {
   game.levelIdx = i; game.level = lvl;
   game.height = lvl.map.length; game.width = lvl.map[0].length;
   game.map = lvl.map.map(r => r.split(""));
-  game.objs = []; game.enemies = []; game.smashed = new Set();
+  game.objs = []; game.enemies = []; game.bullets = []; game.smashed = new Set();
   setupDoors(lvl.map);
   // Guns and ammo carry over from the previous scene (flow.js passes the right loadout on a retry)
   const prev = game.player;
@@ -152,6 +153,7 @@ export function loadLevel(i) {
     x: 2, y: 2, a: 0, hp: !prev || lvl.fullHealth ? PLAYER.maxHp : Math.max(prev.hp, PLAYER.minStartHp), weapon: prev ? prev.weapon : 0, has: three(prev && prev.has, [true, false, false]),
     mag: three(prev && prev.mag, [6, 0, 0]), reserve: three(prev && prev.reserve, [AMMO.startRevolverReserve, 0, 0]),
     fireCd: 0, reload: 0, recoil: 0, flash: 0, bob: 0, moving: false, hurt: 0, ledger: false,
+    lean: 0, vx: 0, vy: 0,
   };
   for (let y = 0; y < game.height; y++) for (let x = 0; x < game.width; x++) {
     const ch = game.map[y][x], cx = x + 0.5, cy = y + 0.5;
@@ -164,7 +166,7 @@ export function loadLevel(i) {
   }
   buildLight();
   buildNav();
-  game.timer = 0; game.cracking = null; game.lift = null;
+  game.timer = 0; game.cracking = null; game.lift = null; game.alarm = false;
 }
 
 // Put a gangster on the map. He stands watching the longest open view from where he is.
@@ -173,6 +175,14 @@ export function spawnEnemy(letter, x, y) {
   // A fleeing Don is already on the run when the scene opens
   const e = { x, y, type, hp: type.hp, state: "idle", t: 0, cd: rand(0.5, 1.5), alert: !!type.flees, lx: x, ly: y, burstLeft: 0, step: 0, wp: 0, wp2: null, repath: 0, staggerCd: 0,
     face: facingOpen(x | 0, y | 0), turnT: rand(3, 8), lookBack: false };
+  if (type.up) {
+    // A man at a window: tucked against the building beside him, looking out over the street
+    for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) {
+      if (!WALLS.includes((game.map[(y | 0) + dy] || [])[(x | 0) + dx])) continue;
+      e.x += dx * 0.38; e.y += dy * 0.38; e.face = Math.atan2(-dy, -dx); e.turnT = Infinity;
+      break;
+    }
+  }
   game.enemies.push(e);
   return e;
 }
@@ -217,7 +227,7 @@ export function lightAt(x, y) {
 export function blocked(x, y, r, self) {
   if (wallAt(x - r, y - r) || wallAt(x + r, y - r) || wallAt(x - r, y + r) || wallAt(x + r, y + r)) return true;
   for (const o of game.objs) if (o.block && Math.abs(o.x - x) < r + (o.size || 0.28) && Math.abs(o.y - y) < r + (o.size || 0.28)) return true;
-  for (const e of game.enemies) if (e !== self && e.hp > 0 && Math.hypot(e.x - x, e.y - y) < r + 0.25) return true;
+  for (const e of game.enemies) if (e !== self && e.hp > 0 && !e.type.up && Math.hypot(e.x - x, e.y - y) < r + 0.25) return true;
   if (self !== game.player && Math.hypot(game.player.x - x, game.player.y - y) < r + 0.25) return true;
   return false;
 }

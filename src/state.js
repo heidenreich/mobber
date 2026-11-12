@@ -25,7 +25,9 @@ export const game = {
   moverCells: new Map(),
   smashed: new Set(),   // wall squares whose bottles or shop window have been shot out (y * width + x)
   lift: null,           // the hotel lift's state while riding it (lift.js)
+  alarm: false,         // the bagman got to the bell
   cracking: null,       // { progress, working } while you stand at a safe
+  bullets: [],          // gangsters' shots in flight (bullets.js)
   navBlocked: null,     // squares furniture fills, for enemy pathfinding (world.js)
 };
 
@@ -42,6 +44,12 @@ export const input = {
   touched: false,       // the player has touched the screen this scene (phone auto-fire waits for it)
   touch: { move: null, look: null },
 };
+
+// Where your eyes are: at your feet's position, or off to one side when you lean
+export function eye() {
+  const p = game.player, l = p.lean || 0;
+  return { x: p.x - Math.sin(p.a) * l, y: p.y + Math.cos(p.a) * l };
+}
 
 export function say(text, dur = 2.2) { game.msg = { text, t: dur }; }
 

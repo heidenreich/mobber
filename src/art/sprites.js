@@ -26,6 +26,13 @@ function longGun(g, kind) {
     g.fillStyle = gray(22); g.beginPath(); g.arc(-1.5, 4.6, 4.6, 0, 6.283); g.fill(); // drum
     g.strokeStyle = gray(96); g.lineWidth = 0.7; g.beginPath(); g.arc(-1.5, 4.6, 3.2, 0, 6.283); g.stroke();
     g.fillStyle = gray(90); g.fillRect(5.5, 1.3, 2.2, 5);                            // foregrip
+  } else if (kind === "rifle") {
+    poly(g, [[-19, -0.4], [-8, -1.6], [-8, 1.8], [-19, 4.2]], gray(104));             // rifle stock
+    g.fillStyle = gray(96); g.fillRect(-8, -1.4, 13, 3);                             // wooden fore-end
+    g.fillStyle = gray(30); g.fillRect(-8, -1.6, 28, 1.5);                           // a long barrel
+    g.fillStyle = gray(140); g.fillRect(-8, -1.6, 28, 0.4);
+    g.fillStyle = gray(22); g.fillRect(-6, -4, 10, 1.8);                             // the scope
+    g.fillStyle = gray(200); g.fillRect(3.4, -4, 0.8, 1.8);
   } else {
     poly(g, [[-18, -0.6], [-8, -1.8], [-8, 2], [-18, 4]], gray(92));                 // shotgun stock
     g.fillStyle = gray(30); g.fillRect(-8, -1.8, 9, 3.8);
@@ -43,11 +50,21 @@ function fedora(g, o, cx, y = 0) {
   g.fillStyle = gray(o.hat - 40); g.fillRect(cx - 0.3, y + 1.9, 0.7, 3.6);
 }
 
+// A flat cap, for men who don't run to a fedora
+function flatCap(g, o, cx, y = 0) {
+  g.fillStyle = across(g, cx - 7, cx + 7, o.hat, 30, 30);
+  g.beginPath(); g.ellipse(cx, y + 6.8, 6.6, 3.6, 0, Math.PI, 0); g.fill(); g.fillRect(cx - 6.6, y + 6.6, 13.2, 2.2);
+  g.fillStyle = gray(o.hat - 34); g.beginPath(); g.ellipse(cx + 0.6, y + 9.1, 7.8, 1.5, 0, 0, 6.283); g.fill();   // the peak
+}
+const hat = (g, o, cx, y) => (o.cap ? flatCap : fedora)(g, o, cx, y);
+
 // One figure. `pose` is idle, walk1, walk2, aim, fire, hurt or back (seen from behind, when he hasn't noticed you).
 function person(g, o, pose) {
   const cx = 32, aiming = pose === "aim" || pose === "fire", back = pose === "back";
   const stride = pose === "walk1" ? 1 : pose === "walk2" ? -1 : 0;
   g.save(); g.scale(P_RES / 64, P_RES / 64);
+  // a man at an upstairs window: the dark opening behind him (the sill goes on last)
+  if (o.window) { g.fillStyle = gray(12); g.fillRect(12, 1, 40, 40); g.strokeStyle = gray(150); g.lineWidth = 1.4; g.strokeRect(12, 1, 40, 40); }
   // a pool of shadow at the feet
   g.fillStyle = gray(8); g.beginPath(); g.ellipse(cx + 1, 62.6, o.wide ? 15 : 13, 1.6, 0, 0, 6.283); g.fill();
   if (o.wide) { g.translate(cx, 64); g.scale(1.2, 1); g.translate(-cx, -64); }
@@ -113,7 +130,7 @@ function person(g, o, pose) {
   if (o.hatless) {                                                                      // slicked-back hair
     g.fillStyle = across(g, cx - 5.4, cx + 5.4, 34, 60, 20);
     g.beginPath(); g.moveTo(cx - 5.4, 10); g.quadraticCurveTo(cx - 5.6, 3.6, cx, 3.4); g.quadraticCurveTo(cx + 5.6, 3.6, cx + 5.4, 10); g.lineTo(cx + 4.2, 8.2); g.quadraticCurveTo(cx, 6.4, cx - 4.2, 8.2); g.closePath(); g.fill();
-  } else fedora(g, o, cx);
+  } else hat(g, o, cx);
 
   // arms and the gun
   const sleeve = (x, y, w, h, shade) => { g.fillStyle = across(g, x, x + w, o.coat - shade, 26, 30); g.beginPath(); g.roundRect(x, y, w, h, 2); g.fill(); };
@@ -123,6 +140,15 @@ function person(g, o, pose) {
     sleeve(cx - 13.4, 21, 5, 16, 30); sleeve(cx + 8.4, 21, 5, 16, 10);
     hand(cx - 10.9, 38); hand(cx + 10.9, 38);
     if (o.weapon !== "pistol") { g.fillStyle = gray(30); g.save(); g.translate(cx + 7, 21); g.rotate(-0.35); g.fillRect(-1, -11, 2.2, 11); g.restore(); }
+  } else if (o.weapon === "knife") {
+    // no gun: a blade that catches the light, low at his side, raised to strike, or coming down
+    const blade = (x, y, rot) => { g.save(); g.translate(x, y); g.rotate(rot); g.fillStyle = gray(50); g.fillRect(-1, 0, 2, 3.6); poly(g, [[-1.2, 0], [1.2, 0], [0.2, -10.5]], gray(255)); g.restore(); };
+    sleeve(cx - 13.4, 21, 5, 17, 10); hand(cx - 10.9, 38.6);
+    if (pose === "aim") { sleeve(cx + 8.4, 8, 5, 15, 30); hand(cx + 10.9, 7.6); blade(cx + 10.9, 6.4, 0.3); }
+    else if (pose === "fire") {
+      g.strokeStyle = "rgba(255,255,255,0.95)"; g.lineWidth = 1.6; g.beginPath(); g.arc(cx + 1, 23, 14, -1.25, 1.0); g.stroke();   // the sweep of the blade
+      sleeve(cx + 3.4, 24, 5.4, 12, 30); hand(cx + 4.4, 37); blade(cx + 4.4, 38, 2.75);
+    } else { sleeve(cx + 8.4, 21, 5, 15.5, 30); hand(cx + 10.9, 37); blade(cx + 11.1, 38.4, 2.85); }
   } else if (aiming) {
     // both arms brought up, the gun pointed straight at you
     sleeve(cx - 13, 21, 5.4, 11.5, 10); sleeve(cx + 7.6, 21, 5.4, 11.5, 30);
@@ -137,6 +163,8 @@ function person(g, o, pose) {
     else { g.beginPath(); g.arc(cx, 27.6, r * 0.62, 0, 6.283); g.fill(); }
     g.fillStyle = gray(120); g.fillRect(cx - 0.4, 23.2, 0.8, 1.4);                     // front sight
     hand(cx - 4.4, 31.4); hand(cx + 4.4, 30.6);
+    // a rifleman taking aim gives himself away: the lamplight in his scope
+    if (o.weapon === "rifle" && pose === "aim") { g.fillStyle = gray(255); g.beginPath(); g.arc(cx, 21.6, 1.7, 0, 6.283); g.fill(); g.fillRect(cx - 4.6, 21.3, 9.2, 0.6); g.fillRect(cx - 0.3, 17, 0.6, 9.2); }
     if (pose === "fire") {
       g.fillStyle = gray(255); g.beginPath();
       for (let i = 0; i < 18; i++) { const a = i * Math.PI / 9 + 0.2, rr = i % 2 ? 4.2 : 9 + (i * 7 % 5); g.lineTo(cx + Math.cos(a) * rr, 27.4 + Math.sin(a) * rr); }
@@ -146,6 +174,11 @@ function person(g, o, pose) {
     sleeve(cx - 13.4, 21, 5, 17, 10); sleeve(cx + 8.4, 21, 5, 15.5, 30);
     hand(cx - 10.9, 38.6); hand(cx + 10.9, 37);
     g.fillStyle = gray(30); g.fillRect(cx + 9.6, 37.4, 2.6, 6.4); g.fillRect(cx + 9.6, 36, 5, 2.2);   // a pistol held low
+    if (o.bag) {                                                                          // the night's takings
+      g.fillStyle = across(g, cx - 17, cx - 6, 150, 40, 50); g.beginPath(); g.roundRect(cx - 17, 41, 11.5, 8.5, 1.6); g.fill();
+      g.strokeStyle = gray(60); g.lineWidth = 0.8; g.beginPath(); g.arc(cx - 11.2, 41, 2.6, Math.PI, 0); g.stroke();
+      g.fillStyle = gray(230); g.fillRect(cx - 12.2, 43.6, 2, 3);
+    }
   } else {
     // a long gun carried across the body, muzzle up over the left shoulder
     sleeve(cx - 13.4, 21, 5, 13.5, 10); sleeve(cx + 8.4, 21, 5, 15.5, 30);
@@ -153,12 +186,20 @@ function person(g, o, pose) {
     hand(cx - 7.2, 31.2); hand(cx + 6.4, 37.2);
   }
   g.restore();
+  if (o.window) {                                                                        // nothing shows below the sill
+    g.save(); g.scale(P_RES / 64, P_RES / 64);
+    g.clearRect(0, 41, 64, 23); g.clearRect(0, 0, 11.3, 64); g.clearRect(52.7, 0, 12, 64);
+    g.fillStyle = gray(176); g.fillRect(10, 39.6, 44, 2.6); g.fillStyle = gray(90); g.fillRect(10, 41.6, 44, 0.8);
+    g.restore();
+  }
 }
 // The same picture facing the other way
 const mirrored = bm => { const L = new Uint8Array(bm.L.length), A = new Uint8Array(bm.A.length); for (let y = 0; y < bm.h; y++) for (let x = 0; x < bm.w; x++) { const i = y * bm.w + x, j = y * bm.w + bm.w - 1 - x; L[i] = bm.L[j]; A[i] = bm.A[j]; } return { w: bm.w, h: bm.h, L, A }; };
 
-function personSet(o) {
-  const f = pose => bitmap(P_RES, P_RES, g => person(g, o, pose));
+function personSet(look) {
+  // A man shot at his window comes out of it: falling and on the pavement he's drawn full length
+  const o = look.window ? { ...look, window: false } : look;
+  const f = pose => bitmap(P_RES, P_RES, g => person(g, look, pose));
   const hurt = f("hurt"), back = f("back");
   const k = P_RES / 64;
   return {
@@ -189,6 +230,10 @@ export const PEOPLE = {};
 const LOOKS = {};
 LOOKS.goon = ({ coat: 112, hat: 44, band: 16, pants: 60, tie: 30, skin: 172, weapon: "tommy", belt: true });
 LOOKS.heavy = ({ coat: 178, hat: 196, band: 44, pants: 70, tie: 44, skin: 164, weapon: "shotgun", wide: true, moustache: true });
+// A knife man in a flat cap, a rifleman at an upstairs window, and the bagman with the night's takings
+LOOKS.knife = ({ coat: 62, hat: 92, band: 30, pants: 44, tie: 150, skin: 168, weapon: "knife", cap: true });
+LOOKS.rifle = ({ coat: 92, hat: 60, band: 20, pants: 60, tie: 30, skin: 170, weapon: "rifle", window: true });
+LOOKS.bagman = ({ coat: 150, hat: 120, band: 40, pants: 84, tie: 40, skin: 174, weapon: "pistol", bag: true, moustache: true });
 LOOKS.boss = ({ coat: 40, hat: 232, band: 20, pants: 36, tie: 228, skin: 176, weapon: "pistol", stripes: true, cigar: true, wide: true, spats: true });
 // Each kind of gangster, with his hat on and (after a near miss) with it knocked off
 for (const [k, look] of Object.entries(LOOKS)) { PEOPLE[k] = personSet(look); PEOPLE[k + "Bare"] = personSet({ ...look, hatless: true }); }
@@ -394,7 +439,7 @@ OBJ.shells = bitmap(64, 64, g => {
 // Hats knocked off by a near thing, lying where they fell
 OBJ.hats = Object.fromEntries(Object.entries(LOOKS).map(([k, look]) => [k, bitmap(64, 64, g => {
   g.fillStyle = gray(8); g.beginPath(); g.ellipse(32, 62.4, 12, 1.4, 0, 0, 6.283); g.fill();
-  g.translate(32, 62.5); g.scale(1.15, 1.15); g.rotate(0.12); g.translate(-32, -11); fedora(g, look, 32);
+  g.translate(32, 62.5); g.scale(1.15, 1.15); g.rotate(0.12); g.translate(-32, -11); hat(g, look, 32);
 })]));
 
 // A lamp that's been shot out: the same picture with its light gone
@@ -426,6 +471,15 @@ function safe(open) {
     }
   });
 }
+// An alarm bell on a post: if the bagman reaches it, every gun in the place comes for you
+OBJ.alarm = bitmap(64, 64, g => {
+  g.fillStyle = gray(8); g.beginPath(); g.ellipse(32, 62.6, 8, 1.4, 0, 0, 6.283); g.fill();
+  g.fillStyle = across(g, 30, 34, 60, 50, 30); g.fillRect(30.6, 30, 2.8, 32); g.fillRect(27, 60, 10, 2.6);
+  g.fillStyle = across(g, 23, 41, 110, 40, 50); g.beginPath(); g.roundRect(23, 12, 18, 20, 2); g.fill();
+  g.fillStyle = across(g, 26, 38, 214, 30, 80); g.beginPath(); g.arc(32, 21, 6, 0, 6.283); g.fill();          // the bell
+  g.fillStyle = gray(40); g.beginPath(); g.arc(32, 21, 1.4, 0, 6.283); g.fill();
+  g.fillStyle = gray(30); g.fillRect(31.2, 27, 1.6, 6);                                                       // the pull
+});
 OBJ.safe = safe(false); OBJ.safeOpen = safe(true);
 
 // The autogiro with its rotor turning: the same machine with the blades at three angles

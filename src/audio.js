@@ -112,6 +112,8 @@ export const SND = {
     else if (what === "ledger") { hiss("bandpass", 2600, 0.2, 0.06); tone(784, 0.2, "triangle", 0.05, 0, 0.12); tone(1175, 0.4, "triangle", 0.05, 0, 0.26); }
     else { tone(880, 0.08); tone(1320, 0.12, "sine", 0.05, 0, 0.07); }
   },
+  alarm: () => { for (let i = 0; i < 14; i++) { tone(1568, 0.11, "triangle", 0.07, 0, i * 0.12); tone(3136, 0.06, "sine", 0.02, 0, i * 0.12); } },
+  whizz: () => { hiss("bandpass", 3200, 0.07, 0.16, 0, 3); tone(2100, 0.11, "sine", 0.025, 900); },
   hurt: () => { hiss("lowpass", 320, 0.16, 0.5); tone(120, 0.2, "sawtooth", 0.07, 70); },
   click: () => metal(0, 0.03, 1800),
   // Reloading, in the time each gun takes: thumb the cylinder open, rounds in, snap it shut;

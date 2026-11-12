@@ -4,7 +4,7 @@ import { isTouch, PLAYER } from "../config.js";
 import { game, input, say } from "../state.js";
 import { cv } from "../screen.js";
 import { initAudio } from "../audio.js";
-import { music } from "../music.js";
+import { settings, saveSettings, lookSpeed, clearGame } from "../settings.js";
 import { switchWeapon, startReload, use } from "../player.js";
 import { advance, requestLock } from "../flow.js";
 
@@ -12,8 +12,10 @@ export function installDesktopInput() {
   window.addEventListener("keydown", e => {
     const k = e.key.toLowerCase(), p = game.player; input.keys.add(k);
     if (k === " ") { e.preventDefault(); input.firing = true; }
+    if (input.menu) return;
     if (k === "enter") advance();
-    if (k === "m" && !e.repeat) say(music.toggle() ? "The pianist takes a break." : "The pianist is back.");
+    if (k === "m" && !e.repeat) { settings.music = !settings.music; saveSettings(); say(settings.music ? "The pianist is back." : "The pianist takes a break."); }
+    if (k === "n" && game.state === "title") clearGame();   // start over instead of picking up where you left off
     // One press, one action (no key-repeat), and nothing while paused or between scenes
     const paused = input.wasLocked && !input.locked;
     if (e.repeat || !p || game.state !== "play" || paused) return;
@@ -28,7 +30,7 @@ export function installDesktopInput() {
   document.addEventListener("pointerlockchange", () => { input.locked = document.pointerLockElement === cv; if (input.locked) input.wasLocked = true; });
   cv.addEventListener("mousedown", e => {
     initAudio();
-    if (game.state !== "play") return;
+    if (game.state !== "play" || input.menu) return;
     if (!input.locked) requestLock();
     if (input.wasLocked && !input.locked) return; // first click after a pause just resumes
     if (e.button === 0) input.firing = true;
@@ -37,8 +39,8 @@ export function installDesktopInput() {
   window.addEventListener("mouseup", () => { input.firing = false; input.dragLook = false; });
   window.addEventListener("mousemove", e => {
     if (game.state !== "play" || !game.player) return;
-    if (input.locked || (input.dragLook && !isTouch)) game.player.a += e.movementX * PLAYER.mouseSensitivity;
+    if (input.locked || (input.dragLook && !isTouch)) game.player.a += e.movementX * PLAYER.mouseSensitivity * lookSpeed();
   });
   cv.addEventListener("wheel", () => { if (game.player && game.state === "play") switchWeapon(1 - game.player.weapon); });
-  cv.addEventListener("click", () => { initAudio(); if (game.state !== "play") advance(); });
+  cv.addEventListener("click", () => { initAudio(); if (game.state !== "play" && !input.menu) advance(); });
 }

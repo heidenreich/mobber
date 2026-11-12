@@ -19,7 +19,10 @@ Your brother Eddie kept the books at the Blue Note, and kept them honest. The Vi
 | Swap guns | Q, 1/2 or the mouse wheel | SWAP |
 | Search for secret walls | Walk into a wall, or press E | Walk into a wall |
 | Pause | Esc | — |
-| Music on or off | M | — |
+| Music on or off | M | the gear, top right |
+| Settings | the gear, top right (Esc first to free the mouse) | the gear, top right |
+
+The gear opens the projection booth: music, sound effects, look speed, difficulty (Sunday stroll, Regular, Hard-boiled), a buzz when you're hit on a phone, and starting the picture over. Your choices and the scene you last reached are remembered in the browser, so closing the tab doesn't send you back to the start.
 
 Doors open by themselves as you walk up to them. Some walls hide rooms: look for faint scrape marks near the floor.
 
@@ -68,7 +71,9 @@ src/
   player.js           moving, shooting, reloading, pickups, the exit
   enemies.js          gangster behavior: idle -> chase -> aim -> fire
   flow.js             title card -> chapter card -> play -> death / next chapter / the end
-  audio.js            synthesized gunshots and projector clatter
+  audio.js            synthesized sound effects: gunshots, footsteps, rain, reloads, pickups, projector clatter
+  settings.js         your choices and your saved place, kept in the browser's local storage
+  panel.js            the settings panel behind the gear
   music.js            the piano accompaniment: three short tunes, synthesized note by note
   render/
     camera.js         the player's view and world-to-screen projection
@@ -89,11 +94,11 @@ scripts/              the local server, and the playthrough bot
 tests/                browser tests
 ```
 
-All the art and sound are generated in code when the page loads; there are no image or audio files. The renderer draws brightness values into a 640x360 buffer (`render/raycaster.js`), and `render/film.js` turns that into the finished black-and-white frame.
+All the art and sound are generated in code when the page loads; there are no image or audio files (`og.png` is only the preview shown when the link is shared). The renderer draws brightness values into a 640x360 buffer (`render/raycaster.js`), and `render/film.js` turns that into the finished black-and-white frame.
 
 ### Common changes
 
-- **Difficulty:** `src/config.js`. Enemy health, damage, accuracy and reaction time, player speed, how strong the phone aim assist is, and how much ammo you start with, find and loot (`AMMO`).
+- **Difficulty:** the three difficulty levels are `DIFFICULTY` in `src/settings.js`; everything else is in `src/config.js`. Enemy health, damage, accuracy and reaction time, player speed, how strong the phone aim assist is, and how much ammo you start with, find and loot (`AMMO`).
 - **The story:** the prologue and epilogue are `STORY` in `src/levels.js`, and each scene's title card is its `card` lines.
 - **A new level:** add an entry to `src/levels.js`. For a street scene, set `sky`, `wallHeight: 2`, `rain` and `objective: "reach"`, and pick an `entrance` for the door at the end. The legend at the top lists every map character. `npm test` checks that the map is sealed, that everything in it can be reached, and that the objective and exit never depend on finding a secret.
 - **Doors and secrets:** put `D` between two walls for a door, and `!` in a wall (with open floor behind it) for a secret. Their timing and speed are in `DOORS` in `src/config.js`.

@@ -18,10 +18,13 @@ import { renderWorld } from "./render/raycaster.js";
 import { drawHUD } from "./render/hud.js";
 import { drawCard } from "./render/cards.js";
 import { music } from "./music.js";
+import { installPanel } from "./panel.js";
+import { settings } from "./settings.js";
 
 watchScreen();
 installDesktopInput();
 installTouchInput();
+installPanel();
 // Ask for the web fonts early so the title card doesn't flash in a fallback face
 if (document.fonts) ["16px Limelight", "italic 700 16px 'Playfair Display'", "900 16px 'Playfair Display'", "16px 'Special Elite'"]
   .forEach(f => document.fonts.load(f).catch(() => {}));
@@ -42,7 +45,7 @@ let last = performance.now(), t = 0;
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
   resizeIfChanged();
-  const paused = game.state === "play" && input.wasLocked && !input.locked && !isTouch;
+  const paused = input.menu || (game.state === "play" && input.wasLocked && !input.locked && !isTouch);
   // A dialogue card stops the action (and any fade) while it holds the screen
   const it = game.intertitle;
   if (it) { if (!paused) it.t -= dt; if (it.t <= 0) game.intertitle = null; }
@@ -86,6 +89,6 @@ requestAnimationFrame(frame);
 // Hook for the automated tests in tests/
 window.__mobber = {
   get state() { return game.state; }, get player() { return game.player; }, get enemies() { return game.enemies; },
-  get objs() { return game.objs; }, get level() { return game.level; }, get card() { return game.card; }, get map() { return game.map; }, get doors() { return game.doors; }, get fade() { return game.fade; }, get navBlocked() { return game.navBlocked; }, get intertitle() { return game.intertitle; }, set dialogue(v) { game.dialogue = v; }, stats, LEVELS, AMMO, music, startLevel, wallAt, los, hurtPlayer,
+  get objs() { return game.objs; }, get level() { return game.level; }, get card() { return game.card; }, get map() { return game.map; }, get doors() { return game.doors; }, get fade() { return game.fade; }, get navBlocked() { return game.navBlocked; }, get intertitle() { return game.intertitle; }, set dialogue(v) { game.dialogue = v; }, stats, LEVELS, AMMO, music, settings, startLevel, wallAt, los, hurtPlayer,
   TILES: { walls: WALL_CHARS, sideWalls: SIDE_WALL_CHARS, blockers: Object.keys(SPAWNS).filter(k => SPAWNS[k].block).join("") },
 };

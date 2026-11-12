@@ -7,13 +7,15 @@ import { cv, view, fireBtn, swapBtn } from "../screen.js";
 import { initAudio } from "../audio.js";
 import { switchWeapon } from "../player.js";
 import { advance } from "../flow.js";
+import { lookSpeed } from "../settings.js";
 
-function lookBy(dx) { if (game.player) game.player.a += dx * TOUCH.lookSensitivity; }
+function lookBy(dx) { if (game.player) game.player.a += dx * TOUCH.lookSensitivity * lookSpeed(); }
 
 export function installTouchInput() {
   const touch = input.touch, R = TOUCH.stickRadius;
   cv.addEventListener("touchstart", e => {
     initAudio();
+    if (input.menu) return;
     if (game.state !== "play") { advance(); e.preventDefault(); return; }
     input.touched = true;
     for (const t of e.changedTouches) {

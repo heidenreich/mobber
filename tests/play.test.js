@@ -465,3 +465,52 @@ test("the pianist plays under the picture", async () => {
   await page.waitForFunction(() => window.__mobber.music.playing === "chase", null, { timeout: 5000 });
   assert.deepEqual(errors, []);
 });
+
+test("closing the tab keeps your place, and the end of the picture clears it", async () => {
+  const g = await openGame(browser, srv.url);
+  const { page, errors, context } = g;
+  await rollFilm(page);
+  // Walk into the second scene carrying a tommy gun and some cash
+  await game(page, () => { const M = window.__mobber; M.player.has[1] = true; M.player.reserve[1] = 40; M.stats.cash = 700; M.startLevel(1); });
+  await page.reload();
+  await page.waitForFunction(() => window.__mobber && window.__mobber.state === "title");
+  await page.evaluate(() => { window.__mobber.dialogue = false; });
+  await page.mouse.click(200, 200);
+  await page.waitForFunction(() => window.__mobber.state === "card");
+  assert.deepEqual(await game(page, () => window.__mobber.card), { kind: "chapter", idx: 1 }, "the title leads straight to the scene you reached");
+  await clickCard(page);
+  await page.waitForFunction(() => window.__mobber.state === "play");
+  const after = await game(page, () => ({ title: window.__mobber.level.title, tommy: window.__mobber.player.has[1], reserve: window.__mobber.player.reserve[1], cash: window.__mobber.stats.cash }));
+  assert.deepEqual(after, { title: "The Blue Note Club", tommy: true, reserve: 40, cash: 700 });
+  // THE END wipes the save
+  await page.evaluate(async () => { (await import("/src/flow.js")).showCard("end"); });
+  await page.reload();
+  await page.waitForFunction(() => window.__mobber && window.__mobber.state === "title");
+  await page.mouse.click(200, 200);
+  await page.waitForFunction(() => window.__mobber.state === "card");
+  assert.equal(await game(page, () => window.__mobber.card.kind), "prologue");
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test("the settings panel stops the picture and its choices stick", async () => {
+  const { page, errors } = await openGame(browser, srv.url);
+  await rollFilm(page);
+  // On a desktop the mouse is captured while you play: Esc lets it go, then the gear can be clicked
+  await page.evaluate(() => document.exitPointerLock());
+  await page.waitForFunction(() => !document.pointerLockElement);
+  await page.click("#gear");
+  assert.equal(await page.isVisible("#panel"), true);
+  const t0 = await game(page, () => window.__mobber.stats.time);
+  await page.waitForTimeout(300);
+  assert.equal(await game(page, () => window.__mobber.stats.time), t0, "the clock stops while the panel is open");
+  await page.click("#panel .row:has-text('Difficulty')");
+  await page.click("#panel .row:has-text('Music')");
+  assert.deepEqual(await game(page, () => [window.__mobber.settings.difficulty, window.__mobber.settings.music]), [2, false]);
+  await page.click("#panel .row:has-text('Back to the picture')");
+  assert.equal(await page.isVisible("#panel"), false);
+  await page.reload();
+  await page.waitForFunction(() => window.__mobber && window.__mobber.state === "title");
+  assert.deepEqual(await game(page, () => [window.__mobber.settings.difficulty, window.__mobber.settings.music]), [2, false], "settings survive a reload");
+  assert.deepEqual(errors, []);
+});

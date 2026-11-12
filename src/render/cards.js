@@ -32,7 +32,7 @@ function corner(x, y, sx, sy, s) {
 const HOW_TO = isTouch
   ? [["Walk and turn", "left thumb, anywhere"], ["Aim", "drag with your right thumb"], ["Shoot", "hold FIRE, or put a gangster under the crosshair"],
      ["Swap guns", "SWAP"], ["Reload", "by itself"], ["Search a wall", "walk into it"]]
-  : [["Move", "W A S D  (Shift to run)"], ["Aim", "mouse"], ["Shoot", "click or Space"], ["Reload", "R"],
+  : [["Move", "W A S D  (Shift to run)"], ["Lean round a corner", "Z and C"], ["Aim", "mouse"], ["Shoot", "click or Space"], ["Reload", "R"],
      ["Swap guns", "Q, or 1, 2 and 3"], ["Search a wall", "E, or walk into it"], ["Pause", "Esc"], ["Music on or off", "M"]];
 
 export function drawCard(t) {
@@ -103,7 +103,7 @@ export function drawCard(t) {
   } else if (card.kind === "controls") {
     line("BEFORE THE PICTURE STARTS", 76, `${14 * s}px ${DECO}`, 0.85);
     rule(96);
-    const gap = HOW_TO.length > 6 ? 20 : 24, top = HOW_TO.length > 6 ? 124 : 128;
+    const n = HOW_TO.length, gap = n > 8 ? 18 : n > 6 ? 20 : 24, top = n > 8 ? 120 : n > 6 ? 124 : 128;
     HOW_TO.forEach(([what, how], i) => {
       const y = Y(top + i * gap);
       ctx.fillStyle = CREAM; ctx.font = `italic 700 ${13 * s}px ${SERIF}`; ctx.textAlign = "right"; ctx.fillText(what, cx - 14 * s, y);

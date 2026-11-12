@@ -1,6 +1,6 @@
 // Draws the 3D view into the film's luma buffer: floor and ceiling, walls (one
 // ray per screen column), sprites sorted far to near, then the gun in your hand.
-import { W, H, HALF, K, PLANE, FOG, GLOW, WEAPONS, ENEMY_AI } from "../config.js";
+import { W, H, HALF, K, PLANE, FOG, GLOW, WEAPONS, ENEMY_AI, PLAYER } from "../config.js";
 import { clamp } from "../util.js";
 import { game } from "../state.js";
 import { FLOORS, CEILS, TEX, WALL_TEXTURES, DOOR_TEX, SECRET_TEXTURES, SMASHED_TEXTURES } from "../art/textures.js";
@@ -21,7 +21,7 @@ const colTex = new Array(W), colTx = new Uint8Array(W), colLit = new Float32Arra
 export function renderWorld(t) {
   camera();
   const { dirX, dirY, planeX, planeY } = cam;
-  const p = game.player, px = p.x, py = p.y, map = game.map, MW = game.width, MH = game.height, lvl = game.level;
+  const p = game.player, px = cam.x, py = cam.y, map = game.map, MW = game.width, MH = game.height, lvl = game.level;
   const fl = FLOORS[lvl.floor].L, ce = lvl.sky ? null : CEILS[lvl.ceil].L;
   const light = lightMap.data, LW = lightMap.w, LH = lightMap.h, LSUB = lightMap.sub;
   const wallH = lvl.wallHeight || 1;
@@ -141,11 +141,13 @@ export function renderWorld(t) {
     else if (e.state === "hurt") art = e.spin ? A.spin[Math.min(3, ((1 - e.t / ENEMY_AI.spinTime) * 4) | 0)] : A.hurt; else if (e.state === "dying") art = e.t > 0.25 ? A.hurt : A.fall;
     else if (e.state === "dead") art = A.dead;
     // Gangsters stay readable in the dark: they're never lit below a floor brightness
-    list.push({ x: e.x, y: e.y, art, scale: e.type.scale, bob: e.moving ? Math.abs(Math.sin(e.step * 9)) * 0.02 : 0, muzzle: e.state === "fire" && e.t > 0.07, minLit: e.hp > 0 ? 0.6 : 0 });
+    const up = !e.type.up || e.state === "dead" ? 0 : e.state === "dying" ? e.type.up * Math.min(1, e.t / 0.5) : e.type.up;
+    list.push({ x: e.x, y: e.y, up, art, scale: e.type.scale, bob: e.moving ? Math.abs(Math.sin(e.step * 9)) * 0.02 : 0, muzzle: e.state === "fire" && e.t > 0.07, minLit: e.hp > 0 ? 0.6 : 0 });
   }
+  for (const b of game.bullets) list.push({ x: b.x, y: b.y, bullet: b });
   for (const s of list) s.d = (s.x - px) ** 2 + (s.y - py) ** 2;
   list.sort((a, b) => b.d - a.d);
-  for (const s of list) drawSprite(s, wet);
+  for (const s of list) s.bullet ? drawBullet(s.bullet) : drawSprite(s, wet);
 
   drawGun(t);
 }
@@ -188,7 +190,7 @@ function drawSprite(s, wet) {
   if (tY < 0.12) return;
   const bm = s.art, size = (K / tY) * s.scale;
   const floorY = HALF + (K * 0.5) / tY;
-  const top = (s.hang ? HALF - (K * 0.5) / tY : floorY - size) - s.bob * (K / tY);
+  const top = (s.hang ? HALF - (K * 0.5) / tY : floorY - size) - ((s.bob || 0) + (s.up || 0)) * (K / tY);
   const wpx = size * bm.w / bm.h, left = sx - wpx / 2;
   const x0 = Math.max(0, left | 0), x1 = Math.min(W, (left + wpx) | 0);
   let lit = lightAt(s.x, s.y) * Math.exp(-tY * FOG);
@@ -206,11 +208,34 @@ function drawSprite(s, wet) {
       ty += stepY;
     }
     // On wet pavement, a dim upside-down copy under the feet
-    if (wet && !s.hang) {
+    if (wet && !s.hang && !s.up) {
       const r1 = Math.min(H, (floorY + size * 0.9) | 0);
       for (let y = Math.max(0, Math.ceil(floorY)); y < r1; y++) {
         const i = (((floorY - y + size) * stepY) | 0) * bm.w + tx;
         if (i >= 0 && bm.A[i] > 110) { const v = bm.L[i] * (bm.L[i] > 245 ? 1.1 : lit); luma[y * W + x] = luma[y * W + x] * 0.72 + v * 0.28; }
+      }
+    }
+  }
+}
+
+// A bullet in flight: a bright streak at chest height, a hot round head with a
+// fading tail, so you can see where it's going and get out of its way
+function drawBullet(b) {
+  const N = 9, LEN = 0.9;
+  for (let n = 0; n < N; n++) {
+    const f = n / (N - 1), back = LEN * (1 - f);
+    const [, tY, sx] = project(b.x - b.dx * back, b.y - b.dy * back);
+    if (tY < 0.1) continue;
+    const r = clamp((K * 0.04) / tY, 2.2, 14) * (0.35 + 0.65 * f), v = 120 + 150 * f;
+    const up = b.drop ? b.drop.h * Math.max(0, 1 - (b.flown - back) / b.drop.over) : 0;   // still coming down from the window
+    const cy = HALF + (K * (0.1 - up)) / tY;
+    const x0 = Math.max(0, Math.floor(sx - r)), x1 = Math.min(W - 1, Math.ceil(sx + r));
+    const y0 = Math.max(0, Math.floor(cy - r)), y1 = Math.min(H - 1, Math.ceil(cy + r));
+    for (let x = x0; x <= x1; x++) {
+      if (tY >= zbuf[x]) continue;
+      for (let y = y0; y <= y1; y++) {
+        if ((x - sx) ** 2 + (y - cy) ** 2 > r * r) continue;
+        if (luma[y * W + x] < v) luma[y * W + x] = v;
       }
     }
   }
@@ -224,7 +249,7 @@ function drawGun(t) {
     : p.flash > 0 ? set.flash
     : set.kick[Math.min(set.kick.length - 1, Math.round(p.recoil * (set.kick.length - 1)))];
   const bobX = p.moving ? Math.cos(p.bob) * 5 : 0, bobY = p.moving ? Math.abs(Math.sin(p.bob)) * 5 : Math.sin(t * 1.5) * 1.5;
-  const ox = Math.round(set.x + bobX), oy = Math.round(set.y + bobY + reloading * 26);
+  const ox = Math.round(set.x + bobX + (p.lean || 0) / PLAYER.leanReach * 16), oy = Math.round(set.y + bobY + reloading * 26);
   const lit = clamp(lightAt(p.x, p.y) * 0.9 + 0.12, 0.36, 1.05);   // the gun takes the light of where you stand
   // The flash adds a fixed amount of light, so dark steel catches it and skin doesn't burn out
   const flashAdd = p.flash > 0 ? 20 : 0;

@@ -1,13 +1,14 @@
 // The Vitale outfit. Each gangster runs a small state machine:
 // idle -> chase -> aim -> fire -> chase ... with hurt/dying/dead on top.
 // They raise their gun ("aim") before firing, which gives you a moment to react.
-import { ENEMY_AI } from "./config.js";
-import { rand, clamp } from "./util.js";
-import { game, stats, say, intertitle } from "./state.js";
+import { ENEMY_AI, BULLETS } from "./config.js";
+import { rand } from "./util.js";
+import { game, stats, say, intertitle, eye } from "./state.js";
 import { SND } from "./audio.js";
 import { los, moveBy, nextStep, lightAt } from "./world.js";
 import { fadeOut, showCard } from "./flow.js";
 import { difficulty, buzz } from "./settings.js";
+import { spawnBullet } from "./bullets.js";
 
 export function updateEnemy(e, dt) {
   const p = game.player, T = e.type;
@@ -20,12 +21,14 @@ export function updateEnemy(e, dt) {
   const range = ENEMY_AI.sightRange * (lightAt(p.x, p.y) < 0.5 && p.flash <= 0 ? ENEMY_AI.darkSight : 1);
   // Until something alerts him he only sees what's in front of him, and now and then he looks behind
   if (!e.alert && (e.turnT -= dt) <= 0) { e.face += Math.PI; e.lookBack = !e.lookBack; e.turnT = e.lookBack ? rand(2, 3.5) : rand(4, 8); }
-  let sees = d < range && los(e.x, e.y, p.x, p.y);
+  // He sees you if he can see where you stand, or your head leaning out of cover
+  let sees = d < range && (los(e.x, e.y, p.x, p.y) || (!!p.lean && los(e.x, e.y, eye().x, eye().y)));
   if (sees && !e.alert && d > ENEMY_AI.senseRange) {
     const off = Math.atan2(dy, dx) - e.face;
     if (Math.abs(Math.atan2(Math.sin(off), Math.cos(off))) > ENEMY_AI.viewCone) sees = false;
   }
   if (e.panic) { runForIt(e, dt, d); return; }
+  if (T.runner && e.alert && !e.rang && !e.cornered) { runForAlarm(e, dt); return; }
   if (sees) {
     // The first gangster to get a good look at you, and later the Don himself, have something to say
     if (!e.alert && d < 9) {
@@ -41,6 +44,7 @@ export function updateEnemy(e, dt) {
     case "hurt": e.t -= dt; if (e.t <= 0) e.state = "chase"; break;
     case "chase": {
       if (sees && d < T.range && e.cd <= 0) { e.state = "aim"; e.t = T.aim; e.burstLeft = T.burst; break; }
+      if (T.still) break;   // a man at a window stays there
       if (T.flees && game.level.route) { flee(e, dt); break; }
       // Between bursts a goon may duck out of your line of fire until he's ready to shoot again
       if (e.cover) {
@@ -55,8 +59,9 @@ export function updateEnemy(e, dt) {
       }
       if (sees) {
         // In sight: close in, but not right up to you
+        // (a knife man comes all the way, and straight)
         const gd = d;
-        if (gd > ENEMY_AI.keepDistance) walk(e, p.x, p.y, gd, dt, true);
+        if (gd > (T.melee ? 0.6 : ENEMY_AI.keepDistance)) walk(e, p.x, p.y, gd, dt, !T.melee);
       } else if (Math.hypot(e.lx - e.x, e.ly - e.y) > 0.4) {
         // Out of sight: hunt, finding a way around walls and furniture to where you were last seen or heard
         if (e.repath <= 0 || !e.wp2) { e.wp2 = nextStep(e.x, e.y, e.lx, e.ly); e.repath = ENEMY_AI.repath; }
@@ -93,6 +98,27 @@ function lastSteps(e, dt) {
   SND.down();
   intertitle("eddie", null, ["“That's for Eddie.”"]) || say("That's for Eddie.", 4);
   fadeOut(() => showCard("epilogue"), 2.6);
+}
+
+// The bagman makes for the nearest alarm bell. If he gets there, every gun in the
+// place knows where you are; then he looks after himself. With no bell to run to, he just runs.
+function runForAlarm(e, dt) {
+  const p = game.player;
+  if (e.state === "hurt") { e.t -= dt; if (e.t > 0) return; }
+  e.state = "chase"; e.moving = false;
+  let bell = null, best = Infinity;
+  for (const o of game.objs) { const bd = Math.hypot(o.x - e.x, o.y - e.y); if (o.alarm && bd < best) { best = bd; bell = o; } }
+  if (!bell) { e.rang = true; e.panic = true; return; }
+  if (best < 0.95) {
+    e.rang = true; e.panic = true; game.alarm = true; SND.alarm();
+    for (const o of game.enemies) if (o.hp > 0) { o.alert = true; o.lx = p.x; o.ly = p.y; }
+    intertitle("alarm", null, ["The bagman has rung the alarm.", "Every gun in the place is coming."]) || say("The alarm! Every gun in the place is coming.", 3.5);
+    return;
+  }
+  if (e.repath <= 0 || !e.wp2) { e.wp2 = nextStep(e.x, e.y, bell.x, bell.y); e.repath = ENEMY_AI.repath; }
+  if (!e.wp2) { e.rang = true; e.panic = true; return; }
+  const gd = Math.hypot(e.wp2.x - e.x, e.wp2.y - e.y);
+  if (gd < 0.1) e.repath = 0; else walk(e, e.wp2.x, e.wp2.y, gd, dt, false);
 }
 
 // The first to spot you shouts, and anyone near him turns your way too
@@ -179,15 +205,32 @@ function escaped() {
   fadeOut(() => showCard("escaped", game.levelIdx), 1.8);
 }
 
+// He fires where he sees you, or where he last saw you. The bullet takes time to
+// arrive (bullets.js), so his aim is a guess at where you'll be: sometimes he
+// leads a moving target well, sometimes not at all.
 function shoot(e, d, sees) {
-  const T = e.type, p = game.player, shotgun = T.name === "heavy";
+  const T = e.type, p = game.player, D = difficulty(), shotgun = T.name === "heavy";
+  if (T.melee) {
+    // The knife comes down: it only finds you if you're still within reach
+    const hit = sees && d < T.range + 0.35 && game.state === "play";
+    SND.whip(hit);
+    if (hit) hurtPlayer(rand(T.dmg[0], T.dmg[1]) * D.damage);
+    return;
+  }
   shotgun ? SND.shotgun(d) : SND.enemy(d);
-  if (!sees || game.state !== "play") return; // no hits on a player who's already down
-  const chance = clamp(ENEMY_AI.accuracyNear - d * ENEMY_AI.accuracyFalloff, ENEMY_AI.accuracyMin, ENEMY_AI.accuracyNear) * (p.moving ? ENEMY_AI.movingTargetPenalty : 1) * difficulty().aim;
-  if (Math.random() > chance) return;
-  let dmg = rand(T.dmg[0], T.dmg[1]) * difficulty().damage;
-  if (shotgun) dmg *= clamp(1.3 - d * 0.12, 0.3, 1.3); // shotguns hit hardest up close
-  hurtPlayer(dmg);
+  if (game.state !== "play") return; // no more rounds at a player who's already down
+  const speed = T.bulletSpeed || BULLETS.speed;
+  let tx = e.lx, ty = e.ly;
+  if (sees) {
+    // Your body if he can see it, otherwise the head you've leaned out
+    const at = los(e.x, e.y, p.x, p.y) ? p : eye(), ahead = (d / speed) * rand(0, D.lead);
+    tx = at.x + (p.vx || 0) * ahead; ty = at.y + (p.vy || 0) * ahead;
+  }
+  const a = Math.atan2(ty - e.y, tx - e.x), ox = e.x + Math.cos(a) * 0.2, oy = e.y + Math.sin(a) * 0.2;
+  const dmg = () => rand(T.dmg[0], T.dmg[1]) * D.damage;
+  // A shotgun's pellets spread, so it hits hardest up close
+  if (shotgun) for (let n = 0; n < BULLETS.pellets; n++) spawnBullet(ox, oy, a + rand(-BULLETS.pelletSpread, BULLETS.pelletSpread), dmg() * 1.3 / BULLETS.pellets);
+  else { const s = (T.scatter || BULLETS.scatter) / D.aim; spawnBullet(ox, oy, a + rand(-s, s), dmg(), speed, T.up ? { h: T.up + 0.2, over: Math.max(1, d) } : null); }
 }
 
 // Every hit on you goes through here. Once you're down, that's one death, however

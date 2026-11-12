@@ -13,6 +13,7 @@ Your brother Eddie kept the books at the Blue Note, and kept them honest. The Vi
 | | Desktop | Phone |
 |---|---|---|
 | Move | WASD (Shift to run) | Left thumb: up/down walks, left/right turns |
+| Lean round a corner | Z (left) and C (right) | — |
 | Aim | Mouse | Drag with your right thumb, including on FIRE |
 | Shoot | Click or Space | Hold FIRE. It also fires on its own when a gangster is under the crosshair |
 | Reload | R (automatic when empty) | Automatic |
@@ -30,6 +31,12 @@ Doors open by themselves as you walk up to them. Some walls hide rooms: look for
 Ammo is limited, and so is what you can carry. You start with a loaded revolver and 12 spare rounds. Boxes of rounds and tommy gun drums are lying around, and gangsters you put down leave something behind: a few revolver rounds, sometimes their tommy gun, sometimes cash. The first heavy you put down gives up his sawn-off shotgun, which settles things up close and does little at a distance. With both guns empty, a click swings the gun at anyone in arm's reach. Your health carries over from scene to scene, so first-aid kits matter.
 
 Gangsters who hear gunfire come looking for you, finding their way around walls and through doors. The first to see you shouts for the others near him. Between bursts a goon may duck out of your line of fire, a hit may knock his hat off, and the last hired gun left standing loses his nerve and runs.
+
+Their bullets take time to reach you, and you can see them coming: a bright streak in the air. Step sideways and it goes past; stand still and it finds you. Some gangsters aim ahead of a moving target, so walking in a straight line isn't always enough, and changing direction is. Walls, closed doors and tall cover stop bullets.
+
+Z and C lean your head and gun out to one side while your feet stay where they are. From behind a corner or a doorway that's enough to see and shoot, with only your head for them to aim at, and letting go puts the wall back between you and whatever is already on its way. You can't run while leaning.
+
+Not all of them carry tommy guns. A knife man in a flat cap has no gun at all, but he runs faster than you walk: he raises the blade before he strikes, and a step back makes it miss. On the streets a rifleman may be waiting at an upstairs window; the lamplight catches his scope a moment before a fast, well-aimed shot, and he can be shot out of his window. The bagman, carrying the night's takings, doesn't fight: he runs for the alarm bell, and if he reaches it every gun in the place knows where you are. Drop him first and the bag is yours.
 
 Until something alerts him, a gangster only sees what's in front of him, and now and then he looks behind. If you can see his back, he can't see you: keep out of the lamplight, don't get too close, and you can slip past. A shot at a man who never saw it coming does three times the damage.
 
@@ -49,7 +56,7 @@ npm start            # then open http://127.0.0.1:8000/
 
 ## Tests
 
-The tests play the game in headless Chromium: the maps, shooting, the safe and the exit, the street scenes, doors and secret walls, every level, dying and retrying, the lift, slipping past a lookout, the ending, saving, the settings panel, and the phone controls.
+The tests play the game in headless Chromium: the maps, shooting, the safe and the exit, the street scenes, doors and secret walls, bullets and leaning, the knife man, the rifleman and the bagman, every level, dying and retrying, the lift, slipping past a lookout, the ending, saving, the settings panel, and the phone controls.
 
 ```sh
 npm install
@@ -76,8 +83,9 @@ src/
   world.js            loading a map, walls, line of sight and cover, the light map, collision, enemy pathfinding
   doors.js            sliding doors and secret walls
   lift.js             the hotel lift: ride, stop at a landing, clear it, ride on
-  player.js           moving, shooting, reloading, pickups, cracking the safe, the exit
-  enemies.js          gangster behavior: watching, idle -> chase -> aim -> fire, taking cover, running, the Don's last steps
+  player.js           moving, leaning, shooting, reloading, pickups, cracking the safe, the exit
+  enemies.js          gangster behavior: watching, idle -> chase -> aim -> fire, taking cover, running, the knife, the alarm, the Don's last steps
+  bullets.js          gangsters' bullets in flight: what stops them, and when they hit you
   flow.js             title card -> chapter card -> play -> death / next chapter / the end
   audio.js            synthesized sound effects: gunshots, footsteps, rain, reloads, pickups, projector clatter
   settings.js         your choices and your saved place, kept in the browser's local storage
@@ -107,7 +115,7 @@ All the art and sound are generated in code when the page loads; there are no im
 
 ### Common changes
 
-- **Difficulty:** the three difficulty levels are `DIFFICULTY` in `src/settings.js`; everything else is in `src/config.js`. Enemy health, damage, accuracy and reaction time, player speed, how strong the phone aim assist is, and how much ammo you start with, find and loot (`AMMO`).
+- **Difficulty:** the three difficulty levels are `DIFFICULTY` in `src/settings.js`; everything else is in `src/config.js`. Enemy health, damage and reaction time, how fast their bullets fly and how wide of the mark they go (`BULLETS`), player speed, how strong the phone aim assist is, and how much ammo you start with, find and loot (`AMMO`).
 - **The story:** the prologue and epilogue are `STORY` in `src/levels.js`, and each scene's title card is its `card` lines.
 - **A new level:** add an entry to `src/levels.js`. For a street scene, set `sky`, `wallHeight: 2`, `rain` and `objective: "reach"`, and pick an `entrance` for the door at the end. The legend at the top lists every map character. `npm test` checks that the map is sealed, that everything in it can be reached, and that the objective and exit never depend on finding a secret.
 - **Doors and secrets:** put `D` between two walls for a door, and `!` in a wall (with open floor behind it) for a secret. Their timing and speed are in `DOORS` in `src/config.js`.

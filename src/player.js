@@ -1,7 +1,7 @@
 // You: moving, shooting, reloading, looting and leaving through the exit.
 import { W, K, isTouch, PLAYER, TOUCH, AIM_ASSIST, WEAPONS, ROUND_NAMES, ENEMY_AI, AMMO, MELEE } from "./config.js";
 import { rand, clamp } from "./util.js";
-import { game, stats, input, say, intertitle } from "./state.js";
+import { game, stats, input, say, intertitle, eye } from "./state.js";
 import { LEVELS } from "./levels.js";
 import { OBJ, dimmed } from "./art/sprites.js";
 import { SND } from "./audio.js";
@@ -48,7 +48,7 @@ function hitscan(col, maxDist = Infinity) {
     if (tY < 0.15 || tY > zbuf[col] || tY > maxDist) continue;
     const half = (K / tY) * (isTouch ? TOUCH.hitWidth : PLAYER.hitWidth);
     // Same line-of-sight rule enemies use, so a half-open door hides you both equally
-    if (Math.abs(sx - col) < half && tY < bestD && los(p.x, p.y, e.x, e.y)) { bestD = tY; best = e; }
+    if (Math.abs(sx - col) < half && tY < bestD && los(cam.x, cam.y, e.x, e.y)) { bestD = tY; best = e; }
   }
   return best;
 }
@@ -57,6 +57,9 @@ function hitscan(col, maxDist = Infinity) {
 function dropLoot(e) {
   const at = (pick, art, extra) => game.objs.push({ x: e.x, y: e.y, art: OBJ[art], scale: 0.6, pick, ...extra });
   if (e.type.name === "boss") return at("cash", "cash", { amount: AMMO.bossCash });
+  if (e.type.name === "bagman") return at("cash", "cash", { amount: AMMO.bagCash });
+  if (e.type.name === "knife") return at("cash", "cash");
+  if (e.type.name === "rifleman") return at("rounds", "rounds", { weapon: 0, amount: AMMO.rifleRounds });
   if (e.type.name === "heavy") {
     // The first heavy you put down gives up his sawn-off; after that, shells or revolver rounds
     if (!game.player.has[2] || Math.random() < 0.5) return at("rounds", game.player.has[2] ? "shells" : "sawnoff", { weapon: 2, amount: AMMO.heavyShells });
@@ -113,7 +116,8 @@ function damage(t, dmg) {
 function pistolWhip() {
   const p = game.player;
   p.fireCd = MELEE.rate; p.recoil = 1.6; stats.shots++;
-  const t = hitscan(W / 2, MELEE.range);
+  let t = hitscan(W / 2, MELEE.range);
+  if (t && t.type.up) t = null;   // out of reach at his window
   SND.whip(!!t);
   if (t) damage(t, MELEE.dmg * rand(0.85, 1.15) * (t.alert ? 1 : ENEMY_AI.ambush));   // a man who never saw it coming goes down hard
   else if (game.msg.t <= 0) say("Out of ammo. Search the bodies.");
@@ -158,7 +162,7 @@ function smash() {
   // How far the shot flies before a wall stops it
   let far = 0, tile = null;
   for (; far < 30; far += 0.05) {
-    const x = p.x + cam.dirX * far, y = p.y + cam.dirY * far;
+    const x = cam.x + cam.dirX * far, y = cam.y + cam.dirY * far;
     if (wallAt(x, y)) { tile = { x: x | 0, y: y | 0 }; break; }
   }
   // A lit lamp in the line of fire, nearer than the wall
@@ -166,7 +170,7 @@ function smash() {
   for (const o of game.objs) {
     if (!o.light || !o.lampWidth) continue;
     const [, tY, sx] = project(o.x, o.y);
-    if (tY > 0.2 && tY < lampD && Math.abs(sx - W / 2) < (K / tY) * o.lampWidth && los(p.x, p.y, o.x, o.y)) { lamp = o; lampD = tY; }
+    if (tY > 0.2 && tY < lampD && Math.abs(sx - W / 2) < (K / tY) * o.lampWidth && los(cam.x, cam.y, o.x, o.y)) { lamp = o; lampD = tY; }
   }
   if (lamp) {
     lamp.light = null; lamp.glow = false; lamp.art = dimmed(lamp.art);
@@ -230,7 +234,9 @@ export function updatePlayer(dt) {
   if (touch.move) { fw -= touch.move.dy; turn += touch.move.dx * TOUCH.stickTurn; st += touch.move.dx * TOUCH.stickStrafe; }
   if (isTouch) aimAssist(dt);
   p.a += turn * PLAYER.turnSpeed * dt;
-  const m = Math.hypot(fw, st), speed = keys.has("shift") ? PLAYER.runSpeed : PLAYER.walkSpeed;
+  const leanTo = (keys.has("c") ? 1 : 0) - (keys.has("z") ? 1 : 0);
+  const m = Math.hypot(fw, st), speed = keys.has("shift") && !leanTo ? PLAYER.runSpeed : PLAYER.walkSpeed;   // no running bent sideways
+  const ox = p.x, oy = p.y;
   if (m > 0.05) {
     const k = Math.min(1, m) / m * speed * dt;
     const bumped = moveBy(p, (cam.dirX * fw - cam.dirY * st) * k, (cam.dirY * fw + cam.dirX * st) * k, PLAYER.radius);
@@ -242,10 +248,30 @@ export function updatePlayer(dt) {
     if (beat !== p.beat) { p.beat = beat; SND.step(game.level.rain ? "wet" : game.level.floor === "carpet" ? "soft" : "hard"); }
     checkExit();
   } else p.moving = false;
+  // How fast you're really going, for gangsters who aim ahead of a moving target
+  const vx = dt > 0 ? (p.x - ox) / dt : 0, vy = dt > 0 ? (p.y - oy) / dt : 0, v = Math.hypot(vx, vy), cap = v > PLAYER.runSpeed ? PLAYER.runSpeed / v : 1;
+  p.vx = vx * cap; p.vy = vy * cap;
+  lean(leanTo, dt);
   crackSafe(dt);
   tickPlayerEffects(dt);
   if (p.reload > 0) { p.reload -= dt; if (p.reload <= 0) { p.reload = 0; finishReload(); } }
   if ((input.firing || autoFire()) && game.state === "play") fire();
+}
+
+// Z and C lean your head and gun out to one side while your feet stay put: enough
+// to see and shoot round a corner, and to duck back before the answer arrives.
+// A wall (or tall cover) on that side stops the lean.
+function lean(to, dt) {
+  const p = game.player, R = PLAYER.leanReach, max = (R / PLAYER.leanTime) * dt, want = to * R;
+  let l = (p.lean || 0) + clamp(want - (p.lean || 0), -max, max);
+  const sx = -Math.sin(p.a), sy = Math.cos(p.a), r = 0.1;
+  const stuck = l => {
+    const x = p.x + sx * l, y = p.y + sy * l;
+    return wallAt(x - r, y - r) || wallAt(x + r, y - r) || wallAt(x - r, y + r) || wallAt(x + r, y + r)
+      || game.objs.some(o => o.cover && Math.abs(o.x - x) < (o.size || 0.28) && Math.abs(o.y - y) < (o.size || 0.28));
+  };
+  while (Math.abs(l) > 0.01 && stuck(l)) l *= 0.8;
+  p.lean = Math.abs(l) > 0.01 ? l : 0;
 }
 
 // Standing at the safe, working the dial (hold E; on a phone, just stand still).

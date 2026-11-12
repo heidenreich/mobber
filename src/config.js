@@ -111,6 +111,8 @@ export const ENEMY_AI = {
   shoutRange: 6.5,          // the first to see you shouts, and anyone this close to him comes too
   darkSight: 0.6,           // how much of sightRange they keep when you stand in the dark
   coverChance: 0.5,         // how often a goon ducks out of sight between bursts
+  spinChance: 0.3,          // how often a hit that staggers a man spins him right round
+  spinTime: 0.45,           // how long the spin takes (a plain flinch is 0.18)
   hatChance: 0.35,          // how often a hit knocks a man's hat off
   keepDistance: 2.6,        // stop approaching when this close and in sight
   accuracyNear: 0.82,       // hit chance up close...

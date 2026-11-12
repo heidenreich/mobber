@@ -8,6 +8,7 @@ import { initAudio } from "../audio.js";
 import { nextWeapon } from "../player.js";
 import { advance } from "../flow.js";
 import { lookSpeed } from "../settings.js";
+import { chooseDifficultyAt } from "../render/cards.js";
 
 function lookBy(dx) { if (game.player) game.player.a += dx * TOUCH.lookSensitivity * lookSpeed(); }
 
@@ -16,7 +17,11 @@ export function installTouchInput() {
   cv.addEventListener("touchstart", e => {
     initAudio();
     if (input.menu) return;
-    if (game.state !== "play") { advance(); e.preventDefault(); return; }
+    if (game.state !== "play") {
+      const t = e.changedTouches[0];
+      if (!chooseDifficultyAt(t.clientX, t.clientY)) advance();   // a tap on a difficulty name picks it; anywhere else rolls the film
+      e.preventDefault(); return;
+    }
     input.touched = true;
     for (const t of e.changedTouches) {
       if (t.clientX < view.vw * TOUCH.joystickArea && !touch.move) touch.move = { id: t.identifier, x: t.clientX, y: t.clientY, kx: t.clientX, ky: t.clientY, dx: 0, dy: 0 };

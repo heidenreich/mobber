@@ -98,7 +98,9 @@ function damage(t, dmg) {
     }
   } else if (!t.type.noStagger && t.staggerCd <= 0 && (t.state !== "aim" || Math.random() < 0.4)) {
     // Flinch, but not again straight away: a fast gun can't keep someone pinned
-    t.state = "hurt"; t.t = 0.18; t.staggerCd = ENEMY_AI.staggerCooldown;
+    // Now and then the hit turns him right round before he recovers
+    t.spin = Math.random() < ENEMY_AI.spinChance;
+    t.state = "hurt"; t.t = t.spin ? ENEMY_AI.spinTime : 0.18; t.staggerCd = ENEMY_AI.staggerCooldown;
   }
   // Sometimes a hit takes his hat off
   if (t.hp > 0 && !t.hatless && Math.random() < ENEMY_AI.hatChance) {

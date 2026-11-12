@@ -59,6 +59,17 @@ function tone(freq, dur, type = "sine", vol = 0.05, slide = 0, at = 0) {
   g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
   o.connect(g).connect(sfx); o.start(t); o.stop(t + dur + 0.02);
 }
+// A creak: a thin, rasping note that climbs and wobbles, squeezed through a narrow filter
+function creak(vol, dur = 0.55) {
+  if (!actx) return;
+  const t = actx.currentTime + 0.03, o = actx.createOscillator(), wob = actx.createOscillator(), wg = actx.createGain();
+  const f = actx.createBiquadFilter(), g = actx.createGain();
+  o.type = "sawtooth"; o.frequency.setValueAtTime(rand(210, 260), t); o.frequency.linearRampToValueAtTime(rand(330, 400), t + dur * 0.7); o.frequency.linearRampToValueAtTime(290, t + dur);
+  wob.frequency.value = rand(9, 14); wg.gain.value = 26; wob.connect(wg).connect(o.frequency);   // the judder
+  f.type = "bandpass"; f.frequency.value = 1100; f.Q.value = 5;
+  g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + 0.06); g.gain.setValueAtTime(vol, t + dur * 0.6); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(f).connect(g).connect(sfx); o.start(t); wob.start(t); o.stop(t + dur + 0.02); wob.stop(t + dur + 0.02);
+}
 // A gunshot is three things at once: the crack, the body of the report, and a thump you feel. Then the room answers.
 function shot({ crack, body, thump, tail = 0.1, vol = 1 }) {
   hiss("bandpass", crack, 0.05, 0.55 * vol, 0, 0.6);
@@ -111,7 +122,8 @@ export const SND = {
   },
   // A man going down: the cry cut short, then the body hitting the floor
   down: () => { tone(260, 0.28, "triangle", 0.05, 90); hiss("lowpass", 240, 0.22, 0.45, 0.38); tone(80, 0.16, "sine", 0.2, 40, 0.38); },
-  door: d => { const v = clamp(0.05 - d * 0.004, 0.008, 0.05); tone(95, 0.45, "sawtooth", v, 70); hiss("lowpass", 500, 0.3, v * 3); tone(520, 0.3, "sine", v * 0.35, 760, 0.05); },
+  // A door: the rumble of it sliding, and a dry hinge-and-runner creak that wavers as it goes
+  door: d => { const v = clamp(0.05 - d * 0.004, 0.008, 0.05); tone(95, 0.45, "sawtooth", v, 70); hiss("lowpass", 500, 0.3, v * 3); creak(v * 1.6); },
   whip: hit => { hit ? (hiss("lowpass", 900, 0.12, 0.4), tone(140, 0.12, "sine", 0.3, 60)) : hiss("bandpass", 1600, 0.07, 0.1); },
   grind: () => { hiss("lowpass", 350, 1.6, 0.25); tone(55, 1.6, "sawtooth", 0.05, 45); },
   glass: () => { hiss("highpass", 4200, 0.25, 0.25); for (let i = 0; i < 4; i++) tone(rand(2600, 5200), 0.12, "sine", 0.02, 0, rand(0.02, 0.2)); },

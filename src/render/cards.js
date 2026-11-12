@@ -4,10 +4,21 @@ import { game } from "../state.js";
 import { LEVELS, STORY } from "../levels.js";
 import { ctx, view } from "../screen.js";
 import { noiseCv } from "./film.js";
-import { loadGame } from "../settings.js";
+import { loadGame, settings, saveSettings, DIFFICULTY } from "../settings.js";
 import { drawPaper } from "./paper.js";
 
 const { deco: DECO, serif: SERIF, type: TYPE } = FONTS;
+
+// Where the difficulty names sit on the title card (screen pixels), so a click or tap can pick one
+export const titleChoices = [];
+export function setDifficulty(i) { settings.difficulty = Math.max(0, Math.min(DIFFICULTY.length - 1, i)); saveSettings(); }
+// True if the click landed on a difficulty name (and so shouldn't start the picture)
+export function chooseDifficultyAt(x, y) {
+  if (game.state !== "title") return false;
+  const hit = titleChoices.find(c => x >= c.x0 && x < c.x1 && y >= c.y0 && y < c.y1);
+  if (hit) setDifficulty(hit.i);
+  return !!hit;
+}
 
 // Art deco fan in each corner of the frame
 function corner(x, y, sx, sy, s) {
@@ -66,7 +77,20 @@ export function drawCard(t) {
     line("MOBBER", 174, `${76 * s}px ${DECO}`);
     rule(200, 150);
     line("a gangland picture in three reels", 228, `italic 700 ${15 * s}px ${SERIF}`);
-    if (view.portrait) line("best played sideways (turn off rotation lock)", 262, `${9 * s}px ${TYPE}`, 0.6);
+    // How hard a night do you want? Click or tap one (or use the arrow keys).
+    ctx.font = `${11 * s}px ${TYPE}`;
+    const names = DIFFICULTY.map(d => d.name), gap = 26 * s, widths = names.map(n => ctx.measureText(n).width);
+    let x = cx - (widths.reduce((a, b) => a + b, 0) + gap * (names.length - 1)) / 2;
+    titleChoices.length = 0;
+    names.forEach((n, i) => {
+      const on = i === settings.difficulty, w = widths[i], y = Y(258);
+      ctx.globalAlpha = on ? 1 : 0.45; ctx.fillStyle = CREAM; ctx.textAlign = "left"; ctx.fillText(n, x, y);
+      if (on) ctx.fillRect(x, y + 4 * s, w, Math.max(1, s));
+      titleChoices.push({ x0: x - gap / 2, x1: x + w + gap / 2, y0: y - 16 * s, y1: y + 12 * s, i });
+      x += w + gap;
+    });
+    ctx.globalAlpha = 1;
+    if (view.portrait) line("best played sideways (turn off rotation lock)", 278, `${9 * s}px ${TYPE}`, 0.6);
     const save = loadGame(), at = save && LEVELS[save.idx];
     if (at) { prompt(`pick up at ${at.title}`); if (!isTouch) line("N to start over", 318, `${8.5 * s}px ${TYPE}`, 0.55); }
     else prompt("roll film");

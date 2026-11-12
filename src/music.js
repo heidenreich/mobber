@@ -6,6 +6,7 @@
 //   joint   a rag, for the club, the pier and the hotel
 //   chase   fast and minor, for the roof
 import { audioContext } from "./audio.js";
+import { settings } from "./settings.js";
 
 const NAMES = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
 // "C#5" -> MIDI note number
@@ -71,7 +72,7 @@ function arrange(score) {
 const TUNES = Object.fromEntries(Object.entries(SCORES).map(([k, s]) => [k, { step: 60 / s.bpm / 2, steps: arrange(s) }]));
 
 const VOLUME = 0.2;
-let want = null, playing = null, pos = 0, nextTime = 0, out = null, muted = false, level = 1;
+let want = null, playing = null, pos = 0, nextTime = 0, out = null, level = 1;
 
 // A slightly out-of-tune upright: two detuned strings and an octave partial, struck and left to ring
 function strike(ac, note, when, dur, vel) {
@@ -95,7 +96,7 @@ function tick() {
     out = ac.createGain(); out.gain.value = VOLUME;
     out.connect(tone).connect(ac.destination);
   }
-  out.gain.setTargetAtTime(muted ? 0 : VOLUME * level, ac.currentTime, 0.25);
+  out.gain.setTargetAtTime(settings.music ? VOLUME * level : 0, ac.currentTime, 0.25);
   if (want !== playing) { playing = want; pos = 0; nextTime = ac.currentTime + 0.3; }
   if (!playing) return;
   const tune = TUNES[playing];
@@ -111,6 +112,5 @@ export const music = {
   // Start a tune (or carry on, if it's already the one playing). `vol` is 0..1.
   play(name, vol = 1) { want = name; level = vol; },
   stop() { want = null; },
-  toggle() { muted = !muted; return muted; },
   get playing() { return playing; },
 };

@@ -35,6 +35,7 @@ export const input = {
   locked: false,        // pointer lock is active
   wasLocked: false,     // pointer lock was active this chapter (so losing it means "paused")
   dragLook: false,
+  menu: false,          // the settings panel is open: the picture stops
   touched: false,       // the player has touched the screen this scene (phone auto-fire waits for it)
   touch: { move: null, look: null },
 };

@@ -7,6 +7,7 @@ import { game, stats, say, intertitle } from "./state.js";
 import { SND } from "./audio.js";
 import { los, moveBy, nextStep } from "./world.js";
 import { fadeOut, showCard } from "./flow.js";
+import { difficulty, buzz } from "./settings.js";
 
 export function updateEnemy(e, dt) {
   const p = game.player, T = e.type;
@@ -99,9 +100,9 @@ function shoot(e, d, sees) {
   const T = e.type, p = game.player, shotgun = T.name === "heavy";
   shotgun ? SND.shotgun(d) : SND.enemy(d);
   if (!sees || game.state !== "play") return; // no hits on a player who's already down
-  const chance = clamp(ENEMY_AI.accuracyNear - d * ENEMY_AI.accuracyFalloff, ENEMY_AI.accuracyMin, ENEMY_AI.accuracyNear) * (p.moving ? ENEMY_AI.movingTargetPenalty : 1);
+  const chance = clamp(ENEMY_AI.accuracyNear - d * ENEMY_AI.accuracyFalloff, ENEMY_AI.accuracyMin, ENEMY_AI.accuracyNear) * (p.moving ? ENEMY_AI.movingTargetPenalty : 1) * difficulty().aim;
   if (Math.random() > chance) return;
-  let dmg = rand(T.dmg[0], T.dmg[1]);
+  let dmg = rand(T.dmg[0], T.dmg[1]) * difficulty().damage;
   if (shotgun) dmg *= clamp(1.3 - d * 0.12, 0.3, 1.3); // shotguns hit hardest up close
   hurtPlayer(dmg);
 }
@@ -111,7 +112,7 @@ function shoot(e, d, sees) {
 export function hurtPlayer(dmg) {
   const p = game.player;
   if (game.state !== "play") return;
-  p.hp -= dmg; p.hurt = 0.3; SND.hurt();
+  p.hp -= dmg; p.hurt = 0.3; SND.hurt(); buzz(40);
   if (p.hp <= 0) {
     p.hp = 0; game.state = "dying"; stats.deaths++;
     fadeOut(() => showCard("dead", game.levelIdx), 1.4);

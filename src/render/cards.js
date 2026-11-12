@@ -4,6 +4,7 @@ import { game, stats } from "../state.js";
 import { LEVELS, STORY } from "../levels.js";
 import { ctx, view } from "../screen.js";
 import { noiseCv } from "./film.js";
+import { loadGame, difficulty, settings } from "../settings.js";
 
 const { deco: DECO, serif: SERIF, type: TYPE } = FONTS;
 
@@ -14,6 +15,12 @@ function corner(x, y, sx, sy, s) {
   for (let i = 0; i < 7; i++) { const a = i * Math.PI / 12; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(a) * 34 * s, Math.sin(a) * 34 * s); ctx.stroke(); }
   for (const r of [14, 22]) { ctx.beginPath(); ctx.arc(0, 0, r * s, 0, Math.PI / 2); ctx.stroke(); }
   ctx.restore();
+}
+// What the critics make of your run: accuracy, retakes, pace and how hard you made it
+function rating() {
+  const acc = stats.shots ? stats.hits / stats.shots : 0;
+  const stars = 3 + (acc >= 0.5) + (stats.deaths === 0) - (stats.deaths >= 4) + (stats.time < 12 * 60) - (stats.time > 25 * 60) + [-1, 0, 1][settings.difficulty];
+  return ["a flop.", "a flop.", "a flop.", "a B picture.", "a solid programmer.", "a hit!", "a box office smash!", "the picture of the year!"][Math.max(0, Math.min(7, stars))];
 }
 // Controls, shown once before the first scene. Desktop and phone get their own list.
 const HOW_TO = isTouch
@@ -64,7 +71,9 @@ export function drawCard(t) {
     rule(200, 150);
     line("a gangland picture in three reels", 228, `italic 700 ${15 * s}px ${SERIF}`);
     if (view.portrait) line("best played sideways (turn off rotation lock)", 262, `${9 * s}px ${TYPE}`, 0.6);
-    prompt("roll film");
+    const save = loadGame(), at = save && LEVELS[save.idx];
+    if (at) { prompt(`pick up at ${at.title}`); if (!isTouch) line("N to start over", 318, `${8.5 * s}px ${TYPE}`, 0.55); }
+    else prompt("roll film");
   } else if (card.kind === "prologue") {
     line("PROLOGUE", 80, `${14 * s}px ${DECO}`, 0.85);
     line("Chicago, 1931", 120, `italic 700 ${26 * s}px ${SERIF}`);
@@ -112,7 +121,8 @@ export function drawCard(t) {
     rule(142);
     line("Eddie's name was cleared. The city got a new boss.", 172, `italic 700 ${16 * s}px ${SERIF}`);
     line(`${stats.kills} Vitale men down · $${stats.cash.toLocaleString()} collected · ${acc}% of shots on target`, 214, `${11 * s}px ${TYPE}`, 0.85);
-    line(`Running time ${mm}:${String(ss).padStart(2, "0")} · secrets found: ${stats.secretsFound.size} · retakes: ${stats.deaths}`, 234, `${11 * s}px ${TYPE}`, 0.85);
+    line(`The critics call it ${rating()}`, 258, `italic 700 ${15 * s}px ${SERIF}`);
+    line(`Running time ${mm}:${String(ss).padStart(2, "0")} · secrets found: ${stats.secretsFound.size} · retakes: ${stats.deaths} · ${difficulty().name}`, 234, `${11 * s}px ${TYPE}`, 0.85);
     prompt("watch it again");
   }
   // Dark corners, like a projected slide

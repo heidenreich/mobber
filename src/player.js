@@ -22,7 +22,7 @@ export function startReload() {
   const p = game.player, w = WEAPONS[p.weapon];
   if (p.reload > 0 || p.mag[p.weapon] >= w.mag) return;
   if (p.reserve[p.weapon] <= 0) return;
-  p.reload = w.reload; p.reloadW = p.weapon; SND.reload();
+  p.reload = w.reload; p.reloadW = p.weapon; SND.reload(p.weapon, w.reload);
 }
 
 function finishReload() {
@@ -175,6 +175,9 @@ export function updatePlayer(dt) {
     // Walking straight into a secret wall pushes it
     if (bumped && fw > 0.3) tryPush(p.x, p.y, cam.dirX, cam.dirY);
     p.bob += dt * 9; p.moving = true;
+    // A footfall each time the walk cycle comes down
+    const beat = Math.floor(p.bob / Math.PI);
+    if (beat !== p.beat) { p.beat = beat; SND.step(game.level.rain ? "wet" : game.level.floor === "carpet" ? "soft" : "hard"); }
     checkExit();
   } else p.moving = false;
   tickPlayerEffects(dt);
@@ -222,6 +225,6 @@ export function collectPickups() {
       p.ledger = true; say("Got the ledger. Now find the EXIT.", 3.5);
       for (const e of game.enemies) { e.alert = true; e.lx = p.x; e.ly = p.y; }
     }
-    objs.splice(i, 1); SND.pickup();
+    objs.splice(i, 1); SND.pickup(o.pick);
   }
 }

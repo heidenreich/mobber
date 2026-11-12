@@ -24,6 +24,8 @@ Your brother Eddie kept the books at the Blue Note, and kept them honest. The Vi
 | Music on or off | M | the gear, top right |
 | Settings | the gear, top right (Esc first to free the mouse) | the gear, top right |
 
+A game controller works too, on a desktop or paired with a phone: left stick to walk and sidestep, right stick to look, RT to fire, X to reload, Y for the next gun, LB and RB to lean, A to search a wall or work a safe (and to move the title cards along), and a press of the left stick to run.
+
 The gear opens the projection booth: music, sound effects, look speed, difficulty (Sunday stroll, Regular, Hard-boiled), a buzz when you're hit on a phone, and starting the picture over. Your choices and the scene you last reached are remembered in the browser, so closing the tab doesn't send you back to the start.
 
 Doors open by themselves as you walk up to them. Some walls hide rooms: look for faint scrape marks near the floor.
@@ -35,6 +37,8 @@ Gangsters who hear gunfire come looking for you, finding their way around walls 
 Their bullets take time to reach you, and you can see them coming: a bright streak in the air. Step sideways and it goes past; stand still and it finds you. Some gangsters aim ahead of a moving target, so walking in a straight line isn't always enough, and changing direction is. Walls, closed doors and tall cover stop bullets.
 
 Z and C lean your head and gun out to one side while your feet stay where they are. From behind a corner or a doorway that's enough to see and shoot, with only your head for them to aim at, and letting go puts the wall back between you and whatever is already on its way. You can't run while leaning.
+
+On a phone there is no lean, and a thumb can't sidestep like a keyboard can, so the game helps: gangsters' bullets fly a quarter slower and are aimed less far ahead of you, and a sideways push on the left thumb carries you sideways as well as turning you. The gear has a "Left thumb" setting that makes that push a clean sidestep with no turning, for playing it like a twin-stick shooter.
 
 Not all of them carry tommy guns. A knife man in a flat cap has no gun at all, but he runs faster than you walk: he raises the blade before he strikes, and a step back makes it miss. On the streets a rifleman may be waiting at an upstairs window; the lamplight catches his scope a moment before a fast, well-aimed shot, and he can be shot out of his window. The bagman, carrying the night's takings, doesn't fight: he runs for the alarm bell, and if he reaches it every gun in the place knows where you are. Drop him first and the bag is yours.
 
@@ -107,6 +111,7 @@ src/
   input/
     desktop.js        keyboard, mouse, pointer lock
     touch.js          floating stick, drag-to-aim, FIRE and SWAP
+    gamepad.js        a game controller: sticks, trigger, buttons
 scripts/              the local server, and the playthrough bot
 tests/                browser tests
 ```

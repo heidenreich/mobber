@@ -1,5 +1,5 @@
 // You: moving, shooting, reloading, looting and leaving through the exit.
-import { W, K, isTouch, PLAYER, TOUCH, AIM_ASSIST, WEAPONS, ROUND_NAMES, ENEMY_AI, AMMO, MELEE } from "./config.js";
+import { W, K, isTouch, PLAYER, TOUCH, PAD, AIM_ASSIST, WEAPONS, ROUND_NAMES, ENEMY_AI, AMMO, MELEE } from "./config.js";
 import { rand, clamp } from "./util.js";
 import { game, stats, input, say, intertitle, eye } from "./state.js";
 import { LEVELS } from "./levels.js";
@@ -9,6 +9,7 @@ import { los, moveBy, objectiveDone, wallAt, buildLight } from "./world.js";
 import { tryPush } from "./doors.js";
 import { cam, camera, project, zbuf } from "./render/camera.js";
 import { fadeOut, showCard } from "./flow.js";
+import { settings, lookSpeed } from "./settings.js";
 
 const ammoLeft = (p, i) => (p.mag[i] || 0) + (p.reserve[i] || 0);
 
@@ -231,11 +232,17 @@ export function updatePlayer(dt) {
   if (keys.has("d")) st += 1;
   if (keys.has("arrowleft")) turn -= 1;
   if (keys.has("arrowright")) turn += 1;
-  if (touch.move) { fw -= touch.move.dy; turn += touch.move.dx * TOUCH.stickTurn; st += touch.move.dx * TOUCH.stickStrafe; }
-  if (isTouch) aimAssist(dt);
+  if (touch.move) {
+    fw -= touch.move.dy;
+    // The left thumb's sideways push turns you and sidesteps a little, or (your choice in the settings) sidesteps outright
+    if (settings.stick) st += touch.move.dx; else { turn += touch.move.dx * TOUCH.stickTurn; st += touch.move.dx * TOUCH.stickStrafe; }
+  }
+  const pad = input.pad;
+  if (pad) { fw += pad.fw; st += pad.st; p.a += pad.look * PAD.turnSpeed * lookSpeed() * dt; }
+  if (isTouch || pad) aimAssist(dt);   // thumbs and sticks get a little help staying on target
   p.a += turn * PLAYER.turnSpeed * dt;
-  const leanTo = (keys.has("c") ? 1 : 0) - (keys.has("z") ? 1 : 0);
-  const m = Math.hypot(fw, st), speed = keys.has("shift") && !leanTo ? PLAYER.runSpeed : PLAYER.walkSpeed;   // no running bent sideways
+  const leanTo = clamp((keys.has("c") ? 1 : 0) - (keys.has("z") ? 1 : 0) + (pad ? pad.lean : 0), -1, 1);
+  const m = Math.hypot(fw, st), speed = (keys.has("shift") || (pad && pad.run)) && !leanTo ? PLAYER.runSpeed : PLAYER.walkSpeed;   // no running bent sideways
   const ox = p.x, oy = p.y;
   if (m > 0.05) {
     const k = Math.min(1, m) / m * speed * dt;
@@ -255,7 +262,7 @@ export function updatePlayer(dt) {
   crackSafe(dt);
   tickPlayerEffects(dt);
   if (p.reload > 0) { p.reload -= dt; if (p.reload <= 0) { p.reload = 0; finishReload(); } }
-  if ((input.firing || autoFire()) && game.state === "play") fire();
+  if ((input.firing || (pad && pad.fire) || autoFire()) && game.state === "play") fire();
 }
 
 // Z and C lean your head and gun out to one side while your feet stay put: enough
@@ -280,7 +287,7 @@ function crackSafe(dt) {
   const p = game.player, s = game.objs.find(o => o.safe && !o.cracked);
   game.cracking = null;
   if (!s || Math.hypot(s.x - p.x, s.y - p.y) > PLAYER.safeReach) return;
-  const working = isTouch ? !p.moving && !input.firing : input.keys.has("e");
+  const working = (input.pad && input.pad.use) || (isTouch ? !p.moving && !input.firing : input.keys.has("e"));
   game.cracking = { progress: s.progress, working };
   if (!working) return;
   const before = s.progress, everyone = () => { for (const e of game.enemies) { e.alert = true; e.lx = p.x; e.ly = p.y; } };

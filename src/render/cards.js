@@ -30,10 +30,10 @@ function corner(x, y, sx, sy, s) {
 }
 // Controls, shown once before the first scene. Desktop and phone get their own list.
 const HOW_TO = isTouch
-  ? [["Walk and turn", "left thumb, anywhere"], ["Aim", "drag with your right thumb"], ["Shoot", "hold FIRE, or put a gangster under the crosshair"],
-     ["Swap guns", "SWAP"], ["Reload", "by itself"], ["Search a wall", "walk into it"]]
+  ? [["Walk and turn", "left thumb (the gear can make it sidestep)"], ["Aim", "drag with your right thumb"], ["Shoot", "hold FIRE, or put a gangster under the crosshair"],
+     ["Swap guns", "SWAP"], ["Reload", "by itself"], ["Search a wall", "walk into it"], ["Game controller", "works too, if you pair one"]]
   : [["Move", "W A S D  (Shift to run)"], ["Lean round a corner", "Z and C"], ["Aim", "mouse"], ["Shoot", "click or Space"], ["Reload", "R"],
-     ["Swap guns", "Q, or 1, 2 and 3"], ["Search a wall", "E, or walk into it"], ["Pause", "Esc"], ["Music on or off", "M"]];
+     ["Swap guns", "Q, or 1, 2 and 3"], ["Search a wall", "E, or walk into it"], ["Pause", "Esc"], ["Music on or off", "M"], ["Game controller", "sticks, RT fire, X reload, Y swap, LB RB lean"]];
 
 export function drawCard(t) {
   const f = view.cardRect, s = f.s, card = game.intertitle ? { kind: "intertitle" } : game.card || {};   // no card yet on the title

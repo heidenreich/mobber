@@ -75,3 +75,38 @@ test("plays upright and keeps playing after rotating", async () => {
   assert.deepEqual(g.errors, []);
   await g.context.close();
 });
+
+test("the left thumb can be set to sidestep, and a sideways push moves you well clear either way", async () => {
+  const g = await phone("iPhone 13 landscape");
+  await game(g.page, () => { const P = window.__mobber.player; P.x = 6.5; P.y = 9.5; P.a = 0; });
+  // As it comes: a sideways push turns you, and carries you sideways as well
+  let a = await pose(g.page);
+  await drag(g, 1, 120, 250, 70, 0, 500);
+  let b = await pose(g.page);
+  assert.ok(Math.abs(b.a - a.a) > 0.3, "turned");
+  assert.ok(Math.hypot(b.x - a.x, b.y - a.y) > 0.4, "and moved more than a bullet's width");
+  // Set to sidestep: no turning at all, a clean step to the side
+  await game(g.page, () => { window.__mobber.settings.stick = 1; });
+  a = await pose(g.page);
+  await drag(g, 1, 120, 250, 70, 0, 300);
+  b = await pose(g.page);
+  assert.equal(b.a, a.a, "didn't turn");
+  // How far you went to your right, and how far forward
+  const side = (b.x - a.x) * -Math.sin(a.a) + (b.y - a.y) * Math.cos(a.a), ahead = (b.x - a.x) * Math.cos(a.a) + (b.y - a.y) * Math.sin(a.a);
+  assert.ok(side > 0.5 && Math.abs(ahead) < side / 2, `stepped to the right (side ${side.toFixed(2)}, ahead ${ahead.toFixed(2)})`);
+  assert.deepEqual(g.errors, []);
+  await g.context.close();
+});
+
+test("on a phone the gangsters' bullets come slower", async () => {
+  const g = await phone("iPhone 13 landscape");
+  const speed = await game(g.page, () => {
+    const M = window.__mobber, P = M.player, e = M.enemies[0];
+    P.hp = 1e9; e.hp = 1e6; e.state = "aim"; e.t = 0; e.alert = true; e.burstLeft = 1; e.x = P.x + 3; e.y = P.y; e.cd = 0;
+    const usual = e.type.bulletSpeed || 11;   // what the same man's bullet does on a desktop
+    return new Promise(done => { const wait = () => (M.bullets.length ? done(M.bullets[0].speed / usual) : requestAnimationFrame(wait)); wait(); });
+  });
+  assert.ok(Math.abs(speed - 0.75) < 0.01, `expected three quarters of the usual speed, got ${speed}`);
+  assert.deepEqual(g.errors, []);
+  await g.context.close();
+});

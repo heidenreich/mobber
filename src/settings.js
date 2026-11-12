@@ -15,7 +15,10 @@ export const DIFFICULTY = [
 ];
 export const LOOK_SPEEDS = [{ name: "Slow", k: 0.6 }, { name: "Normal", k: 1 }, { name: "Fast", k: 1.5 }];
 
-export const settings = { music: true, sound: true, look: 1, vibrate: true, difficulty: 1, ...read(KEY) };
+// What the left thumb's sideways push does on a phone: turn you (with a little sidestep), or sidestep outright
+export const STICKS = ["Walk and turn", "Walk and sidestep"];
+
+export const settings = { music: true, sound: true, look: 1, vibrate: true, difficulty: 1, stick: 0, ...read(KEY) };
 export function saveSettings() { write(KEY, settings); }
 export const difficulty = () => DIFFICULTY[settings.difficulty] || DIFFICULTY[1];
 export const lookSpeed = () => (LOOK_SPEEDS[settings.look] || LOOK_SPEEDS[1]).k;

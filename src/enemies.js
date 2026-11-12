@@ -1,7 +1,7 @@
 // The Vitale outfit. Each gangster runs a small state machine:
 // idle -> chase -> aim -> fire -> chase ... with hurt/dying/dead on top.
 // They raise their gun ("aim") before firing, which gives you a moment to react.
-import { ENEMY_AI, BULLETS } from "./config.js";
+import { ENEMY_AI, BULLETS, TOUCH, isTouch } from "./config.js";
 import { rand } from "./util.js";
 import { game, stats, say, intertitle, eye } from "./state.js";
 import { SND } from "./audio.js";
@@ -219,17 +219,18 @@ function shoot(e, d, sees) {
   }
   shotgun ? SND.shotgun(d) : SND.enemy(d);
   if (game.state !== "play") return; // no more rounds at a player who's already down
-  const speed = T.bulletSpeed || BULLETS.speed;
+  // A thumb stick can't sidestep like a keyboard can: on a phone the bullets come slower and are led less
+  const speed = (T.bulletSpeed || BULLETS.speed) * (isTouch ? TOUCH.bulletSpeed : 1), lead = D.lead * (isTouch ? TOUCH.lead : 1);
   let tx = e.lx, ty = e.ly;
   if (sees) {
     // Your body if he can see it, otherwise the head you've leaned out
-    const at = los(e.x, e.y, p.x, p.y) ? p : eye(), ahead = (d / speed) * rand(0, D.lead);
+    const at = los(e.x, e.y, p.x, p.y) ? p : eye(), ahead = (d / speed) * rand(0, lead);
     tx = at.x + (p.vx || 0) * ahead; ty = at.y + (p.vy || 0) * ahead;
   }
   const a = Math.atan2(ty - e.y, tx - e.x), ox = e.x + Math.cos(a) * 0.2, oy = e.y + Math.sin(a) * 0.2;
   const dmg = () => rand(T.dmg[0], T.dmg[1]) * D.damage;
   // A shotgun's pellets spread, so it hits hardest up close
-  if (shotgun) for (let n = 0; n < BULLETS.pellets; n++) spawnBullet(ox, oy, a + rand(-BULLETS.pelletSpread, BULLETS.pelletSpread), dmg() * 1.3 / BULLETS.pellets);
+  if (shotgun) for (let n = 0; n < BULLETS.pellets; n++) spawnBullet(ox, oy, a + rand(-BULLETS.pelletSpread, BULLETS.pelletSpread), dmg() * 1.3 / BULLETS.pellets, speed);
   else { const s = (T.scatter || BULLETS.scatter) / D.aim; spawnBullet(ox, oy, a + rand(-s, s), dmg(), speed, T.up ? { h: T.up + 0.2, over: Math.max(1, d) } : null); }
 }
 

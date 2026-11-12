@@ -55,9 +55,17 @@ export const TOUCH = {
   deadZone: 0.18,
   joystickArea: 0.45,       // left share of the screen that starts the stick
   stickTurn: 1.05,          // stick left/right turns...
-  stickStrafe: 0.25,        // ...and sidesteps a little
+  stickStrafe: 0.5,         // ...and sidesteps too, enough to step out of a bullet's way
+  bulletSpeed: 0.75,        // gangsters' bullets fly this much slower at a thumb-stick player...
+  lead: 0.5,                // ...and are aimed this much less far ahead of one
   lookSensitivity: 0.0055,  // right-thumb drag, radians per pixel
   hitWidth: 0.3,            // more forgiving crosshair on phones
+};
+
+// A game controller's sticks
+export const PAD = {
+  deadZone: 0.18,           // stick movement smaller than this is ignored
+  turnSpeed: 3.2,           // right stick, radians per second at full tilt
 };
 
 export const AIM_ASSIST = {

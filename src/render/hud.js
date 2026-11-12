@@ -4,6 +4,7 @@ import { isTouch, FONTS, CREAM, TOUCH, WEAPONS } from "../config.js";
 import { game, stats, input } from "../state.js";
 import { ctx, view, swapBtn } from "../screen.js";
 import { objectiveDone } from "../world.js";
+import { liftFloor } from "../lift.js";
 
 const { deco: DECO, serif: SERIF, type: TYPE } = FONTS;
 
@@ -26,7 +27,7 @@ function thumbDeck(top) {
 
 export function drawHUD() {
   const p = game.player, f = view.hudRect, film = view.film, s = f.s;
-  if (isTouch) swapBtn.style.display = game.state === "play" && p.has[1] ? "block" : "none";
+  if (isTouch) swapBtn.style.display = game.state === "play" && p.has.filter(Boolean).length > 1 ? "block" : "none";
   const fs = n => Math.max(10, n * s);
   // Crosshair
   const cx = film.x + film.w / 2, cy = film.y + film.h / 2, g = 4 + p.recoil * 6;
@@ -52,7 +53,9 @@ export function drawHUD() {
   ctx.textAlign = "center"; ctx.font = `${fs(10)}px ${TYPE}`;
   const left = game.enemies.filter(e => e.hp > 0).length;
   const o = game.level.objective;
-  const obj = o === "reach" || game.level.endOnBoss ? game.level.goal.toUpperCase()
+  const lift = game.lift;
+  const obj = o === "lift" ? (lift.done ? "THROUGH THE DOOR TO THE DON'S SUITE" : lift.phase === "ride" ? "GOING UP" : left ? "CLEAR THE LANDING" : "BACK IN THE LIFT")
+    : o === "reach" || game.level.endOnBoss ? game.level.goal.toUpperCase()
     : o === "doubles" ? (objectiveDone() ? "IT WAS A DOUBLE — GET TO THE ROOF" : "FIND DON VITALE")
     : o === "ledger" ? (p.ledger ? "LEDGER IN HAND — FIND THE EXIT" : "FIND THE LEDGER")
     : (objectiveDone() ? "THE DON IS DOWN — FIND THE EXIT" : "FIND DON VITALE");
@@ -62,13 +65,27 @@ export function drawHUD() {
   ctx.fillText(obj, f.x + f.w / 2, base - 12 * s);
   // Under it: how many are left, or just where you are when the job is only to get through
   ctx.font = `italic 700 ${fs(10)}px ${SERIF}`;
-  ctx.fillText(o === "reach" ? game.level.title : left === 0 ? "The Vitale outfit is finished here" : `${left} of the Vitale outfit ${left === 1 ? "remains" : "remain"}`, f.x + f.w / 2, base);
+  ctx.fillText(o === "lift" ? liftFloor() : o === "reach" ? game.level.title : left === 0 ? "The Vitale outfit is finished here" : `${left} of the Vitale outfit ${left === 1 ? "remains" : "remain"}`, f.x + f.w / 2, base);
   ctx.textAlign = "right"; ctx.font = `${fs(9)}px ${TYPE}`;
-  ctx.fillText(WEAPONS[p.weapon].name + (p.has[1] && p.has[0] ? "   [Q]" : ""), f.x + f.w - 18 * s, base - 13 * s);
+  ctx.fillText(WEAPONS[p.weapon].name + (p.has.filter(Boolean).length > 1 ? "   [Q]" : ""), f.x + f.w - 18 * s, base - 13 * s);
   ctx.font = `${fs(17)}px ${DECO}`;
   const ammo = p.reload > 0 ? "RELOADING" : `${p.mag[p.weapon]} / ${p.reserve[p.weapon]}`;
   if (!p.reload && p.mag[p.weapon] + p.reserve[p.weapon] === 0) ctx.fillStyle = Math.floor(game.timer * 3) % 2 ? "#ffffff" : CREAM;
   ctx.fillText(ammo, f.x + f.w - 18 * s, base);
+  // At the safe: a dial that turns as you work it, with a ring showing how far along you are
+  const ck = game.cracking;
+  if (ck) {
+    const x = film.x + film.w / 2, y = film.y + film.h * 0.68, R = 20 * film.s;
+    ctx.fillStyle = "rgba(0,0,0,0.55)"; ctx.beginPath(); ctx.arc(x, y, R + 7 * film.s, 0, 6.283); ctx.fill();
+    ctx.strokeStyle = "rgba(236,230,218,0.35)"; ctx.lineWidth = 3 * film.s; ctx.beginPath(); ctx.arc(x, y, R + 3 * film.s, 0, 6.283); ctx.stroke();
+    ctx.strokeStyle = CREAM; ctx.beginPath(); ctx.arc(x, y, R + 3 * film.s, -Math.PI / 2, -Math.PI / 2 + ck.progress * 6.283); ctx.stroke();
+    ctx.lineWidth = 1; const turn = ck.progress * 21;
+    for (let i = 0; i < 20; i++) { const a = turn + i * 0.314, r0 = R * (i % 5 ? 0.82 : 0.68); ctx.beginPath(); ctx.moveTo(x + Math.cos(a) * r0, y + Math.sin(a) * r0); ctx.lineTo(x + Math.cos(a) * R, y + Math.sin(a) * R); ctx.stroke(); }
+    ctx.fillStyle = CREAM; ctx.beginPath(); ctx.arc(x, y, R * 0.3, 0, 6.283); ctx.fill();
+    ctx.textAlign = "center"; ctx.font = `${Math.max(11, 10 * film.s)}px ${TYPE}`;
+    const tip = ck.working ? "working the dial…" : isTouch ? "stand still to work the dial" : "hold E to work the dial";
+    ctx.fillStyle = "rgba(0,0,0,0.7)"; ctx.fillText(tip, x + 1, y + R + 21 * film.s + 1); ctx.fillStyle = CREAM; ctx.fillText(tip, x, y + R + 21 * film.s);
+  }
   // Messages ("Find the ledger.", pickups)
   const msg = game.msg;
   if (msg.t > 0) {

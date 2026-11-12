@@ -3,7 +3,7 @@
 import { rand, clamp } from "./util.js";
 import { settings } from "./settings.js";
 
-let actx = null, noise = null, sfx = null, rainGain = null;
+let actx = null, noise = null, sfx = null, rainGain = null, rotorGain = null;
 
 // For music.js, which schedules its own notes. Null until the first click or tap.
 export const audioContext = () => actx;
@@ -31,6 +31,14 @@ export function initAudio() {
   const lp = actx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 7000;
   rainGain = actx.createGain(); rainGain.gain.value = 0;
   rs.connect(hp).connect(lp).connect(rainGain).connect(sfx); rs.start();
+  // The autogiro's rotor: a low thud chopped six times a second, silent until the roof
+  const ro = actx.createBufferSource(); ro.buffer = noise; ro.loop = true;
+  const rl = actx.createBiquadFilter(); rl.type = "lowpass"; rl.frequency.value = 260;
+  const chop = actx.createGain(); chop.gain.value = 0.5;
+  const beat = actx.createOscillator(); beat.type = "sawtooth"; beat.frequency.value = 6;
+  const bg = actx.createGain(); bg.gain.value = 0.5; beat.connect(bg).connect(chop.gain);
+  rotorGain = actx.createGain(); rotorGain.gain.value = 0;
+  ro.connect(rl).connect(chop).connect(rotorGain).connect(sfx); ro.start(); beat.start();
 }
 export function setSoundOn(on) { if (sfx) sfx.gain.setTargetAtTime(on ? 1 : 0, actx.currentTime, 0.05); }
 
@@ -68,6 +76,9 @@ export const SND = {
     metal(0.03, 0.02, 1900);
     tone(rand(3200, 4400), 0.07, "sine", 0.012, 0, rand(0.28, 0.45));
   },
+  sawn: () => { shot({ crack: 1000, body: 800, thump: 0.8, tail: 0.25, vol: 1.2 }); hiss("lowpass", 300, 0.5, 0.3, 0.02); },
+  // Someone has seen you and is calling the others: two barks
+  shout: d => { const v = clamp(0.09 - d * 0.006, 0.015, 0.09); tone(330, 0.12, "sawtooth", v, 250); tone(390, 0.16, "sawtooth", v, 280, 0.16); },
   // Other people's guns are duller the further off they are
   enemy: d => shot({ crack: clamp(1700 - d * 70, 500, 1700), body: clamp(1300 - d * 60, 350, 1300), thump: 0.15, vol: clamp(0.75 - d * 0.04, 0.12, 0.75) }),
   shotgun: d => shot({ crack: 900, body: clamp(900 - d * 30, 300, 900), thump: 0.5, tail: 0.18, vol: clamp(1 - d * 0.05, 0.16, 1) }),
@@ -77,6 +88,10 @@ export const SND = {
     else if (surface === "soft") hiss("lowpass", 220, 0.09, 0.16);
     else { hiss("bandpass", 1400, 0.035, 0.07, 0, 1.5); tone(95, 0.06, "sine", 0.07, 60); }
   },
+  rotor: on => { if (rotorGain) rotorGain.gain.setTargetAtTime(on ? 0.5 : 0, actx.currentTime, 0.8); },
+  // The lift: a motor winding up for as long as the ride lasts, and a bell at each landing
+  lift: dur => { tone(62, dur, "sawtooth", 0.035, 84); hiss("lowpass", 180, dur, 0.12); },
+  bell: () => { tone(1319, 0.9, "triangle", 0.07); tone(2637, 0.5, "sine", 0.02); },
   rain: on => { if (rainGain) rainGain.gain.setTargetAtTime(on ? 0.022 : 0, actx.currentTime, 0.6); },
   // What you picked up: "cash", "rounds", "med", "ledger"
   pickup: what => {

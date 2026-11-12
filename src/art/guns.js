@@ -218,6 +218,28 @@ function tommy(S, { flash, drum = true }) {
   slab([[8, 0.6], [-11, -2.8], [-11, -9.5], [5, -3]], -1.3, 1.3, WOOD * 1.05);      // walnut stock, back to your shoulder
 }
 
+// ---- The sawn-off: two short barrels side by side, a cut-down grip ----
+function sawnOff(S, { flash }) {
+  const { tube, slab, box, line, limb, patch } = S;
+  if (flash) S.flash([0, 0.3, 33], 15);
+  box(-2.0, 2.0, -2.7, -0.95, 9, 21, WOOD);                                        // walnut fore-end
+  for (const x of [1.0, -1.0]) tube(x, 0, 0.98, 6, 30, STEEL * 1.05, { shine: 0.9 });   // the barrels
+  box(-0.22, 0.22, 0.75, 1.05, 6, 30, STEEL * 1.2, 0.9);                            // the rib between them
+  line([0, 1.1, 29.4], [0, 1.1, 29.4], 0.5, 200);                                   // bead sight
+  // left hand under the fore-end: thumb along the side, the back of the hand, the arm
+  limb([[-2.7, -1.9, 10], [-2.5, -1.0, 14], [-2.3, -0.8, 17]], [1.1, 1.0, 0.85], SKIN);
+  patch([[-2.3, -1.9, 9.5], [-2.5, -1.3, 18.5], [-3.0, -4.3, 18.8], [-3.3, -5.6, 13], [-2.9, -5.2, 8.5]], SKIN);
+  limb([[-3.0, -4.6, 9.5], [-5.2, -7.6, 3.5]], 2.8, SKIN * 0.9, { crease: false });
+  limb([[-5, -7.3, 4], [-5.8, -8.4, 1.8]], 3.2, 228, { crease: false });
+  limb([[-5.8, -8.4, 1.8], [-10.5, -14, -9]], 3.6, CLOTH, { crease: false, stripes: 5 });
+  triggerFinger(S, -0.4);
+  box(-2.15, 2.15, -2.5, 1.5, -2, 6, STEEL, 0.8);                                   // the action
+  line([-2.16, -0.4, -1], [-2.16, -0.4, 5], 0.35, 20);
+  for (const x of [1.0, -1.0]) slab([[-1.4, 1.4], [-1.9, 2.5], [-3.0, 2.8], [-2.8, 2.1], [-2.2, 1.0]], x - 0.3, x + 0.3, STEEL * 1.3, 0.9);   // two hammers
+  slab([[-2.0, -0.3], [-3.2, -1.4], [-4.2, -5], [-5.4, -9.6], [-2.8, -10.2], [-1.6, -6], [-0.4, -2.4]], -1.4, 1.4, WOOD);   // what's left of the stock
+  rightHand(S, -0.4);
+}
+
 // Each gun's bitmaps cover a fixed patch of the screen, running past the bottom
 // edge so arms and the stock always leave the picture.
 // `shift` is the usual first-person cheat: the gun is modeled further below and beside
@@ -238,9 +260,12 @@ function gunSet(model, rect, at, kick, reloadPoses) {
 
 const REVOLVER_RECT = { x: W / 2 - 60, y: H - 260, w: 360, h: 276, shift: [-36, -116] };
 const TOMMY_RECT = { x: W / 2 - 170, y: H - 260, w: 460, h: 276, shift: [-22, -58] };
+const SAWN_RECT = { x: W / 2 - 150, y: H - 260, w: 440, h: 276, shift: [-28, -98] };
 export const GUN_ART = [
   gunSet(revolver, REVOLVER_RECT, [9, 13, 26], { rest: 0.03, rise: 0.16, back: 2.2 },
     [{ pitch: 0.2, roll: 0.25, open: 0.4 }, { pitch: 0.42, roll: 0.5, open: 1 }]),
   gunSet(tommy, TOMMY_RECT, [8, 15, 22], { rest: -0.04, rise: 0.035, back: 1.6 },
     [{ pitch: -0.05, roll: -0.2, pivot: [0, -5, 8] }, { pitch: -0.1, roll: -0.42, drum: false, pivot: [0, -5, 8] }]),
+  gunSet(sawnOff, SAWN_RECT, [8, 14, 25], { rest: 0, rise: 0.2, back: 3 },
+    [{ pitch: -0.22, roll: -0.15 }, { pitch: -0.5, roll: -0.3 }]),
 ];

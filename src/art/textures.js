@@ -162,3 +162,21 @@ function scuffed(src) {
   return { w: 64, h: H, L, A };
 }
 export const SECRET_TEXTURES = Object.fromEntries(Object.entries(WALL_TEXTURES).map(([k, t]) => [k, scuffed(t)]));
+
+// What the bar shelves and a shop window look like after a stray bullet.
+// Same size as the original, with the glass gone from the given box.
+function shotOut(tex, x0, y0, x1, y1, keepRows = []) {
+  const L = Uint8Array.from(tex.L);
+  for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+    if (keepRows.some(([a, b]) => y >= a && y < b)) continue;                     // shelves and frames stay
+    const edge = Math.min(x - x0, x1 - 1 - x, y - y0, y1 - 1 - y);
+    // Jagged teeth of glass left round the edge, a few glinting shards, dark behind
+    const tooth = edge < 2 + ((x * 7 + y * 13) % 5);
+    L[y * tex.w + x] = tooth ? Math.min(255, tex.L[y * tex.w + x]) : (x * 31 + y * 17) % 53 === 0 ? 230 : 20 + ((x + y) % 3) * 4;
+  }
+  return { w: tex.w, h: tex.h, L, A: tex.A };
+}
+export const SMASHED_TEXTURES = {
+  B: shotOut(TEX.bar, 0, 3, 64, 42, [[22, 25]]),          // both rows of bottles, not the shelf between
+  F: shotOut(FACADES.F, 6, 82, 58, 116),                  // the shop window
+};

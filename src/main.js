@@ -4,7 +4,7 @@ import { rand } from "./util.js";
 import { game, input, stats } from "./state.js";
 import { LEVELS } from "./levels.js";
 import { ctx, view, watchScreen, resizeIfChanged } from "./screen.js";
-import { wallAt, los, SPAWNS } from "./world.js";
+import { wallAt, los, lightAt, SPAWNS } from "./world.js";
 import { WALL_CHARS, SIDE_WALL_CHARS } from "./tiles.js";
 import { AMMO } from "./config.js";
 import { updatePlayer, collectPickups, tickPlayerEffects } from "./player.js";
@@ -19,6 +19,7 @@ import { drawHUD } from "./render/hud.js";
 import { drawCard } from "./render/cards.js";
 import { music } from "./music.js";
 import { installPanel } from "./panel.js";
+import { updateLift } from "./lift.js";
 import { settings } from "./settings.js";
 
 watchScreen();
@@ -36,6 +37,7 @@ function update(dt) {
   if (alive) updatePlayer(dt); else tickPlayerEffects(dt);
   updateDoors(dt);
   updateSecrets(dt);
+  if (alive) updateLift(dt);
   for (const e of game.enemies) updateEnemy(e, dt);
   if (alive) collectPickups();
   if (game.msg.t > 0) game.msg.t -= dt;
@@ -68,8 +70,11 @@ function frame(now) {
     // Scenes open and close with an iris (below); the picture itself only dims a little
     let bright = flicker * (0.5 + 0.5 * game.fade) * (p.flash > 0 ? 1.25 : 1) * (1 - p.hurt * 1.2);
     if (game.state === "dying") bright *= 0.7;
+    // Riding the lift: the landings' lights slide past the gate
+    const riding = game.lift && game.lift.phase === "ride" && !game.lift.done;
+    if (riding) bright *= 0.62 + 0.38 * Math.abs(Math.sin(t * 2.6));
     develop(Math.max(0.05, bright));
-    const shake = p.hurt > 0 ? rand(-4, 4) * p.hurt * 3 : 0;
+    const shake = (p.hurt > 0 ? rand(-4, 4) * p.hurt * 3 : 0) + (riding ? rand(-1.2, 1.2) : 0);
     ctx.imageSmoothingEnabled = true;
     ctx.drawImage(buf, film.x + shake, film.y + jitter + shake, film.w, film.h);
     if (game.level.rain) rain(dt);
@@ -89,6 +94,6 @@ requestAnimationFrame(frame);
 // Hook for the automated tests in tests/
 window.__mobber = {
   get state() { return game.state; }, get player() { return game.player; }, get enemies() { return game.enemies; },
-  get objs() { return game.objs; }, get level() { return game.level; }, get card() { return game.card; }, get map() { return game.map; }, get doors() { return game.doors; }, get fade() { return game.fade; }, get navBlocked() { return game.navBlocked; }, get intertitle() { return game.intertitle; }, set dialogue(v) { game.dialogue = v; }, stats, LEVELS, AMMO, music, settings, startLevel, wallAt, los, hurtPlayer,
+  get objs() { return game.objs; }, get level() { return game.level; }, get card() { return game.card; }, get map() { return game.map; }, get doors() { return game.doors; }, get fade() { return game.fade; }, get navBlocked() { return game.navBlocked; }, get intertitle() { return game.intertitle; }, get smashed() { return game.smashed; }, get lift() { return game.lift; }, get cracking() { return game.cracking; }, lightAt, set dialogue(v) { game.dialogue = v; }, stats, LEVELS, AMMO, music, settings, startLevel, wallAt, los, hurtPlayer,
   TILES: { walls: WALL_CHARS, sideWalls: SIDE_WALL_CHARS, blockers: Object.keys(SPAWNS).filter(k => SPAWNS[k].block).join("") },
 };

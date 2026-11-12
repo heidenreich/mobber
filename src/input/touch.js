@@ -5,7 +5,7 @@ import { TOUCH } from "../config.js";
 import { game, input } from "../state.js";
 import { cv, view, fireBtn, swapBtn } from "../screen.js";
 import { initAudio } from "../audio.js";
-import { switchWeapon } from "../player.js";
+import { nextWeapon } from "../player.js";
 import { advance } from "../flow.js";
 import { lookSpeed } from "../settings.js";
 
@@ -61,5 +61,5 @@ export function installTouchInput() {
   const fireUp = e => { e.preventDefault(); input.firing = false; fireTouch = null; };
   fireBtn.addEventListener("touchend", fireUp, { passive: false });
   fireBtn.addEventListener("touchcancel", fireUp, { passive: false });
-  swapBtn.addEventListener("touchstart", e => { e.preventDefault(); if (game.player) switchWeapon(1 - game.player.weapon); }, { passive: false });
+  swapBtn.addEventListener("touchstart", e => { e.preventDefault(); if (game.player && game.state === "play") nextWeapon(); }, { passive: false });
 }

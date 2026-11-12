@@ -67,6 +67,19 @@ function installBot(skill) {
     let path = bfs(P, (x, y) => M.objs.some(o => want(o) && (o.x | 0) === x && (o.y | 0) === y));
     if (path && path.length > 14) path = null;
     let exitFace = null;
+    // The safe: walk up to it and hold E until it opens
+    hold("e", false);
+    const safe = M.objs.find(o => o.safe && !o.cracked);
+    if (!path && safe) {
+      if (Math.hypot(safe.x - P.x, safe.y - P.y) < 1.2) { hold("w", false); hold("e", true); return; }
+      path = bfs(P, (x, y) => Math.abs(x + 0.5 - safe.x) + Math.abs(y + 0.5 - safe.y) === 1);
+    }
+    // The lift: between landings, wait in the car (where the scene starts)
+    if (!path && M.lift && !M.lift.done) {
+      const sy = lvl.map.findIndex(r => r.includes("S")), sx = lvl.map[sy].indexOf("S");
+      if ((P.x | 0) === sx && (P.y | 0) === sy) { hold("w", false); return; }
+      path = bfs(P, (x, y) => x === sx && y === sy);
+    }
     if (!path) {
       const o = lvl.objective, led = M.objs.find(o => o.pick === "ledger");
       const need = o === "ledger" && led ? [led] : o === "doubles" ? M.enemies.filter(e => e.type.name === "double" && e.hp > 0) : o === "boss" ? M.enemies.filter(e => e.type.name === "boss" && e.hp > 0) : [];

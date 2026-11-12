@@ -5,23 +5,34 @@ import { ENEMY_AI } from "./config.js";
 import { rand, clamp } from "./util.js";
 import { game, stats, say, intertitle } from "./state.js";
 import { SND } from "./audio.js";
-import { los, moveBy, nextStep } from "./world.js";
+import { los, moveBy, nextStep, lightAt } from "./world.js";
 import { fadeOut, showCard } from "./flow.js";
 import { difficulty, buzz } from "./settings.js";
 
 export function updateEnemy(e, dt) {
   const p = game.player, T = e.type;
+  if (e.state === "stagger") { lastSteps(e, dt); return; }
   if (e.state === "dying") { e.t -= dt; if (e.t <= 0) e.state = "dead"; return; }
   if (e.state === "dead") return;
   e.cd -= dt; e.staggerCd = Math.max(0, (e.staggerCd || 0) - dt); e.repath = (e.repath || 0) - dt;
   const dx = p.x - e.x, dy = p.y - e.y, d = Math.hypot(dx, dy);
-  const sees = d < ENEMY_AI.sightRange && los(e.x, e.y, p.x, p.y);
+  // They see less far when you're standing in the dark (shoot out a lamp and find out)
+  const range = ENEMY_AI.sightRange * (lightAt(p.x, p.y) < 0.5 && p.flash <= 0 ? ENEMY_AI.darkSight : 1);
+  // Until something alerts him he only sees what's in front of him, and now and then he looks behind
+  if (!e.alert && (e.turnT -= dt) <= 0) { e.face += Math.PI; e.lookBack = !e.lookBack; e.turnT = e.lookBack ? rand(2, 3.5) : rand(4, 8); }
+  let sees = d < range && los(e.x, e.y, p.x, p.y);
+  if (sees && !e.alert && d > ENEMY_AI.senseRange) {
+    const off = Math.atan2(dy, dx) - e.face;
+    if (Math.abs(Math.atan2(Math.sin(off), Math.cos(off))) > ENEMY_AI.viewCone) sees = false;
+  }
+  if (e.panic) { runForIt(e, dt, d); return; }
   if (sees) {
     // The first gangster to get a good look at you, and later the Don himself, have something to say
     if (!e.alert && d < 9) {
       if (T.flees) intertitle("don", "DON VITALE", ["“You should have stayed", "out of it, kid.”"]);
       else intertitle("spotted", "A VITALE GUNMAN", ["“It's Eddie's brother!", "Get him!”"]);
     }
+    if (!e.alert) raiseAlarm(e, d);
     e.alert = true; e.lx = p.x; e.ly = p.y;
   }
   e.moving = false;
@@ -31,6 +42,17 @@ export function updateEnemy(e, dt) {
     case "chase": {
       if (sees && d < T.range && e.cd <= 0) { e.state = "aim"; e.t = T.aim; e.burstLeft = T.burst; break; }
       if (T.flees && game.level.route) { flee(e, dt); break; }
+      // Between bursts a goon may duck out of your line of fire until he's ready to shoot again
+      if (e.cover) {
+        if (e.cd <= 0) e.cover = null;
+        else {
+          if (Math.hypot(e.cover.x - e.x, e.cover.y - e.y) > 0.25) {
+            const s = nextStep(e.x, e.y, e.cover.x, e.cover.y) || e.cover, gd = Math.hypot(s.x - e.x, s.y - e.y);
+            if (gd > 0.05) walk(e, s.x, s.y, gd, dt, false);
+          }
+          break;
+        }
+      }
       if (sees) {
         // In sight: close in, but not right up to you
         const gd = d;
@@ -53,9 +75,70 @@ export function updateEnemy(e, dt) {
       e.t -= dt;
       if (e.t <= 0) {
         if (e.burstLeft > 0 && sees) { shoot(e, d, sees); e.burstLeft--; e.t = 0.16; }
-        else { e.state = "chase"; e.cd = rand(T.cd[0], T.cd[1]); }
+        else {
+          e.state = "chase"; e.cd = rand(T.cd[0], T.cd[1]);
+          e.cover = T.name === "goon" && Math.random() < ENEMY_AI.coverChance ? findCover(e) : null;
+        }
       }
       break;
+  }
+}
+
+// The Don is hit and finished, but not down yet: he staggers for the parapet and goes over
+function lastSteps(e, dt) {
+  e.t -= dt; e.step += dt;
+  const gd = Math.hypot(e.goal.x - e.x, e.goal.y - e.y);
+  if (gd > 0.75 && e.t > 0) { moveBy(e, (e.goal.x - e.x) / gd * 0.9 * dt, (e.goal.y - e.y) / gd * 0.9 * dt, 0.22); return; }
+  e.state = "dying"; e.t = 0.6; e.over = gd <= 1.3;   // close enough to the edge to fall from it
+  SND.down();
+  intertitle("eddie", null, ["“That's for Eddie.”"]) || say("That's for Eddie.", 4);
+  fadeOut(() => showCard("epilogue"), 2.6);
+}
+
+// The first to spot you shouts, and anyone near him turns your way too
+function raiseAlarm(e, d) {
+  const p = game.player;
+  let heard = false;
+  for (const o of game.enemies) {
+    if (o === e || o.hp <= 0 || o.alert || Math.hypot(o.x - e.x, o.y - e.y) > ENEMY_AI.shoutRange) continue;
+    o.alert = true; o.lx = p.x; o.ly = p.y; heard = true;
+  }
+  if (heard) SND.shout(d);
+}
+
+// The nearest open square within a few steps that you can't see
+function findCover(e) {
+  const p = game.player, ex = e.x | 0, ey = e.y | 0;
+  let best = null, bestD = Infinity;
+  for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) {
+    const x = ex + dx, y = ey + dy;
+    if (!dx && !dy || (game.map[y] || [])[x] !== "." || game.navBlocked[y * game.width + x]) continue;
+    const d = Math.hypot(dx, dy);
+    if (d < bestD && !los(x + 0.5, y + 0.5, p.x, p.y) && los(e.x, e.y, x + 0.5, y + 0.5)) { bestD = d; best = { x: x + 0.5, y: y + 0.5 }; }
+  }
+  return best;
+}
+
+// The last hired gun has lost his nerve: he runs from you, and only turns to fight if cornered
+function runForIt(e, dt, d) {
+  const p = game.player;
+  if (e.state === "hurt") { e.t -= dt; if (e.t > 0) return; }
+  e.state = "chase"; e.moving = false; e.repath -= dt;
+  if (e.repath <= 0 || !e.away) {
+    e.repath = 0.6; e.away = null;
+    let bestD = d + 1;
+    for (let a = 0; a < 6.28; a += 0.785) {
+      const x = e.x + Math.cos(a) * 4, y = e.y + Math.sin(a) * 4;
+      if ((game.map[y | 0] || [])[x | 0] !== "." || game.navBlocked[(y | 0) * game.width + (x | 0)]) continue;
+      const far = Math.hypot(x - p.x, y - p.y);
+      if (far > bestD && nextStep(e.x, e.y, x, y)) { bestD = far; e.away = { x, y }; }
+    }
+    // Nowhere left to run, and you're on top of him
+    if (!e.away && d < 3.5) { e.panic = false; e.cornered = true; e.alert = true; e.cd = 0.4; return; }
+  }
+  if (e.away) {
+    const s = nextStep(e.x, e.y, e.away.x, e.away.y) || e.away, gd = Math.hypot(s.x - e.x, s.y - e.y);
+    if (gd > 0.1) walk(e, s.x, s.y, gd, dt, false); else e.repath = 0;
   }
 }
 

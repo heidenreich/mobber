@@ -45,14 +45,17 @@ function analyse(map) {
   };
 }
 
-test("three locations, each preceded by a street scene, then the rooftop finale", () => {
-  assert.equal(levels.length, 7);
-  levels.slice(0, 6).forEach((l, i) => assert.equal(l.objective === "reach", i % 2 === 0, `${l.title}: streets and locations should alternate`));
-  const roof = levels[6];
+test("three locations, each preceded by a street scene, the lift up, then the rooftop finale", () => {
+  assert.equal(levels.length, 8);
+  // Street, club, street, pier, street, then the hotel lift on the way up to the penthouse
+  levels.slice(0, 5).forEach((l, i) => assert.equal(l.objective === "reach", i % 2 === 0, `${l.title}: streets and locations should alternate`));
+  assert.equal(levels[5].objective, "lift");
+  assert.equal(levels[6].objective, "doubles");
+  const roof = levels[7];
   assert.ok(roof.endOnBoss && roof.objective === "boss", "the picture ends when the Don goes down on the roof");
 });
 
-for (let i = 0; i < 7; i++) {
+for (let i = 0; i < 8; i++) {
   test(`level ${i + 1} map is sound and beatable`, () => {
     const { title, objective, map } = levels[i];
     const w = map[0].length, h = map.length;

@@ -107,11 +107,15 @@ test("ledger, exit door and the next scene", async () => {
   const { page, context } = await startedGame();
   await goTo(page, CLUB);
   await game(page, () => {
-    const M = window.__mobber, P = M.player, L = M.objs.find(o => o.pick === "ledger");
+    // The ledger is in the office safe: stand next to it
+    const M = window.__mobber, P = M.player, safe = M.objs.find(o => o.safe);
     for (const e of M.enemies) { e.hp = 0; e.state = "dead"; }
-    P.x = L.x; P.y = L.y;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (!M.wallAt(safe.x + dx, safe.y + dy)) { P.x = safe.x + dx * 1.1; P.y = safe.y + dy * 1.1; break; }
   });
-  await page.waitForFunction(() => window.__mobber.player.ledger);
+  await page.waitForFunction(() => window.__mobber.cracking && !window.__mobber.cracking.working);
+  assert.equal(await game(page, () => window.__mobber.player.ledger), false, "the safe doesn't open by itself");
+  // Work the dial (hold E) until it gives
+  await holdUntil(page, "e", () => window.__mobber.player.ledger);
   await faceExit(page);
   await holdUntil(page, "w", () => window.__mobber.state === "card");
   await clickCard(page);
@@ -439,6 +443,7 @@ test("a dialogue card stops the action, then the scene carries on", async () => 
     M.dialogue = true;
     for (const o of M.enemies) if (o !== e) { o.hp = 0; o.state = "dead"; }
     e.x = P.x + Math.cos(P.a) * 3; e.y = P.y + Math.sin(P.a) * 3; e.alert = false; e.state = "idle";
+    e.face = P.a + Math.PI; e.turnT = 99;   // looking straight at you
   });
   await page.waitForFunction(() => window.__mobber.intertitle);
   const before = await game(page, () => ({ lines: window.__mobber.intertitle.lines.join(" "), cd: window.__mobber.enemies[0].cd }));

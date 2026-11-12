@@ -90,8 +90,10 @@ function damage(t, dmg) {
       if (game.level.endOnBoss) {
         // The Don goes down and the picture ends: no exit to find
         game.state = "won";
-        intertitle("eddie", null, ["“That's for Eddie.”"]) || say("That's for Eddie.", 4);
-        fadeOut(() => showCard("epilogue"), 3);
+        // He isn't down yet: he staggers for the nearest stretch of parapet (enemies.js finishes it)
+        let goal = { x: t.x, y: t.y }, best = Infinity;
+        game.map.forEach((row, y) => row.forEach((c, x) => { const d = Math.hypot(x + 0.5 - t.x, y + 0.5 - t.y); if (c === "R" && d < best) { best = d; goal = { x: x + 0.5, y: y + 0.5 }; } }));
+        t.state = "stagger"; t.t = 2.6; t.goal = goal;
       } else say("Don Vitale is finished. Get to the exit.", 4);
     }
   } else if (!t.type.noStagger && t.staggerCd <= 0 && (t.state !== "aim" || Math.random() < 0.4)) {
@@ -111,7 +113,7 @@ function pistolWhip() {
   p.fireCd = MELEE.rate; p.recoil = 1.6; stats.shots++;
   const t = hitscan(W / 2, MELEE.range);
   SND.whip(!!t);
-  if (t) damage(t, MELEE.dmg * rand(0.85, 1.15));
+  if (t) damage(t, MELEE.dmg * rand(0.85, 1.15) * (t.alert ? 1 : ENEMY_AI.ambush));   // a man who never saw it coming goes down hard
   else if (game.msg.t <= 0) say("Out of ammo. Search the bodies.");
 }
 
@@ -128,6 +130,7 @@ function fire() {
   p.mag[p.weapon]--; p.fireCd = w.rate; p.recoil = w.pellets ? 1.5 : 1; p.flash = 0.06; stats.shots++;
   [SND.rev, SND.tommy, SND.sawn][p.weapon]();
   // Gunfire carries: anyone in earshot now knows where you are, and comes looking
+  const unaware = new Set(game.enemies.filter(e => e.hp > 0 && !e.alert));
   for (const e of game.enemies) if (e.hp > 0 && Math.hypot(e.x - p.x, e.y - p.y) < ENEMY_AI.hearingRange) { e.alert = true; e.lx = p.x; e.ly = p.y; }
   const spread = w.spread * (p.moving ? 1.6 : 1);
   let hitAnyone = false;
@@ -138,7 +141,7 @@ function fire() {
     hitAnyone = true;
     // Buckshot loses its punch with distance; the Don's vest shrugs off some of a tommy gun
     const reach = w.pellets ? clamp(1.25 - Math.hypot(t.x - p.x, t.y - p.y) * 0.12, 0.2, 1) : 1;
-    damage(t, w.dmg * rand(0.85, 1.15) * reach * (p.weapon === 1 ? t.type.tommyResist ?? 1 : 1));
+    damage(t, w.dmg * rand(0.85, 1.15) * reach * (p.weapon === 1 ? t.type.tommyResist ?? 1 : 1) * (unaware.delete(t) ? ENEMY_AI.ambush : 1));
     if (n > 0) stats.hits--;   // a blast counts as one shot on target, however many pellets land
   }
   if (!hitAnyone) smash();
@@ -205,7 +208,7 @@ function checkExit() {
         fadeOut(() => game.levelIdx + 1 < LEVELS.length ? showCard("chapter", game.levelIdx + 1) : showCard("end"));
         return;
       }
-      if (game.msg.t <= 0) say(lvl.objective === "ledger" ? "Not without the ledger." : "Not while Don Vitale still breathes.");
+      if (game.msg.t <= 0) say(lvl.objective === "ledger" ? "Not without the ledger." : lvl.objective === "lift" ? "Not this floor." : "Not while Don Vitale still breathes.");
     }
   }
 }
@@ -237,9 +240,29 @@ export function updatePlayer(dt) {
     if (beat !== p.beat) { p.beat = beat; SND.step(game.level.rain ? "wet" : game.level.floor === "carpet" ? "soft" : "hard"); }
     checkExit();
   } else p.moving = false;
+  crackSafe(dt);
   tickPlayerEffects(dt);
   if (p.reload > 0) { p.reload -= dt; if (p.reload <= 0) { p.reload = 0; finishReload(); } }
   if ((input.firing || autoFire()) && game.state === "play") fire();
+}
+
+// Standing at the safe, working the dial (hold E; on a phone, just stand still).
+// It takes a while, and partway through the whole club hears you at it.
+function crackSafe(dt) {
+  const p = game.player, s = game.objs.find(o => o.safe && !o.cracked);
+  game.cracking = null;
+  if (!s || Math.hypot(s.x - p.x, s.y - p.y) > PLAYER.safeReach) return;
+  const working = isTouch ? !p.moving && !input.firing : input.keys.has("e");
+  game.cracking = { progress: s.progress, working };
+  if (!working) return;
+  const before = s.progress, everyone = () => { for (const e of game.enemies) { e.alert = true; e.lx = p.x; e.ly = p.y; } };
+  s.progress += dt / PLAYER.safeTime;
+  if (Math.floor(s.progress * 14) !== Math.floor(before * 14)) SND.click();   // the tumblers
+  if (before < 0.35 && s.progress >= 0.35 && game.enemies.some(e => e.hp > 0)) { everyone(); say("They've heard you at the safe!", 3); }
+  if (s.progress >= 1) {
+    s.cracked = true; s.art = OBJ.safeOpen; game.cracking = null;
+    p.ledger = true; say("Got the ledger. Now find the EXIT.", 3.5); SND.pickup("ledger"); everyone();
+  }
 }
 
 // Flashes, recoil and the hurt shake keep fading even while the player is dying

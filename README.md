@@ -18,6 +18,7 @@ Your brother Eddie kept the books at the Blue Note, and kept them honest. The Vi
 | Reload | R (automatic when empty) | Automatic |
 | Swap guns | Q, 1/2/3 or the mouse wheel | SWAP |
 | Search for secret walls | Walk into a wall, or press E | Walk into a wall |
+| Crack a safe | Stand at it and hold E | Stand still at it |
 | Pause | Esc | — |
 | Music on or off | M | the gear, top right |
 | Settings | the gear, top right (Esc first to free the mouse) | the gear, top right |
@@ -29,6 +30,10 @@ Doors open by themselves as you walk up to them. Some walls hide rooms: look for
 Ammo is limited, and so is what you can carry. You start with a loaded revolver and 12 spare rounds. Boxes of rounds and tommy gun drums are lying around, and gangsters you put down leave something behind: a few revolver rounds, sometimes their tommy gun, sometimes cash. The first heavy you put down gives up his sawn-off shotgun, which settles things up close and does little at a distance. With both guns empty, a click swings the gun at anyone in arm's reach. Your health carries over from scene to scene, so first-aid kits matter.
 
 Gangsters who hear gunfire come looking for you, finding their way around walls and through doors. The first to see you shouts for the others near him. Between bursts a goon may duck out of your line of fire, a hit may knock his hat off, and the last hired gun left standing loses his nerve and runs.
+
+Until something alerts him, a gangster only sees what's in front of him, and now and then he looks behind. If you can see his back, he can't see you: keep out of the lamplight, don't get too close, and you can slip past. A shot at a man who never saw it coming does three times the damage.
+
+Each chapter has something besides shooting. The ledger at the Blue Note is in the office safe, and partway through working the dial the whole club hears you. The lookouts on the Waterfront can be slipped past. At the Hotel Regent you ride the lift, and Vitale men are waiting at every landing on the way up.
 
 A shot that misses can still hit something. Lamps can be shot out, and gangsters see less far when you stand in the dark. The bottles behind a bar and shop windows shatter. Crates, cars, water towers and other solid props are cover: they block bullets and sight both ways.
 
@@ -44,7 +49,7 @@ npm start            # then open http://127.0.0.1:8000/
 
 ## Tests
 
-The tests play the game in headless Chromium: the maps, shooting, the ledger and exit, the street scenes, doors and secret walls, every level, dying and retrying, the ending, and the phone controls.
+The tests play the game in headless Chromium: the maps, shooting, the safe and the exit, the street scenes, doors and secret walls, every level, dying and retrying, the lift, slipping past a lookout, the ending, saving, the settings panel, and the phone controls.
 
 ```sh
 npm install
@@ -64,14 +69,15 @@ style.css
 src/
   main.js             starts everything and runs the frame loop
   config.js           screen size and every tuning number (speeds, damage, aim assist)
-  levels.js           the story cards and the seven scenes (three streets, three locations, the roof) as plain data
+  levels.js           the story cards and the eight scenes (three streets, three locations, the lift, the roof) as plain data
   state.js            the game's shared state (one object, read and updated by the modules)
   screen.js           canvas sizing, landscape vs. portrait layout
   tiles.js            which map letters are walls (the one list everything uses)
   world.js            loading a map, walls, line of sight and cover, the light map, collision, enemy pathfinding
   doors.js            sliding doors and secret walls
-  player.js           moving, shooting, reloading, pickups, the exit
-  enemies.js          gangster behavior: idle -> chase -> aim -> fire
+  lift.js             the hotel lift: ride, stop at a landing, clear it, ride on
+  player.js           moving, shooting, reloading, pickups, cracking the safe, the exit
+  enemies.js          gangster behavior: watching, idle -> chase -> aim -> fire, taking cover, running, the Don's last steps
   flow.js             title card -> chapter card -> play -> death / next chapter / the end
   audio.js            synthesized sound effects: gunshots, footsteps, rain, reloads, pickups, projector clatter
   settings.js         your choices and your saved place, kept in the browser's local storage
@@ -82,13 +88,14 @@ src/
     raycaster.js      walls, floors and ceilings, sprites, the gun in your hand
     film.js           grain, vignette and tint; scratches and dust
     hud.js            health/ammo bar, crosshair, messages, the touch stick
-    cards.js          the title, chapter, "CUT!" and "THE END" cards
+    cards.js          the title, chapter, dialogue and "CUT!" cards
+    paper.js          THE END: the morning paper, with your run as its front page
   art/
     bitmap.js         turns canvas drawings into grayscale bitmaps
     textures.js       wall, floor and ceiling textures
     sprites.js        gangsters, furniture, lamps, pickups and street props
     streets.js        the night sky, two-story building fronts and entrances
-    guns.js           the revolver and the tommy gun: small 3D models drawn from your point of view
+    guns.js           the revolver, the tommy gun and the sawn-off: small 3D models drawn from your point of view
   input/
     desktop.js        keyboard, mouse, pointer lock
     touch.js          floating stick, drag-to-aim, FIRE and SWAP

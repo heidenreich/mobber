@@ -126,10 +126,17 @@ export function renderWorld(t) {
 
   // Sprites, far to near
   const list = [];
-  for (const o of game.objs) list.push({ x: o.x, y: o.y, art: o.art, scale: o.scale, hang: o.hang, glow: o.glow, bob: o.bob ? Math.sin(t * 3) * 0.03 : 0 });
+  for (const o of game.objs) list.push({ x: o.x, y: o.y, art: o.frames ? o.frames[((t * 14) | 0) % o.frames.length] : o.art, scale: o.scale, hang: o.hang, glow: o.glow, bob: o.bob ? Math.sin(t * 3) * 0.03 : 0 });
   for (const e of game.enemies) {
     const A = PEOPLE[e.type.art + (e.hatless ? "Bare" : "")];
+    if (e.state === "dead" && e.over) continue;   // he went over the parapet
     let art = e.moving ? A.walk[Math.sin(e.step * 9) > 0 ? 0 : 1] : A.idle;
+    if (e.state === "idle" && !e.alert) {
+      // He hasn't noticed you: if he's looking the other way, you see his back
+      const off = Math.atan2(py - e.y, px - e.x) - e.face;
+      if (Math.abs(Math.atan2(Math.sin(off), Math.cos(off))) > 1.7) art = A.back;
+    }
+    if (e.state === "stagger") art = Math.sin(e.step * 11) > 0 ? A.hurt : A.idle;
     if (e.state === "aim") art = A.aim; else if (e.state === "fire") art = e.t > 0.07 ? A.fire : A.aim;
     else if (e.state === "hurt") art = A.hurt; else if (e.state === "dying") art = e.t > 0.25 ? A.hurt : A.fall;
     else if (e.state === "dead") art = A.dead;

@@ -11,13 +11,20 @@ import { difficulty, buzz } from "./settings.js";
 
 export function updateEnemy(e, dt) {
   const p = game.player, T = e.type;
+  if (e.state === "stagger") { lastSteps(e, dt); return; }
   if (e.state === "dying") { e.t -= dt; if (e.t <= 0) e.state = "dead"; return; }
   if (e.state === "dead") return;
   e.cd -= dt; e.staggerCd = Math.max(0, (e.staggerCd || 0) - dt); e.repath = (e.repath || 0) - dt;
   const dx = p.x - e.x, dy = p.y - e.y, d = Math.hypot(dx, dy);
   // They see less far when you're standing in the dark (shoot out a lamp and find out)
   const range = ENEMY_AI.sightRange * (lightAt(p.x, p.y) < 0.5 && p.flash <= 0 ? ENEMY_AI.darkSight : 1);
-  const sees = d < range && los(e.x, e.y, p.x, p.y);
+  // Until something alerts him he only sees what's in front of him, and now and then he looks behind
+  if (!e.alert && (e.turnT -= dt) <= 0) { e.face += Math.PI; e.lookBack = !e.lookBack; e.turnT = e.lookBack ? rand(2, 3.5) : rand(4, 8); }
+  let sees = d < range && los(e.x, e.y, p.x, p.y);
+  if (sees && !e.alert && d > ENEMY_AI.senseRange) {
+    const off = Math.atan2(dy, dx) - e.face;
+    if (Math.abs(Math.atan2(Math.sin(off), Math.cos(off))) > ENEMY_AI.viewCone) sees = false;
+  }
   if (e.panic) { runForIt(e, dt, d); return; }
   if (sees) {
     // The first gangster to get a good look at you, and later the Don himself, have something to say
@@ -75,6 +82,17 @@ export function updateEnemy(e, dt) {
       }
       break;
   }
+}
+
+// The Don is hit and finished, but not down yet: he staggers for the parapet and goes over
+function lastSteps(e, dt) {
+  e.t -= dt; e.step += dt;
+  const gd = Math.hypot(e.goal.x - e.x, e.goal.y - e.y);
+  if (gd > 0.75 && e.t > 0) { moveBy(e, (e.goal.x - e.x) / gd * 0.9 * dt, (e.goal.y - e.y) / gd * 0.9 * dt, 0.22); return; }
+  e.state = "dying"; e.t = 0.6; e.over = gd <= 1.3;   // close enough to the edge to fall from it
+  SND.down();
+  intertitle("eddie", null, ["“That's for Eddie.”"]) || say("That's for Eddie.", 4);
+  fadeOut(() => showCard("epilogue"), 2.6);
 }
 
 // The first to spot you shouts, and anyone near him turns your way too

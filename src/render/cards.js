@@ -1,10 +1,11 @@
 // Silent-movie title cards: the title, chapter cards, "CUT!" and "THE END".
 import { isTouch, FONTS, CREAM } from "../config.js";
-import { game, stats } from "../state.js";
+import { game } from "../state.js";
 import { LEVELS, STORY } from "../levels.js";
 import { ctx, view } from "../screen.js";
 import { noiseCv } from "./film.js";
-import { loadGame, difficulty, settings } from "../settings.js";
+import { loadGame } from "../settings.js";
+import { drawPaper } from "./paper.js";
 
 const { deco: DECO, serif: SERIF, type: TYPE } = FONTS;
 
@@ -16,12 +17,6 @@ function corner(x, y, sx, sy, s) {
   for (const r of [14, 22]) { ctx.beginPath(); ctx.arc(0, 0, r * s, 0, Math.PI / 2); ctx.stroke(); }
   ctx.restore();
 }
-// What the critics make of your run: accuracy, retakes, pace and how hard you made it
-function rating() {
-  const acc = stats.shots ? stats.hits / stats.shots : 0;
-  const stars = 3 + (acc >= 0.5) + (stats.deaths === 0) - (stats.deaths >= 4) + (stats.time < 12 * 60) - (stats.time > 25 * 60) + [-1, 0, 1][settings.difficulty];
-  return ["a flop.", "a flop.", "a flop.", "a B picture.", "a solid programmer.", "a hit!", "a box office smash!", "the picture of the year!"][Math.max(0, Math.min(7, stars))];
-}
 // Controls, shown once before the first scene. Desktop and phone get their own list.
 const HOW_TO = isTouch
   ? [["Walk and turn", "left thumb, anywhere"], ["Aim", "drag with your right thumb"], ["Shoot", "hold FIRE, or put a gangster under the crosshair"],
@@ -31,6 +26,7 @@ const HOW_TO = isTouch
 
 export function drawCard(t) {
   const f = view.cardRect, s = f.s, card = game.intertitle ? { kind: "intertitle" } : game.card || {};   // no card yet on the title
+  if (card.kind === "end") { drawPaper(t); return; }   // THE END is the morning paper (paper.js)
   ctx.fillStyle = "#0b0a09"; ctx.fillRect(f.x, f.y, f.w, f.h);
   const cx = f.x + f.w / 2, Y = v => f.y + v * s;
   // The big cards (title, CUT!, THE END) get a faint sunburst rising behind the lettering
@@ -115,15 +111,6 @@ export function drawCard(t) {
     line(`They got you at ${LEVELS[card.idx].title}.`, 198, `italic 700 ${16 * s}px ${SERIF}`);
     line("The picture rewinds to the start of the reel.", 224, `${11 * s}px ${TYPE}`, 0.8);
     prompt("roll it again");
-  } else if (card.kind === "end") {
-    const acc = stats.shots ? Math.round(stats.hits / stats.shots * 100) : 0, mm = Math.floor(stats.time / 60), ss = Math.floor(stats.time % 60);
-    line("THE END", 118, `${60 * s}px ${DECO}`);
-    rule(142);
-    line("Eddie's name was cleared. The city got a new boss.", 172, `italic 700 ${16 * s}px ${SERIF}`);
-    line(`${stats.kills} Vitale men down · $${stats.cash.toLocaleString()} collected · ${acc}% of shots on target`, 214, `${11 * s}px ${TYPE}`, 0.85);
-    line(`The critics call it ${rating()}`, 258, `italic 700 ${15 * s}px ${SERIF}`);
-    line(`Running time ${mm}:${String(ss).padStart(2, "0")} · secrets found: ${stats.secretsFound.size} · retakes: ${stats.deaths} · ${difficulty().name}`, 234, `${11 * s}px ${TYPE}`, 0.85);
-    prompt("watch it again");
   }
   // Dark corners, like a projected slide
   const vg = ctx.createRadialGradient(cx, Y(180), f.h * 0.35, cx, Y(180), f.w * 0.62);

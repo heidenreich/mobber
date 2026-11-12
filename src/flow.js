@@ -5,6 +5,7 @@ import { clamp } from "./util.js";
 import { game, stats, input, resetStats } from "./state.js";
 import { cv, fireBtn, swapBtn } from "./screen.js";
 import { loadLevel } from "./world.js";
+import { startLift } from "./lift.js";
 import { LEVELS } from "./levels.js";
 import { resetIntertitles } from "./state.js";
 import { music } from "./music.js";
@@ -18,7 +19,7 @@ export function showCard(kind, idx) {
   fireBtn.style.display = swapBtn.style.display = "none";
   // The pianist plays quietly under the cards, and stops dead on CUT!
   if (kind === "dead" || kind === "escaped") music.stop(); else music.play("street", 0.6);
-  SND.rain(false);
+  SND.rain(false); SND.rotor(false);
   if (kind === "end") clearGame();   // the picture is over: next time starts from the top
 }
 
@@ -67,7 +68,8 @@ export function startLevel(i, retry) {
   }
   game.state = "play"; game.fade = 0; game.fadeDir = 1; input.touched = false;
   music.play(game.level.endOnBoss ? "chase" : game.level.rain ? "street" : "joint");
-  SND.rain(!!game.level.rain);
+  SND.rain(!!game.level.rain); SND.rotor(!!game.level.endOnBoss);
+  if (game.level.lift) startLift(game.level.lift);
   requestLock();
   if (isTouch) fireBtn.style.display = "block"; // SWAP appears once you have a second gun (hud.js)
 }

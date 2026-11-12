@@ -25,6 +25,7 @@ export const SPAWNS = {
   r: { art: "rounds", scale: 0.6, pick: "rounds", weapon: 0, amount: AMMO.revolverBox },
   L: { art: "ledger", scale: 0.6, pick: "ledger", bob: true },
   // Street furniture. `size` is how far the solid part reaches from the center.
+  // (L becomes a safe holding the ledger on a level with `safe: true`)
   C: { art: "car", scale: 0.8, block: true, size: 0.8 },
   m: { art: "lamppost", scale: 1.8, block: true, size: 0.15, glow: true, light: [1.3, 6], lampWidth: 0.14 },
   h: { art: "hydrant", scale: 0.6, block: true, size: 0.2 },
@@ -34,7 +35,7 @@ export const SPAWNS = {
   w: { art: "watertower", scale: 2.6, block: true, size: 0.8, cover: true },
   q: { art: "chimney", scale: 1.1, block: true, size: 0.3, cover: true },
   N: { art: "regentSign", scale: 1.5, block: true, size: 0.6, glow: true, cover: true },
-  A: { art: "autogiro", scale: 1.3, block: true, size: 1.0, cover: true },
+  A: { art: "autogiro", scale: 1.3, block: true, size: 1.0, cover: true, frames: "autogiroSpin" },
 };
 
 // Blocks movement and sight: walls, closed doors and moving secret walls
@@ -157,16 +158,23 @@ export function loadLevel(i) {
     if (WALLS.includes(ch) || ch === DOOR || ch === SECRET) continue; // doors and secrets stay in the map
     game.map[y][x] = ".";
     if (ch === "S") { player.x = cx; player.y = cy; player.a = facingOpen(x, y); }
-    else if (ENEMY_TYPES[ch]) {
-      const type = ENEMY_TYPES[ch];
-      // A fleeing Don is already on the run when the scene opens
-      game.enemies.push({ x: cx, y: cy, type, hp: type.hp, state: "idle", t: 0, cd: rand(0.5, 1.5), alert: !!type.flees, lx: cx, ly: cy, burstLeft: 0, step: 0, wp: 0, wp2: null, repath: 0, staggerCd: 0 });
-    }
-    else if (SPAWNS[ch]) game.objs.push({ x: cx, y: cy, ...SPAWNS[ch], art: OBJ[SPAWNS[ch].art] });
+    else if (ENEMY_TYPES[ch]) spawnEnemy(ch, cx, cy);
+    else if (ch === "L" && lvl.safe) game.objs.push({ x: cx, y: cy, art: OBJ.safe, scale: 0.8, block: true, size: 0.3, safe: true, progress: 0 });
+    else if (SPAWNS[ch]) { const sp = SPAWNS[ch]; game.objs.push({ x: cx, y: cy, ...sp, art: OBJ[sp.art], frames: sp.frames && OBJ[sp.frames] }); }
   }
   buildLight();
   buildNav();
-  game.timer = 0;
+  game.timer = 0; game.cracking = null; game.lift = null;
+}
+
+// Put a gangster on the map. He stands watching the longest open view from where he is.
+export function spawnEnemy(letter, x, y) {
+  const type = ENEMY_TYPES[letter];
+  // A fleeing Don is already on the run when the scene opens
+  const e = { x, y, type, hp: type.hp, state: "idle", t: 0, cd: rand(0.5, 1.5), alert: !!type.flees, lx: x, ly: y, burstLeft: 0, step: 0, wp: 0, wp2: null, repath: 0, staggerCd: 0,
+    face: facingOpen(x | 0, y | 0), turnT: rand(3, 8), lookBack: false };
+  game.enemies.push(e);
+  return e;
 }
 
 // Start facing down the longest open line of sight, looking through doors
@@ -225,6 +233,7 @@ export function moveBy(o, dx, dy, r) {
 export function objectiveDone() {
   const o = game.level.objective;
   if (o === "reach") return true; // street scenes: just get to the door
+  if (o === "lift") return !!game.lift && game.lift.done;
   if (o === "doubles") return !game.enemies.some(e => e.type.name === "double" && e.hp > 0);
   return o === "ledger" ? game.player.ledger : !game.enemies.some(e => e.type.name === "boss" && e.hp > 0);
 }

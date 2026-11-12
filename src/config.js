@@ -29,6 +29,8 @@ export const PLAYER = {
   mouseSensitivity: 0.0024,
   medkitHeal: 35,
   pickupRange: 0.55,
+  safeReach: 1.3,           // how close you must stand to work a safe's dial
+  safeTime: 5,              // seconds of dial work to open it
   hitWidth: 0.22,           // how wide a target counts as "under the crosshair", desktop
 };
 
@@ -103,6 +105,9 @@ export const ENEMY_AI = {
   repath: 0.4,              // seconds between route recalculations while hunting
   staggerCooldown: 0.7,     // after flinching from a hit, a gangster can't flinch again for this long
   hearingRange: 12,         // gunshots alert enemies this close
+  viewCone: 1.2,            // until he's alerted, a gangster only sees this far (radians) either side of where he's looking...
+  senseRange: 2.2,          // ...or anyone who gets this close
+  ambush: 3,                // damage multiplier for a shot at a man who hasn't noticed you
   shoutRange: 6.5,          // the first to see you shouts, and anyone this close to him comes too
   darkSight: 0.6,           // how much of sightRange they keep when you stand in the dark
   coverChance: 0.5,         // how often a goon ducks out of sight between bursts

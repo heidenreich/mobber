@@ -43,9 +43,9 @@ function fedora(g, o, cx, y = 0) {
   g.fillStyle = gray(o.hat - 40); g.fillRect(cx - 0.3, y + 1.9, 0.7, 3.6);
 }
 
-// One figure. `pose` is idle, walk1, walk2, aim, fire or hurt.
+// One figure. `pose` is idle, walk1, walk2, aim, fire, hurt or back (seen from behind, when he hasn't noticed you).
 function person(g, o, pose) {
-  const cx = 32, aiming = pose === "aim" || pose === "fire";
+  const cx = 32, aiming = pose === "aim" || pose === "fire", back = pose === "back";
   const stride = pose === "walk1" ? 1 : pose === "walk2" ? -1 : 0;
   g.save(); g.scale(P_RES / 64, P_RES / 64);
   // a pool of shadow at the feet
@@ -75,29 +75,41 @@ function person(g, o, pose) {
   }
   g.strokeStyle = gray(o.coat - 46); g.lineWidth = 0.8;                                // the overlap and folds of the skirt
   g.beginPath(); g.moveTo(cx + 1.5, 30); g.lineTo(cx + 2.5, 52); g.moveTo(cx - 6, 40); g.lineTo(cx - 7.4, 52); g.moveTo(cx + 7, 42); g.lineTo(cx + 8.4, 52); g.stroke();
-  if (o.belt) { g.fillStyle = gray(o.coat - 44); g.fillRect(cx - 10.6, 35, 21.2, 2.4); g.fillStyle = gray(170); g.fillRect(cx - 1.6, 34.8, 3.2, 2.8); g.fillStyle = gray(o.coat - 44); g.fillRect(cx - 0.8, 35.5, 1.6, 1.4); }
-  g.fillStyle = gray(o.coat - 58); for (const y of [27, 31.5, 41, 45.5]) for (const x of [-2.6, 4.6]) { g.beginPath(); g.arc(cx + x, y, 0.75, 0, 6.283); g.fill(); }   // double-breasted buttons
-  // shirt, tie and lapels
-  poly(g, [[cx - 3.6, 18.8], [cx + 3.6, 18.8], [cx + 0.6, 29]], gray(232));
-  poly(g, [[cx - 1.1, 19.4], [cx + 1.1, 19.4], [cx + 1.5, 26.5], [cx, 28.4], [cx - 1.5, 26.5]], gray(o.tie));
-  poly(g, [[cx - 5.4, 18.6], [cx - 3.2, 18.6], [cx + 0.6, 29.6], [cx - 6.2, 25]], gray(o.coat + 22));
-  poly(g, [[cx + 5.4, 18.6], [cx + 3.2, 18.6], [cx + 0.6, 29.6], [cx + 6.6, 25]], gray(o.coat - 20));
+  if (back) {
+    // his back: a seam down the middle, a vent in the skirt, the belt with no buckle
+    g.strokeStyle = gray(o.coat - 50); g.lineWidth = 0.9; g.beginPath(); g.moveTo(cx, 21); g.lineTo(cx, 52); g.stroke();
+    g.fillStyle = gray(o.coat - 62); g.fillRect(cx - 0.9, 42, 1.8, 10);
+    if (o.belt) { g.fillStyle = gray(o.coat - 44); g.fillRect(cx - 10.6, 35, 21.2, 2.4); }
+    g.fillStyle = gray(o.coat + 16); g.fillRect(cx - 5.6, 18.4, 11.2, 2.2);        // collar
+  } else {
+    if (o.belt) { g.fillStyle = gray(o.coat - 44); g.fillRect(cx - 10.6, 35, 21.2, 2.4); g.fillStyle = gray(170); g.fillRect(cx - 1.6, 34.8, 3.2, 2.8); g.fillStyle = gray(o.coat - 44); g.fillRect(cx - 0.8, 35.5, 1.6, 1.4); }
+    g.fillStyle = gray(o.coat - 58); for (const y of [27, 31.5, 41, 45.5]) for (const x of [-2.6, 4.6]) { g.beginPath(); g.arc(cx + x, y, 0.75, 0, 6.283); g.fill(); }   // double-breasted buttons
+    // shirt, tie and lapels
+    poly(g, [[cx - 3.6, 18.8], [cx + 3.6, 18.8], [cx + 0.6, 29]], gray(232));
+    poly(g, [[cx - 1.1, 19.4], [cx + 1.1, 19.4], [cx + 1.5, 26.5], [cx, 28.4], [cx - 1.5, 26.5]], gray(o.tie));
+    poly(g, [[cx - 5.4, 18.6], [cx - 3.2, 18.6], [cx + 0.6, 29.6], [cx - 6.2, 25]], gray(o.coat + 22));
+    poly(g, [[cx + 5.4, 18.6], [cx + 3.2, 18.6], [cx + 0.6, 29.6], [cx + 6.6, 25]], gray(o.coat - 20));
+  }
 
   // head: jaw, ears, a face mostly lost in the shadow of the hat brim
   g.fillStyle = gray(o.skin - 60); g.fillRect(cx - 2.4, 16.4, 4.8, 3);                 // neck
   g.fillStyle = across(g, cx - 5.2, cx + 5.2, o.skin, 26, 62);
   g.beginPath(); g.moveTo(cx - 5, 9); g.lineTo(cx + 5, 9); g.quadraticCurveTo(cx + 5.4, 15, cx + 2.4, 18); g.lineTo(cx - 2.4, 18); g.quadraticCurveTo(cx - 5.4, 15, cx - 5, 9); g.fill();
-  g.fillStyle = gray(o.skin - 30); g.fillRect(cx - 5.9, 11.6, 1.1, 2.6); g.fillStyle = gray(o.skin - 80); g.fillRect(cx + 4.8, 11.6, 1.1, 2.6);
-  if (o.hatless) {                                                                      // eyes and brows, now you can see them
-    g.fillStyle = gray(24); g.fillRect(cx - 3, 10.6, 2, 1.1); g.fillRect(cx + 1, 10.6, 2, 1.1); g.fillRect(cx - 3.4, 9.2, 2.8, 0.7); g.fillRect(cx + 0.6, 9.2, 2.8, 0.7);
+  if (back) {                                                                           // the back of his head: hair down to the collar
+    g.fillStyle = across(g, cx - 5.2, cx + 5.2, 36, 50, 20); g.fillRect(cx - 5.1, 9, 10.2, 5.4);
   } else {
-    g.fillStyle = "rgba(0,0,0,0.62)"; g.fillRect(cx - 5.2, 9, 10.4, 3.6);              // brim shadow over the eyes
-    g.fillStyle = gray(o.skin + 34); g.fillRect(cx - 2.6, 10.8, 1.5, 0.7); g.fillRect(cx + 1.0, 10.8, 1.5, 0.7);   // a glint in each eye
+    g.fillStyle = gray(o.skin - 30); g.fillRect(cx - 5.9, 11.6, 1.1, 2.6); g.fillStyle = gray(o.skin - 80); g.fillRect(cx + 4.8, 11.6, 1.1, 2.6);
+    if (o.hatless) {                                                                      // eyes and brows, now you can see them
+      g.fillStyle = gray(24); g.fillRect(cx - 3, 10.6, 2, 1.1); g.fillRect(cx + 1, 10.6, 2, 1.1); g.fillRect(cx - 3.4, 9.2, 2.8, 0.7); g.fillRect(cx + 0.6, 9.2, 2.8, 0.7);
+    } else {
+      g.fillStyle = "rgba(0,0,0,0.62)"; g.fillRect(cx - 5.2, 9, 10.4, 3.6);              // brim shadow over the eyes
+      g.fillStyle = gray(o.skin + 34); g.fillRect(cx - 2.6, 10.8, 1.5, 0.7); g.fillRect(cx + 1.0, 10.8, 1.5, 0.7);   // a glint in each eye
+    }
+    g.fillStyle = gray(o.skin + 30); g.fillRect(cx - 0.9, 11.6, 1.1, 2.8);                // nose
+    g.fillStyle = gray(o.skin - 86); g.fillRect(cx - 2, 15.4, 4, 0.7);                   // mouth
+    if (o.moustache) { g.fillStyle = gray(30); g.fillRect(cx - 2.4, 14.3, 4.8, 1); }
+    if (o.cigar) { g.fillStyle = gray(78); g.fillRect(cx + 1, 15.1, 5.4, 1.5); g.fillStyle = gray(255); g.fillRect(cx + 6.2, 14.8, 1.6, 2.1); }
   }
-  g.fillStyle = gray(o.skin + 30); g.fillRect(cx - 0.9, 11.6, 1.1, 2.8);                // nose
-  g.fillStyle = gray(o.skin - 86); g.fillRect(cx - 2, 15.4, 4, 0.7);                   // mouth
-  if (o.moustache) { g.fillStyle = gray(30); g.fillRect(cx - 2.4, 14.3, 4.8, 1); }
-  if (o.cigar) { g.fillStyle = gray(78); g.fillRect(cx + 1, 15.1, 5.4, 1.5); g.fillStyle = gray(255); g.fillRect(cx + 6.2, 14.8, 1.6, 2.1); }
   if (o.hatless) {                                                                      // slicked-back hair
     g.fillStyle = across(g, cx - 5.4, cx + 5.4, 34, 60, 20);
     g.beginPath(); g.moveTo(cx - 5.4, 10); g.quadraticCurveTo(cx - 5.6, 3.6, cx, 3.4); g.quadraticCurveTo(cx + 5.6, 3.6, cx + 5.4, 10); g.lineTo(cx + 4.2, 8.2); g.quadraticCurveTo(cx, 6.4, cx - 4.2, 8.2); g.closePath(); g.fill();
@@ -106,7 +118,12 @@ function person(g, o, pose) {
   // arms and the gun
   const sleeve = (x, y, w, h, shade) => { g.fillStyle = across(g, x, x + w, o.coat - shade, 26, 30); g.beginPath(); g.roundRect(x, y, w, h, 2); g.fill(); };
   const hand = (x, y) => { g.fillStyle = gray(o.skin - 6); g.beginPath(); g.ellipse(x, y, 2.3, 2, 0, 0, 6.283); g.fill(); };
-  if (aiming) {
+  if (back) {
+    // arms at his sides; a long gun shows as a barrel over the shoulder
+    sleeve(cx - 13.4, 21, 5, 16, 30); sleeve(cx + 8.4, 21, 5, 16, 10);
+    hand(cx - 10.9, 38); hand(cx + 10.9, 38);
+    if (o.weapon !== "pistol") { g.fillStyle = gray(30); g.save(); g.translate(cx + 7, 21); g.rotate(-0.35); g.fillRect(-1, -11, 2.2, 11); g.restore(); }
+  } else if (aiming) {
     // both arms brought up, the gun pointed straight at you
     sleeve(cx - 13, 21, 5.4, 11.5, 10); sleeve(cx + 7.6, 21, 5.4, 11.5, 30);
     poly(g, [[cx - 12.6, 30], [cx - 7.4, 30], [cx - 2.4, 27], [cx - 3.4, 31.6], [cx - 9, 34]], gray(o.coat - 6));
@@ -141,7 +158,7 @@ function personSet(o) {
   const f = pose => bitmap(P_RES, P_RES, g => person(g, o, pose));
   const k = P_RES / 64;
   return {
-    idle: f("idle"), walk: [f("walk1"), f("walk2")], aim: f("aim"), fire: f("fire"), hurt: f("hurt"),
+    idle: f("idle"), back: f("back"), walk: [f("walk1"), f("walk2")], aim: f("aim"), fire: f("fire"), hurt: f("hurt"),
     fall: bitmap(P_RES, P_RES, g => { g.translate(50 * k, 64 * k); g.rotate(-0.72); g.translate(-32 * k, -64 * k); person(g, o, "hurt"); }),
     // sprawled on his back, hat rolled away
     dead: bitmap(P_RES, P_RES, g => {
@@ -380,3 +397,41 @@ export function dimmed(bm) {
   if (!dark.has(bm)) dark.set(bm, { w: bm.w, h: bm.h, A: bm.A, L: bm.L.map(v => (v > 190 ? 44 : v)) });
   return dark.get(bm);
 }
+
+// The office safe: iron, a dial and a handle. Shut, and with the door swung open.
+function safe(open) {
+  return bitmap(128, 128, g => {
+    g.scale(2, 2);
+    g.fillStyle = gray(8); g.beginPath(); g.ellipse(33, 62.6, 22, 1.6, 0, 0, 6.283); g.fill();
+    g.fillStyle = across(g, 12, 52, 70, 40, 40); g.fillRect(12, 20, 40, 42);
+    g.fillStyle = gray(30); g.fillRect(12, 60, 5, 4); g.fillRect(47, 60, 5, 4);
+    g.strokeStyle = gray(120); g.lineWidth = 0.8; g.strokeRect(12.5, 20.5, 39, 41);
+    if (open) {
+      g.fillStyle = gray(10); g.fillRect(16, 24, 32, 34);                                       // the empty inside
+      g.fillStyle = gray(40); g.fillRect(16, 40, 32, 1.5);
+      g.fillStyle = across(g, 48, 60, 82, 40, 40); poly(g, [[48, 22], [60, 26], [60, 60], [48, 60]], across(g, 48, 60, 82, 40, 40));   // the door, swung out
+    } else {
+      g.strokeStyle = gray(34); g.lineWidth = 1; g.strokeRect(16, 24, 32, 34);
+      g.fillStyle = across(g, 22, 34, 150, 60, 70); g.beginPath(); g.arc(28, 40, 6, 0, 6.283); g.fill();   // the dial
+      g.strokeStyle = gray(30); g.lineWidth = 0.5; for (let a = 0; a < 6.283; a += 0.524) { g.beginPath(); g.moveTo(28 + Math.cos(a) * 4, 40 + Math.sin(a) * 4); g.lineTo(28 + Math.cos(a) * 5.6, 40 + Math.sin(a) * 5.6); g.stroke(); }
+      g.fillStyle = gray(40); g.beginPath(); g.arc(28, 40, 1.6, 0, 6.283); g.fill();
+      g.fillStyle = gray(170); g.fillRect(38, 39, 7, 2); g.fillRect(40.5, 34, 2, 12);            // the handle
+      g.fillStyle = gray(200); for (const [x, y] of [[18, 26], [46, 26], [18, 56], [46, 56]]) { g.beginPath(); g.arc(x, y, 0.8, 0, 6.283); g.fill(); }
+    }
+  });
+}
+OBJ.safe = safe(false); OBJ.safeOpen = safe(true);
+
+// The autogiro with its rotor turning: the same machine with the blades at three angles
+OBJ.autogiroSpin = [1, 0.55, 0.15].map(k => bitmap(128, 96, g => {
+  g.fillStyle = gray(30); g.fillRect(62, 14, 4, 26);
+  g.fillStyle = gray(60 + (1 - k) * 60); g.fillRect(64 - 60 * k, 10, 120 * k, 4);                // the blades, foreshortened as they swing round
+  g.fillStyle = gray(110);
+  g.beginPath(); g.moveTo(14, 58); g.quadraticCurveTo(40, 40, 92, 46); g.lineTo(120, 50); g.lineTo(120, 58); g.quadraticCurveTo(70, 70, 14, 66); g.closePath(); g.fill();
+  g.fillStyle = gray(150); g.fillRect(30, 54, 64, 3);
+  g.fillStyle = gray(40); g.fillRect(52, 44, 16, 10);
+  g.fillStyle = gray(80); g.beginPath(); g.moveTo(112, 50); g.lineTo(126, 36); g.lineTo(126, 58); g.closePath(); g.fill();
+  g.fillStyle = gray(k > 0.5 ? 70 : 150); g.fillRect(6, 52 + (1 - k) * 5, 8, 14 * k + 2); g.fillStyle = gray(40); g.fillRect(2, 50, 3, 18);   // the propeller blurs
+  g.fillStyle = gray(30); g.fillRect(40, 66, 2, 16); g.fillRect(82, 64, 2, 18);
+  for (const x of [41, 83]) { g.fillStyle = gray(15); g.beginPath(); g.arc(x, 84, 7, 0, 6.283); g.fill(); g.fillStyle = gray(150); g.beginPath(); g.arc(x, 84, 2.5, 0, 6.283); g.fill(); }
+}));

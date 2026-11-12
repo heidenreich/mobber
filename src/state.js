@@ -24,6 +24,8 @@ export const game = {
   movers: [],
   moverCells: new Map(),
   smashed: new Set(),   // wall squares whose bottles or shop window have been shot out (y * width + x)
+  lift: null,           // the hotel lift's state while riding it (lift.js)
+  cracking: null,       // { progress, working } while you stand at a safe
   navBlocked: null,     // squares furniture fills, for enemy pathfinding (world.js)
 };
 

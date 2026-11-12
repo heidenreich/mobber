@@ -3,7 +3,7 @@
 import { rand, clamp } from "./util.js";
 import { settings } from "./settings.js";
 
-let actx = null, noise = null, sfx = null, rainGain = null;
+let actx = null, noise = null, sfx = null, rainGain = null, rotorGain = null;
 
 // For music.js, which schedules its own notes. Null until the first click or tap.
 export const audioContext = () => actx;
@@ -31,6 +31,14 @@ export function initAudio() {
   const lp = actx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 7000;
   rainGain = actx.createGain(); rainGain.gain.value = 0;
   rs.connect(hp).connect(lp).connect(rainGain).connect(sfx); rs.start();
+  // The autogiro's rotor: a low thud chopped six times a second, silent until the roof
+  const ro = actx.createBufferSource(); ro.buffer = noise; ro.loop = true;
+  const rl = actx.createBiquadFilter(); rl.type = "lowpass"; rl.frequency.value = 260;
+  const chop = actx.createGain(); chop.gain.value = 0.5;
+  const beat = actx.createOscillator(); beat.type = "sawtooth"; beat.frequency.value = 6;
+  const bg = actx.createGain(); bg.gain.value = 0.5; beat.connect(bg).connect(chop.gain);
+  rotorGain = actx.createGain(); rotorGain.gain.value = 0;
+  ro.connect(rl).connect(chop).connect(rotorGain).connect(sfx); ro.start(); beat.start();
 }
 export function setSoundOn(on) { if (sfx) sfx.gain.setTargetAtTime(on ? 1 : 0, actx.currentTime, 0.05); }
 
@@ -80,6 +88,10 @@ export const SND = {
     else if (surface === "soft") hiss("lowpass", 220, 0.09, 0.16);
     else { hiss("bandpass", 1400, 0.035, 0.07, 0, 1.5); tone(95, 0.06, "sine", 0.07, 60); }
   },
+  rotor: on => { if (rotorGain) rotorGain.gain.setTargetAtTime(on ? 0.5 : 0, actx.currentTime, 0.8); },
+  // The lift: a motor winding up for as long as the ride lasts, and a bell at each landing
+  lift: dur => { tone(62, dur, "sawtooth", 0.035, 84); hiss("lowpass", 180, dur, 0.12); },
+  bell: () => { tone(1319, 0.9, "triangle", 0.07); tone(2637, 0.5, "sine", 0.02); },
   rain: on => { if (rainGain) rainGain.gain.setTargetAtTime(on ? 0.022 : 0, actx.currentTime, 0.6); },
   // What you picked up: "cash", "rounds", "med", "ledger"
   pickup: what => {

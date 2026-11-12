@@ -6,11 +6,13 @@
 // length and the outer edge must be walls. tests/maps.test.js checks this, and
 // that everything is reachable from the start.
 //
-// To add a level, add an entry here. `objective` is "ledger" (find the L, then
+// To add a level, add an entry here. `objective` is "lift" (ride the hotel lift: see
+// lift.js), "ledger" (find the L, then
 // the exit), "doubles" (take out every v, then the exit), "boss" (take out the
 // V) or "reach" (just get to the exit; street scenes use it). `goal`, if set, is
 // the on-screen objective. With `endOnBoss`, the V's death ends the picture, and
 // a fleeing V runs along `route` (a list of [x, y] points) and escapes at its end.
+// With `safe: true` the L is a safe you have to crack, not a book lying on a desk.
 // Health carries over between scenes; `fullHealth` restores it on arrival (the finale).
 //
 // Street scenes also set: sky (true for night, "dawn" for the morning sky)
@@ -66,8 +68,8 @@ export const LEVELS = [
       "HHHHHHHHFFFFHHHHH#...g....$.#FFFHHHHHHHH",
       "HHHHHHHHFFFFHHHHH############FFFHHHHHHHH",
     ] },
-  { chapter: "CHAPTER ONE", title: "The Blue Note Club", floor: "checker", ceil: "tin", ambient: 0.4, objective: "ledger",
-    card: ["The Vitales keep Eddie's ledger", "in the back office of the Blue Note.", "Walk in. Take it. Walk out.", "Eddie always said the place was full of hidden rooms."],
+  { chapter: "CHAPTER ONE", title: "The Blue Note Club", floor: "checker", ceil: "tin", ambient: 0.4, objective: "ledger", safe: true,
+    card: ["The Vitales keep Eddie's ledger", "in the back office of the Blue Note.", "It's in the office safe. Work the dial, take it, walk out.", "Eddie always said the place was full of hidden rooms."],
     map: [
       "BBBBBBBBBBBBBBWWWWWWWPPPPPPPPP",
       "Wl.........$.Bk..aW..Pl......P",
@@ -93,7 +95,7 @@ export const LEVELS = [
       "WWWWWWWWWWWWWWWWWWWWW#########",
     ] },
   { chapter: "EXT. THE WATERFRONT — LATER", title: "The Waterfront", ambient: 0.28, goal: "Get to Pier 9", entrance: "pier",
-    card: ["Eddie's last entry: a shipment, Pier 9, Tuesday night.", "The night they pulled him out of the river.", "The Vitales know you're coming."],
+    card: ["Eddie's last entry: a shipment, Pier 9, Tuesday night.", "The night they pulled him out of the river.", "Their lookouts haven't seen you yet.", "Keep behind their backs and out of the lamplight."],
     floor: "cobbles", sky: true, wallHeight: 2, rain: true, objective: "reach",
     map: [
       "HHHHHHHH###########HHHHHHHH#################",
@@ -159,6 +161,19 @@ export const LEVELS = [
       "HHHHHHHHHHHHFFFFFFFFHHHHHHHHFFFFFFFFFFFF",
       "HHHHHHHHHHHHFFFFFFFFHHHHHHHHFFFFFFFFFFFF",
       "HHHHHHHHHHHHFFFFFFFFHHHHHHHHFFFFFFFFFFFF",
+    ] },
+  // The lift: no map letters for the gangsters; `lift` lists who is waiting at each landing
+  { chapter: "INT. HOTEL REGENT — THE LIFT", title: "Going Up", floor: "carpet", ceil: "plaster", ambient: 0.4, objective: "lift",
+    lift: [["g", "g"], ["g", "g", "g"], ["G", "g", "g"]],
+    card: ["The desk clerk rang upstairs.", "Every landing between here and the top floor", "has Vitale men waiting on it."],
+    map: [
+      "TTTTTTTTTTTTTT",
+      "TTTTT........T",
+      "T...T..*...c.T",
+      "T.S.D........E",
+      "T...T..*...c.T",
+      "TTTTT........T",
+      "TTTTTTTTTTTTTT",
     ] },
   { chapter: "CHAPTER THREE", title: "Hotel Regent, Top Floor", floor: "carpet", ceil: "plaster", ambient: 0.42, objective: "doubles",
     card: ["Don Vitale takes his supper", "in the penthouse at eight o'clock.", "Don't be late."],

@@ -16,7 +16,7 @@ import { installTouchInput } from "./input/touch.js";
 import { buf, develop, projector, rain, iris } from "./render/film.js";
 import { renderWorld } from "./render/raycaster.js";
 import { drawHUD } from "./render/hud.js";
-import { drawCard } from "./render/cards.js";
+import { drawCard, titleChoices } from "./render/cards.js";
 import { music } from "./music.js";
 import { installPanel } from "./panel.js";
 import { updateLift } from "./lift.js";
@@ -94,6 +94,6 @@ requestAnimationFrame(frame);
 // Hook for the automated tests in tests/
 window.__mobber = {
   get state() { return game.state; }, get player() { return game.player; }, get enemies() { return game.enemies; },
-  get objs() { return game.objs; }, get level() { return game.level; }, get card() { return game.card; }, get map() { return game.map; }, get doors() { return game.doors; }, get fade() { return game.fade; }, get navBlocked() { return game.navBlocked; }, get intertitle() { return game.intertitle; }, get smashed() { return game.smashed; }, get lift() { return game.lift; }, get cracking() { return game.cracking; }, lightAt, set dialogue(v) { game.dialogue = v; }, stats, LEVELS, AMMO, music, settings, startLevel, wallAt, los, hurtPlayer,
+  get objs() { return game.objs; }, get level() { return game.level; }, get card() { return game.card; }, get map() { return game.map; }, get doors() { return game.doors; }, get fade() { return game.fade; }, get navBlocked() { return game.navBlocked; }, get intertitle() { return game.intertitle; }, get smashed() { return game.smashed; }, titleChoices, get lift() { return game.lift; }, get cracking() { return game.cracking; }, lightAt, set dialogue(v) { game.dialogue = v; }, stats, LEVELS, AMMO, music, settings, startLevel, wallAt, los, hurtPlayer,
   TILES: { walls: WALL_CHARS, sideWalls: SIDE_WALL_CHARS, blockers: Object.keys(SPAWNS).filter(k => SPAWNS[k].block).join("") },
 };

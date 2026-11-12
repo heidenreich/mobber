@@ -1,6 +1,6 @@
 // Draws the 3D view into the film's luma buffer: floor and ceiling, walls (one
 // ray per screen column), sprites sorted far to near, then the gun in your hand.
-import { W, H, HALF, K, PLANE, FOG, GLOW, WEAPONS } from "../config.js";
+import { W, H, HALF, K, PLANE, FOG, GLOW, WEAPONS, ENEMY_AI } from "../config.js";
 import { clamp } from "../util.js";
 import { game } from "../state.js";
 import { FLOORS, CEILS, TEX, WALL_TEXTURES, DOOR_TEX, SECRET_TEXTURES, SMASHED_TEXTURES } from "../art/textures.js";
@@ -138,7 +138,7 @@ export function renderWorld(t) {
     }
     if (e.state === "stagger") art = Math.sin(e.step * 11) > 0 ? A.hurt : A.idle;
     if (e.state === "aim") art = A.aim; else if (e.state === "fire") art = e.t > 0.07 ? A.fire : A.aim;
-    else if (e.state === "hurt") art = A.hurt; else if (e.state === "dying") art = e.t > 0.25 ? A.hurt : A.fall;
+    else if (e.state === "hurt") art = e.spin ? A.spin[Math.min(3, ((1 - e.t / ENEMY_AI.spinTime) * 4) | 0)] : A.hurt; else if (e.state === "dying") art = e.t > 0.25 ? A.hurt : A.fall;
     else if (e.state === "dead") art = A.dead;
     // Gangsters stay readable in the dark: they're never lit below a floor brightness
     list.push({ x: e.x, y: e.y, art, scale: e.type.scale, bob: e.moving ? Math.abs(Math.sin(e.step * 9)) * 0.02 : 0, muzzle: e.state === "fire" && e.t > 0.07, minLit: e.hp > 0 ? 0.6 : 0 });

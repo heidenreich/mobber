@@ -86,3 +86,37 @@ test("the Don staggers for the parapet before the picture ends, and the paper co
   await page.waitForTimeout(1200);   // the paper spins in and is drawn without errors
   assert.deepEqual(errors, []);
 });
+
+test("the title card lets you pick how hard a night it will be", async () => {
+  const { page, errors } = await openGame(browser, srv.url);
+  await page.waitForTimeout(300);
+  assert.equal(await game(page, () => window.__mobber.settings.difficulty), 1, "Regular to begin with");
+  // The names sit in a row under the subtitle: click the last one
+  const at = await game(page, () => {
+    const c = window.__mobber.titleChoices[2];
+    return { x: (c.x0 + c.x1) / 2, y: (c.y0 + c.y1) / 2 };
+  });
+  await page.mouse.click(at.x, at.y);
+  assert.deepEqual(await game(page, () => [window.__mobber.settings.difficulty, window.__mobber.state]), [2, "title"], "picked, and the film hasn't started");
+  await page.keyboard.press("ArrowLeft"); await page.keyboard.press("ArrowLeft");
+  assert.equal(await game(page, () => window.__mobber.settings.difficulty), 0);
+  // A click anywhere else still rolls the film
+  await page.mouse.click(200, 200);
+  await page.waitForFunction(() => window.__mobber.state === "card");
+  assert.deepEqual(errors, []);
+});
+
+test("a hit can spin a man right round before he recovers", async () => {
+  const { page, errors } = await start("The Blue Note Club");
+  await game(page, () => {
+    const M = window.__mobber, P = M.player, e = M.enemies[0];
+    for (const o of M.enemies) if (o !== e) { o.hp = 0; o.state = "dead"; }
+    Math.random = () => 0.01;   // every roll comes up: the hit staggers him and spins him
+    P.hp = 1e9; e.hp = 1e6; e.staggerCd = 0; e.alert = true; e.state = "chase"; e.cd = 99;
+    e.x = P.x + Math.cos(P.a) * 2; e.y = P.y + Math.sin(P.a) * 2; P.mag[0] = 6; P.fireCd = 0;
+  });
+  await page.keyboard.down(" "); await page.waitForFunction(() => window.__mobber.enemies[0].state === "hurt", null, { timeout: 4000 }); await page.keyboard.up(" ");
+  assert.equal(await game(page, () => window.__mobber.enemies[0].spin), true);
+  await page.waitForFunction(() => window.__mobber.enemies[0].state !== "hurt", null, { timeout: 4000 });   // and he comes out of it
+  assert.deepEqual(errors, []);
+});

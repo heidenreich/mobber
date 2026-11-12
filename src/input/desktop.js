@@ -7,6 +7,7 @@ import { initAudio } from "../audio.js";
 import { settings, saveSettings, lookSpeed, clearGame } from "../settings.js";
 import { switchWeapon, nextWeapon, startReload, use } from "../player.js";
 import { advance, requestLock } from "../flow.js";
+import { chooseDifficultyAt, setDifficulty } from "../render/cards.js";
 
 export function installDesktopInput() {
   window.addEventListener("keydown", e => {
@@ -15,7 +16,9 @@ export function installDesktopInput() {
     if (input.menu) return;
     if (k === "enter") advance();
     if (k === "m" && !e.repeat) { settings.music = !settings.music; saveSettings(); say(settings.music ? "The pianist is back." : "The pianist takes a break."); }
-    if (k === "n" && game.state === "title") clearGame();   // start over instead of picking up where you left off
+    if (k === "n" && game.state === "title") clearGame();
+    // On the title card the arrow keys pick how hard a night it will be
+    if (game.state === "title" && (k === "arrowleft" || k === "arrowright")) setDifficulty(settings.difficulty + (k === "arrowleft" ? -1 : 1));   // start over instead of picking up where you left off
     // One press, one action (no key-repeat), and nothing while paused or between scenes
     const paused = input.wasLocked && !input.locked;
     if (e.repeat || !p || game.state !== "play" || paused) return;
@@ -43,5 +46,5 @@ export function installDesktopInput() {
     if (input.locked || (input.dragLook && !isTouch)) game.player.a += e.movementX * PLAYER.mouseSensitivity * lookSpeed();
   });
   cv.addEventListener("wheel", () => { if (game.player && game.state === "play") nextWeapon(); });
-  cv.addEventListener("click", () => { initAudio(); if (game.state !== "play" && !input.menu) advance(); });
+  cv.addEventListener("click", e => { initAudio(); if (game.state !== "play" && !input.menu && !chooseDifficultyAt(e.clientX, e.clientY)) advance(); });
 }

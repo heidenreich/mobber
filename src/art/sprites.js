@@ -154,11 +154,17 @@ function person(g, o, pose) {
   }
   g.restore();
 }
+// The same picture facing the other way
+const mirrored = bm => { const L = new Uint8Array(bm.L.length), A = new Uint8Array(bm.A.length); for (let y = 0; y < bm.h; y++) for (let x = 0; x < bm.w; x++) { const i = y * bm.w + x, j = y * bm.w + bm.w - 1 - x; L[i] = bm.L[j]; A[i] = bm.A[j]; } return { w: bm.w, h: bm.h, L, A }; };
+
 function personSet(o) {
   const f = pose => bitmap(P_RES, P_RES, g => person(g, o, pose));
+  const hurt = f("hurt"), back = f("back");
   const k = P_RES / 64;
   return {
-    idle: f("idle"), back: f("back"), walk: [f("walk1"), f("walk2")], aim: f("aim"), fire: f("fire"), hurt: f("hurt"),
+    idle: f("idle"), back, walk: [f("walk1"), f("walk2")], aim: f("aim"), fire: f("fire"), hurt,
+    // Spun round by a hit: reeling one way, his back, reeling the other way, and facing you again
+    spin: [hurt, back, mirrored(hurt), hurt],
     fall: bitmap(P_RES, P_RES, g => { g.translate(50 * k, 64 * k); g.rotate(-0.72); g.translate(-32 * k, -64 * k); person(g, o, "hurt"); }),
     // sprawled on his back, hat rolled away
     dead: bitmap(P_RES, P_RES, g => {

@@ -67,7 +67,7 @@ for (let i = 0; i < 8; i++) {
     for (const k of cells) {
       if (k.x === 0 || k.y === 0 || k.x === w - 1 || k.y === h - 1) assert.ok(WALLS.includes(k.c), `${title}: gap in the outer wall at ${k.x},${k.y}`);
     }
-    for (const k of cells.filter(k => "gGvVjby$+arLeuif".includes(k.c))) assert.ok(reach(k), `${title}: '${k.c}' at ${k.x},${k.y} can't be reached`);
+    for (const k of cells.filter(k => "gGvVjby$+arLeui".includes(k.c))) assert.ok(reach(k), `${title}: '${k.c}' at ${k.x},${k.y} can't be reached`);
     for (const k of cells.filter(k => "LvV".includes(k.c))) assert.ok(reachMain(k), `${title}: the objective at ${k.x},${k.y} is only reachable through a secret wall`);
     const exits = cells.filter(k => k.c === "E");
     if (!levels[i].endOnBoss) assert.ok(exits.length >= 1 && exits.every(touchesMain), `${title}: exit door can't be reached (without secrets)`);

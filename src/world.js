@@ -9,6 +9,7 @@ import { setupDoors, partialSolid } from "./doors.js";
 
 import { WALL_CHARS as WALLS, DOOR, SECRET } from "./tiles.js";
 import { FOLK_LETTERS, spawnFolk } from "./folk.js";
+import { findWindows } from "./fence.js";
 
 // Map letter -> what gets placed there. `light` is [intensity, radius] for lamps.
 // `cover` props are taller than a person, so they block sight and bullets; you can
@@ -148,6 +149,7 @@ export function loadLevel(i) {
   game.map = lvl.map.map(r => r.split(""));
   game.objs = []; game.enemies = []; game.folk = []; game.bullets = []; game.smashed = new Set();
   setupDoors(lvl.map);
+  findWindows(lvl.map);
   // Guns and ammo carry over from the previous scene (flow.js passes the right loadout on a retry)
   const prev = game.player;
   const player = game.player = {

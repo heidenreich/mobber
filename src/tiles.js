@@ -2,8 +2,8 @@
 // and the tests all read them from here (the tests through window.__mobber.TILES).
 
 // Solid walls, including the exit door and the roof parapet
-export const WALL_CHARS = "#WPBTEFHURIK";
+export const WALL_CHARS = "#WPBTEFHURIKQ";
 // Walls that can sit beside a door or hide a secret (everything but the exit)
-export const SIDE_WALL_CHARS = "#WPBTFHURIK";
+export const SIDE_WALL_CHARS = "#WPBTFHURIKQ";
 export const DOOR = "D";
 export const SECRET = "!";

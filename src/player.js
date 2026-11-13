@@ -9,7 +9,7 @@ import { los, moveBy, objectiveDone, wallAt, buildLight } from "./world.js";
 import { tryPush } from "./doors.js";
 import { cam, camera, project, zbuf } from "./render/camera.js";
 import { fadeOut, showCard } from "./flow.js";
-import { openShop } from "./render/shop.js";
+import { knock } from "./fence.js";
 import { scare, shootFolk, standing } from "./folk.js";
 
 const ammoLeft = (p, i) => (p.mag[i] || 0) + (p.reserve[i] || 0);
@@ -322,8 +322,7 @@ export function tickPlayerEffects(dt) {
 export function use() {
   const p = game.player;
   if (!p || game.state !== "play") return;
-  // Standing with the fence: see what he has
-  if (game.folk.some(f => f.kind === "fence" && f.state === "idle" && Math.hypot(f.x - p.x, f.y - p.y) < FOLK.fenceReach)) { openShop(); return; }
+  if (knock()) return;   // at the fence's window: see what he has
   camera();
   tryPush(p.x, p.y, cam.dirX, cam.dirY, 1.0);
 }

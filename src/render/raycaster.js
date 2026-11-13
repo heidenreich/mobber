@@ -5,7 +5,7 @@ import { clamp } from "../util.js";
 import { game } from "../state.js";
 import { FLOORS, CEILS, TEX, WALL_TEXTURES, DOOR_TEX, SECRET_TEXTURES, SMASHED_TEXTURES } from "../art/textures.js";
 import { PEOPLE } from "../art/sprites.js";
-import { ENTRANCES, makeSky } from "../art/streets.js";
+import { ENTRANCES, makeSky, FENCE_SHUT } from "../art/streets.js";
 import { GUN_ART } from "../art/guns.js";
 import { lightMap, lightAt } from "../world.js";
 import { partialBox, secretTex } from "../doors.js";
@@ -99,7 +99,8 @@ export function renderWorld(t) {
       wallX = side === 0 ? py + perp * rdy : px + perp * rdx;
       wallX -= Math.floor(wallX);
       tex = c === "!" ? SECRET_TEXTURES[secretTex(mx, my)] : c === "E" ? exitTex : WALL_TEXTURES[c] || TEX.brick;
-      if (SMASHED_TEXTURES[c] && game.smashed.has(my * MW + mx)) tex = SMASHED_TEXTURES[c];   // shot-out bottles or shop window
+      if (SMASHED_TEXTURES[c] && game.smashed.has(my * MW + mx)) tex = SMASHED_TEXTURES[c];
+      if (c === "Q" && game.fenceShut > 0) tex = FENCE_SHUT;   // the fence has pulled his shutter down   // shot-out bottles or shop window
     }
     perp = Math.max(0.01, perp);
     zbuf[x] = perp;

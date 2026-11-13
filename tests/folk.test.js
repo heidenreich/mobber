@@ -52,16 +52,19 @@ test("a bullet that finds a bystander is counted against you", async () => {
   assert.deepEqual(errors, []);
 });
 
-test("the fence deals from a yard off the street, and what you buy is yours at once", async () => {
+// Stand in the alley facing the fence's window
+const toWindow = page => game(page, () => {
+  const M = window.__mobber, P = M.player, w = M.windows[0];
+  for (const e of M.enemies) { e.hp = 0; e.state = "dead"; }
+  for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) if (!M.wallAt(w.x + dx, w.y + dy)) { P.x = w.x + dx * 0.9; P.y = w.y + dy * 0.9; P.a = Math.atan2(-dy, -dx); }
+});
+
+test("the fence deals through a window down an alley, and what you buy is yours at once", async () => {
   const { page, errors } = await openGame(browser, srv.url);
   await rollFilm(page);   // Mulberry Street
-  // Walk up to him with money in your pocket
-  await game(page, () => {
-    const M = window.__mobber, P = M.player, f = M.folk.find(f => f.kind === "fence");
-    for (const e of M.enemies) { e.hp = 0; e.state = "dead"; }
-    M.stats.cash = 1000; P.hp = 40; P.reserve[0] = 0;
-    P.x = f.x + 1.2; P.y = f.y; P.a = Math.PI;
-  });
+  await game(page, () => { const M = window.__mobber, P = M.player; M.stats.cash = 1000; P.hp = 40; P.reserve[0] = 0; });
+  await toWindow(page);
+  await page.waitForTimeout(150);
   assert.equal(await game(page, () => window.__mobber.shop), false, "he waits to be asked");
   await page.keyboard.press("e");
   await page.waitForFunction(() => window.__mobber.shop);
@@ -77,25 +80,39 @@ test("the fence deals from a yard off the street, and what you buy is yours at o
   await page.mouse.click(row.x, row.y);
   assert.deepEqual(await game(page, () => [window.__mobber.stats.cash, window.__mobber.shop]), [450, true]);
   assert.equal(await game(page, () => window.__mobber.stats.time), t0, "the clock stops while you deal");
-  // E walks away, and you're back in the street
+  // E walks away, and you're back in the alley
   await page.keyboard.press("e");
   await page.waitForFunction(() => !window.__mobber.shop);
   assert.equal(await game(page, () => window.__mobber.state), "play");
-  // A shot nearby and he won't deal until it's been quiet a while
-  await game(page, () => { const P = window.__mobber.player; P.mag[0] = 6; P.fireCd = 0; P.a = 0; });
-  await page.keyboard.down(" "); await page.waitForTimeout(100); await page.keyboard.up(" ");
-  await page.waitForFunction(() => window.__mobber.folk.find(f => f.kind === "fence").state === "cower", null, { timeout: 3000 });
-  await page.keyboard.press("e");
-  await page.waitForTimeout(200);
-  assert.equal(await game(page, () => window.__mobber.shop), false);
   assert.deepEqual(errors, []);
 });
 
-test("every street has a fence you can walk to, with his sign by the alley", async () => {
+test("a shot brings the fence's shutter down, and it goes back up when it's quiet", async () => {
   const { page, errors } = await openGame(browser, srv.url);
-  const streets = await game(page, () => window.__mobber.LEVELS.filter(l => l.objective === "reach").map(l => ({ title: l.title, fence: l.map.join("").split("f").length - 1, sign: l.map.join("").includes("K") })));
+  await rollFilm(page);
+  await toWindow(page);
+  await game(page, () => { const P = window.__mobber.player; P.mag[0] = 6; P.fireCd = 0; });
+  await page.keyboard.down(" "); await page.waitForTimeout(100); await page.keyboard.up(" ");
+  await page.waitForFunction(() => window.__mobber.fenceShut > 0, null, { timeout: 3000 });
+  await page.keyboard.press("e");
+  await page.waitForTimeout(200);
+  assert.equal(await game(page, () => window.__mobber.shop), false, "no dealing through a shutter");
+  await page.waitForFunction(() => window.__mobber.fenceShut === 0, null, { timeout: 9000 });
+  await page.keyboard.press("e");
+  await page.waitForFunction(() => window.__mobber.shop, null, { timeout: 3000 });
+  assert.deepEqual(errors, []);
+});
+
+test("every street has the fence's window at the end of an alley, with his sign by its mouth", async () => {
+  const { page, errors } = await openGame(browser, srv.url);
+  const streets = await game(page, () => window.__mobber.LEVELS.filter(l => l.objective === "reach").map(l => {
+    const rows = l.map, y = rows.findIndex(r => r.includes("Q")), x = y < 0 ? -1 : rows[y].indexOf("Q");
+    // open ground on exactly one side of the window: the alley
+    const open = y < 0 ? 0 : [[0, -1], [0, 1], [-1, 0], [1, 0]].filter(([dx, dy]) => (rows[y + dy] || "")[x + dx] === ".").length;
+    return { title: l.title, windows: rows.join("").split("Q").length - 1, sign: rows.join("").includes("K"), open };
+  }));
   assert.equal(streets.length, 3);
-  for (const s of streets) assert.deepEqual([s.fence, s.sign], [1, true], s.title);
+  for (const s of streets) assert.deepEqual([s.windows, s.sign, s.open], [1, true, 1], s.title);
   assert.deepEqual(errors, []);
 });
 

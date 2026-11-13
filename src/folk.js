@@ -29,17 +29,34 @@ export function spawnFolk(letter, x, y) {
 const up = f => f.state === "idle" || f.state === "flee" || f.state === "cower";   // still on his feet (or knees)
 export const standing = () => game.folk.filter(up);
 
-// A shot has been fired at (x, y). Everyone in earshot reacts.
+// A shot has been fired at (x, y). Everyone in earshot reacts: the nearest first, the
+// far side of the room a moment later. Someone already hiding stays put unless the
+// shooting comes right up to them, and then they break cover and run again.
 export function scare(x, y) {
   shutWindows(x, y);
   let screamed = false;
   for (const f of game.folk) {
-    if (f.state !== "idle" || Math.hypot(f.x - x, f.y - y) > FOLK.hearing) continue;
-    if (f.kind === "pianist") { music.stop(); SND.clang(); }   // the tune stops dead on a fistful of wrong notes
-    if (STAFF.includes(f.kind)) f.state = "cower";
-    else { f.state = "flee"; f.t = rand(0, 0.5); f.goal = pickGoal(f, x, y, game.folk.indexOf(f)); screamed = true; }
+    const d = Math.hypot(f.x - x, f.y - y);
+    if (d > FOLK.hearing) continue;
+    const staff = STAFF.includes(f.kind);
+    if (f.state === "idle") {
+      if (f.kind === "pianist") { music.stop(); SND.clang(); }   // the tune stops dead on a fistful of wrong notes
+      if (staff) { f.state = "cower"; continue; }
+      bolt(f, x, y, d / FOLK.hearing * 0.6 + rand(0, 0.3));
+      screamed = true;
+    } else if (!staff && (f.nerve || 0) <= 0) {
+      // Hiding, and the gun is on top of them; or running, and the gun is now where they were running to
+      const flushed = f.state === "cower" && d < FOLK.tooClose && los(f.x, f.y, x, y);
+      const cutOff = f.state === "flee" && f.goal && Math.hypot(f.goal.x - x, f.goal.y - y) < FOLK.tooClose;
+      if (flushed || cutOff) { bolt(f, x, y, flushed ? rand(0.1, 0.3) : 0); screamed = screamed || flushed; }
+    }
   }
   if (screamed) SND.scream();
+}
+function bolt(f, x, y, wait) {
+  f.state = "flee"; f.t = wait; f.nerve = FOLK.nerve;
+  f.pace = f.pace || FOLK.speed * rand(0.85, 1.25);
+  f.goal = null; f.goal = pickGoal(f, x, y, game.folk.indexOf(f));
 }
 
 // The ways out of this scene: where you came in, and the floor in front of each exit door
@@ -52,18 +69,24 @@ function waysOut() {
   return out;
 }
 // Where one frightened person runs to. They scatter: every other one bolts for
-// whichever way out is furthest from the gunfire, and the rest dive for the nearest
-// spot the shooter can't see and stay down there. `leave` means they're gone when they arrive.
+// whichever way out is furthest from the danger, and the rest dive for the nearest
+// spot out of sight and stay down there. The danger is the gun that fired and, if it
+// was a gangster's, you as well: nobody hides from him by running into your sights.
+// No two pick the same hiding place. `leave` means they're gone when they arrive.
 function pickGoal(f, sx, sy, n) {
-  const from = d => Math.hypot(d.x - sx, d.y - sy), to = d => Math.hypot(d.x - f.x, d.y - f.y);
+  const p = game.player, guns = [{ x: sx, y: sy }];
+  if (Math.hypot(p.x - sx, p.y - sy) > 1.5) guns.push({ x: p.x, y: p.y });
+  const from = d => Math.min(...guns.map(g => Math.hypot(d.x - g.x, d.y - g.y))), to = d => Math.hypot(d.x - f.x, d.y - f.y);
+  const seen = d => guns.some(g => los(d.x, d.y, g.x, g.y));
   const reachable = d => !!nextStep(f.x, f.y, d.x, d.y);
   // A way out, as long as it isn't where the shooting is
   const exits = waysOut().filter(d => from(d) > 4 && reachable(d)).sort((a, b) => (from(b) - to(b) * 0.4) - (from(a) - to(a) * 0.4));
-  // Somewhere close by that's out of the shooter's sight, and further from him than here
+  // Somewhere close by that's out of sight, no nearer the guns than here, and not already taken
+  const taken = new Set(game.folk.filter(o => o !== f && o.goal && !o.goal.leave && o.state !== "down" && o.state !== "gone").map(o => (o.goal.y | 0) * game.width + (o.goal.x | 0)));
   let hide = null, best = -Infinity;
   for (let dy = -6; dy <= 6; dy++) for (let dx = -6; dx <= 6; dx++) {
-    const x = (f.x | 0) + dx, y = (f.y | 0) + dy, d = { x: x + 0.5, y: y + 0.5 };
-    if ((game.map[y] || [])[x] !== "." || game.navBlocked[y * game.width + x] || los(d.x, d.y, sx, sy) || from(d) < from(f)) continue;
+    const x = (f.x | 0) + dx, y = (f.y | 0) + dy, d = { x: x + 0.5, y: y + 0.5 }, i = y * game.width + x;
+    if ((game.map[y] || [])[x] !== "." || game.navBlocked[i] || taken.has(i) || from(d) < from(f) || seen(d)) continue;
     const score = from(d) * 0.5 - to(d) + rand(0, 1.5);
     if (score > best && reachable(d)) { best = score; hide = d; }
   }
@@ -80,7 +103,7 @@ export function shootFolk(f) {
 export function updateFolk(dt) {
   const p = game.player;
   for (const f of game.folk) {
-    f.step += dt;
+    f.step += dt; f.nerve = Math.max(0, (f.nerve || 0) - dt);
     if (f.state === "idle") {
       if (f.kind === "pianist") {
         // His playing is the music in here: louder the nearer you are
@@ -99,7 +122,10 @@ export function updateFolk(dt) {
       if (Math.hypot(goal.x - f.x, goal.y - f.y) < 0.7) { f.state = goal.leave ? "gone" : "cower"; continue; }
       const s = nextStep(f.x, f.y, goal.x, goal.y);
       if (!s) { f.state = "cower"; continue; }
-      const gd = Math.hypot(s.x - f.x, s.y - f.y) || 1, k = Math.min(1, FOLK.speed * dt / gd);
+      // Someone just ahead in the rush: fall in behind them rather than run through them
+      const gd = Math.hypot(s.x - f.x, s.y - f.y) || 1;
+      const jam = game.folk.some(o => o !== f && o.state === "flee" && o.t <= 0 && Math.hypot(o.x - f.x, o.y - f.y) < 0.45 && Math.hypot(s.x - o.x, s.y - o.y) < gd);
+      const k = Math.min(1, (f.pace || FOLK.speed) * (jam ? 0.35 : 1) * dt / gd);
       const nx = f.x + (s.x - f.x) * k, ny = f.y + (s.y - f.y) * k;
       if (!wallAt(nx, ny)) { f.x = nx; f.y = ny; }   // a shut door holds them up until it slides open
     }

@@ -1,7 +1,7 @@
 // The Vitale outfit. Each gangster runs a small state machine:
 // idle -> chase -> aim -> fire -> chase ... with hurt/dying/dead on top.
 // They raise their gun ("aim") before firing, which gives you a moment to react.
-import { ENEMY_AI, BULLETS } from "./config.js";
+import { ENEMY_AI, BULLETS, STREET } from "./config.js";
 import { rand } from "./util.js";
 import { game, stats, say, intertitle, eye } from "./state.js";
 import { SND } from "./audio.js";
@@ -42,6 +42,8 @@ export function updateEnemy(e, dt) {
     if (!e.alert) raiseAlarm(e, d);
     e.alert = true; e.lx = p.x; e.ly = p.y;
   }
+  // On a street where they make a stand, a man who isn't a lookout falls back to the front door once he knows you're here
+  if (e.alert && e.hold === undefined) e.hold = e.doorMan ? holdSpot(e) : null;
   e.moving = false;
   switch (e.state) {
     case "idle": if (e.alert) e.state = "chase"; break;
@@ -50,6 +52,19 @@ export function updateEnemy(e, dt) {
       if (sees && d < T.range && e.cd <= 0) { e.state = "aim"; e.t = T.aim; e.burstLeft = T.burst; break; }
       if (T.still) break;   // a man at a window stays there
       if (T.flees && game.level.route) { flee(e, dt); break; }
+      if (e.hold) {
+        // Back to his place by the door (firing on the way whenever he's ready), and there he stays
+        if (Math.hypot(e.hold.x - e.x, e.hold.y - e.y) > 0.3) {
+          if (e.repath <= 0 || !e.wp2) { e.wp2 = nextStep(e.x, e.y, e.hold.x, e.hold.y) || e.hold; e.repath = ENEMY_AI.repath; }
+          const gd = Math.hypot(e.wp2.x - e.x, e.wp2.y - e.y);
+          const bx = e.x, by = e.y;
+          if (gd < 0.1) e.repath = 0; else walk(e, e.wp2.x, e.wp2.y, gd, dt, false);
+          // Someone's in his way: after a moment he makes do with where he is
+          e.jam = Math.hypot(e.x - bx, e.y - by) < 0.2 * T.speed * dt ? (e.jam || 0) + dt : 0;
+          if (e.jam > 0.8 && Math.hypot(game.doorFront.x - e.x, game.doorFront.y - e.y) < STREET.holdFar + 2) e.hold = { x: e.x, y: e.y };
+        }
+        break;
+      }
       // Between bursts a goon may duck out of your line of fire until he's ready to shoot again
       if (e.cover) {
         if (e.cd <= 0) e.cover = null;
@@ -86,7 +101,7 @@ export function updateEnemy(e, dt) {
         if (e.burstLeft > 0 && sees) { shoot(e, d, sees); e.burstLeft--; e.t = 0.16; }
         else {
           e.state = "chase"; e.cd = rand(T.cd[0], T.cd[1]);
-          e.cover = T.name === "goon" && Math.random() < ENEMY_AI.coverChance ? findCover(e) : null;
+          e.cover = T.name === "goon" && !e.hold && Math.random() < ENEMY_AI.coverChance ? findCover(e) : null;
         }
       }
       break;
@@ -111,7 +126,16 @@ function runForAlarm(e, dt) {
   if (e.state === "hurt") { e.t -= dt; if (e.t > 0) return; }
   e.state = "chase"; e.moving = false;
   let bell = null, best = Infinity;
-  for (const o of game.objs) { const bd = Math.hypot(o.x - e.x, o.y - e.y); if (o.alarm && bd < best) { best = bd; bell = o; } }
+  if (e.type.toDoor) {
+    // The street's runner: the front door is his bell
+    bell = game.doorFront;
+    if (bell) {
+      best = Math.hypot(bell.x - e.x, bell.y - e.y);
+      if (e.wait === undefined) { e.wait = STREET.runnerWait; intertitle("runner", "A VITALE LOOKOUT", ["“It's him! I'll tell them inside!”"]) || say("A lookout is running for the door. Stop him!", 3.5); }
+      if ((e.wait -= dt) > 0) return;
+      if (best < 0.95) { gotInside(e); return; }
+    }
+  } else for (const o of game.objs) { const bd = Math.hypot(o.x - e.x, o.y - e.y); if (o.alarm && bd < best) { best = bd; bell = o; } }
   if (!bell) { e.rang = true; e.panic = true; return; }
   if (best < 0.95) {
     e.rang = true; e.panic = true; game.alarm = true; SND.alarm(); scare(e.x, e.y);
@@ -123,6 +147,35 @@ function runForAlarm(e, dt) {
   if (!e.wp2) { e.rang = true; e.panic = true; return; }
   const gd = Math.hypot(e.wp2.x - e.x, e.wp2.y - e.y);
   if (gd < 0.1) e.repath = 0; else walk(e, e.wp2.x, e.wp2.y, gd, dt, false);
+}
+
+// The runner made it through the front door: he's out of this scene, and the men in the next one will be ready
+function gotInside(e) {
+  e.rang = true; e.hp = 0; e.state = "dead"; e.over = true;   // gone from the street, and not a man you put down
+  game.player.warnedAt = game.levelIdx + 1;
+  SND.door(Math.hypot(game.player.x - e.x, game.player.y - e.y));
+  say("The lookout got inside. They'll be waiting for you.", 4);
+}
+
+// A place to stand near the front door: in sight of it, not on top of it, and not somebody else's
+function holdSpot(e) {
+  const door = game.doorFront;
+  if (!door) return null;
+  const taken = new Set(game.enemies.filter(o => o !== e && o.hold && o.hp > 0).map(o => (o.hold.y | 0) * game.width + (o.hold.x | 0)));
+  let best = null, bestS = -Infinity;
+  for (let dy = -5; dy <= 5; dy++) for (let dx = -5; dx <= 5; dx++) {
+    const x = (door.x | 0) + dx, y = (door.y | 0) + dy, i = y * game.width + x, d = Math.hypot(dx, dy);
+    if (d < STREET.holdNear || d > STREET.holdFar || (game.map[y] || [])[x] !== "." || game.navBlocked[i] || taken.has(i)) continue;
+    // (a parked car fills more than its own square: he has to be able to stand there)
+    if (game.objs.some(o => o.block && Math.abs(o.x - x - 0.5) < 0.24 + (o.size || 0.28) && Math.abs(o.y - y - 0.5) < 0.24 + (o.size || 0.28))) continue;
+    if (!los(x + 0.5, y + 0.5, door.x, door.y) || !nextStep(e.x, e.y, x + 0.5, y + 0.5)) continue;
+    // Better beside something solid (a car, a lamp post, a wall) than out in the open
+    const beside = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([ax, ay]) => (game.map[y + ay] || [])[x + ax] !== "." || game.navBlocked[(y + ay) * game.width + x + ax]);
+    // ...and the nearer to where he is now the better, so they don't cross each other getting there
+    const s = (beside ? 2 : 0) + rand(0, 1) - Math.hypot(x + 0.5 - e.x, y + 0.5 - e.y) * 0.5;
+    if (s > bestS) { bestS = s; best = { x: x + 0.5, y: y + 0.5 }; }
+  }
+  return best;
 }
 
 // The first to spot you shouts, and anyone near him turns your way too

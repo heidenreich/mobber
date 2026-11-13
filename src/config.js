@@ -51,6 +51,13 @@ export const FOLK = {
   hitWidth: 0.2,            // how wide a bystander is to a stray bullet
 };
 
+// Street scenes with `stand` in levels.js: the men who fall back to the front door and hold it
+export const STREET = {
+  holdNear: 1.8,            // their places are between this far...
+  holdFar: 4.6,             // ...and this far from the door
+  runnerWait: 0.9,          // seconds the runner takes to make up his mind before he bolts
+};
+
 // Gangsters' bullets fly, and you can step out of their way.
 export const BULLETS = {
   speed: 11,                // squares per second (you walk at 3.2)
@@ -124,6 +131,8 @@ export const ENEMY_TYPES = {
   // takes his time, and his scope glints before a fast, well-aimed shot. `up` is how high his window is
   y: { name: "rifleman", art: "rifle", hp: 30, speed: 0, dmg: [20, 28], cd: [2.6, 3.6], range: 16, aim: 1.1, burst: 1, scale: 0.95, up: 0.75, still: true, bulletSpeed: 17, scatter: 0.035 },
   // The bagman doesn't fight: he runs for the nearest alarm bell (x on the map). Stop him before he rings it
+  // On a street: the man who runs for the front door to warn them inside (levels with `stand`). Stop him before he gets there
+  f: { name: "runner", art: "goon", hp: 30, speed: 2.5, dmg: [5, 9], cd: [1.2, 2.0], range: 9, aim: 0.5, burst: 1, scale: 0.9, runner: true, toDoor: true },
   b: { name: "bagman", art: "bagman", hp: 35, speed: 2.7, dmg: [5, 9], cd: [1.2, 2.0], range: 9, aim: 0.5, burst: 1, scale: 0.93, runner: true },
   // Body doubles dressed as the Don, waiting in the penthouse
   // Vitale's lieutenants, one to a chapter. They hold their post: gunfire elsewhere doesn't bring them, only the sight of you.

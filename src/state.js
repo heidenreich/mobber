@@ -26,6 +26,8 @@ export const game = {
   smashed: new Set(),   // wall squares whose bottles or shop window have been shot out (y * width + x)
   lift: null,           // the hotel lift's state while riding it (lift.js)
   alarm: false,         // the bagman got to the bell
+  doorFront: null,      // on a street where they make a stand: the square in front of the door (world.js)
+  warned: false,        // a lookout from the street got in ahead of you
   windows: [],          // the fence's walk-up windows in this scene (fence.js)
   fenceShut: 0,         // seconds until his shutter goes back up after a shot
   choice: null,         // { boss, goal } while you decide what happens to the Don (render/choice.js)

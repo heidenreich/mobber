@@ -24,7 +24,7 @@ test("the Blue Note has patrons, a bartender and a pianist, and the piano is the
   assert.deepEqual(errors, []);
 });
 
-test("the first shot stops the piano, sends the patrons for the door and the staff to the floor", async () => {
+test("the first shot stops the piano, scatters the patrons and sends the staff to the floor", async () => {
   const { page, errors } = await club();
   await page.waitForFunction(() => window.__mobber.music.playing === "joint", null, { timeout: 5000 });
   // Fire into a wall from the middle of the main hall
@@ -34,8 +34,15 @@ test("the first shot stops the piano, sends the patrons for the door and the sta
   const who = await kinds(page);
   assert.ok(who.includes("pianist:cower") && who.includes("barman:cower"), who.join());
   assert.ok(who.some(k => k.endsWith(":flee") || k.endsWith(":gone")), "patrons running: " + who.join());
-  // They make it out the way you came in
-  await page.waitForFunction(() => window.__mobber.folk.filter(f => f.kind === "gent" || f.kind === "lady").every(f => f.state === "gone"), null, { timeout: 25000 });
+  // They scatter: not all to the same place, and away from where the shot was fired
+  const goals = await game(page, () => { const P = window.__mobber.player; return window.__mobber.folk.filter(f => f.goal).map(f => ({ at: f.goal.x + "," + f.goal.y, leave: !!f.goal.leave, away: Math.hypot(f.goal.x - P.x, f.goal.y - P.y) })); });
+  assert.ok(goals.length >= 3, "the patrons each picked somewhere to go");
+  assert.ok(new Set(goals.map(g => g.at)).size >= 2, "they don't all run to the same spot: " + JSON.stringify(goals));
+  assert.ok(goals.some(g => g.leave) && goals.some(g => !g.leave), "some make for a way out, some for a place to hide");
+  assert.ok(goals.every(g => g.away > 3), "nobody runs at the gun");
+  // Every one of them ends up gone or down on the floor somewhere, not left running about
+  await page.waitForFunction(() => window.__mobber.folk.every(f => f.state === "gone" || f.state === "cower"), null, { timeout: 25000 });
+  assert.ok(await game(page, () => window.__mobber.folk.some(f => f.state === "gone")), "some got out");
   assert.equal(await game(page, () => window.__mobber.stats.bystanders), 0);
   assert.deepEqual(errors, []);
 });

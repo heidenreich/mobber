@@ -3,7 +3,8 @@
 // shooting starts the patrons scatter, some for a way out and some for the nearest
 // place to hide, and the staff get their heads down.
 //
-// Map letters: e a patron or passer-by, u the bartender, i the pianist (put him beside a piano).
+// Map letters: e a patron, hotel guest or passer-by, d a working man (the docks, the pier),
+// u the bartender, i the pianist (put him beside a piano), z the hotel doorman.
 import { FOLK } from "./config.js";
 import { shutWindows } from "./fence.js";
 import { rand, clamp } from "./util.js";
@@ -12,10 +13,17 @@ import { SND } from "./audio.js";
 import { music } from "./music.js";
 import { nextStep, wallAt, los } from "./world.js";
 
-export const FOLK_LETTERS = "eui";
+// The ones who stay at their post and get their heads down, and what they say if you walk up first
+const STAFF = ["barman", "pianist", "doorman"];
+const LINES = {
+  barman: ["THE BARTENDER", "“The office is in the back, pal.", "I never saw you.”"],
+  doorman: ["THE DOORMAN", "“Mr. Vitale isn't receiving tonight, sir.", "The lift is straight through.”"],
+};
+
+export const FOLK_LETTERS = "euidz";
 
 export function spawnFolk(letter, x, y) {
-  const kind = letter === "u" ? "barman" : letter === "i" ? "pianist" : ((x | 0) + (y | 0)) % 2 ? "lady" : "gent";
+  const kind = letter === "u" ? "barman" : letter === "i" ? "pianist" : letter === "d" ? "worker" : letter === "z" ? "doorman" : ((x | 0) + (y | 0)) % 2 ? "lady" : "gent";
   game.folk.push({ x, y, kind, state: "idle", step: rand(0, 6), t: 0, spoke: false });
 }
 const up = f => f.state === "idle" || f.state === "flee" || f.state === "cower";   // still on his feet (or knees)
@@ -28,7 +36,7 @@ export function scare(x, y) {
   for (const f of game.folk) {
     if (f.state !== "idle" || Math.hypot(f.x - x, f.y - y) > FOLK.hearing) continue;
     if (f.kind === "pianist") { music.stop(); SND.clang(); }   // the tune stops dead on a fistful of wrong notes
-    if (f.kind === "barman" || f.kind === "pianist") f.state = "cower";
+    if (STAFF.includes(f.kind)) f.state = "cower";
     else { f.state = "flee"; f.t = rand(0, 0.5); f.goal = pickGoal(f, x, y, game.folk.indexOf(f)); screamed = true; }
   }
   if (screamed) SND.scream();
@@ -77,9 +85,11 @@ export function updateFolk(dt) {
       if (f.kind === "pianist") {
         // His playing is the music in here: louder the nearer you are
         music.play("joint", clamp(1.15 - Math.hypot(f.x - p.x, f.y - p.y) / 16, 0.25, 1));
-      } else if (f.kind === "barman" && !f.spoke && Math.hypot(f.x - p.x, f.y - p.y) < FOLK.barmanReach && los(f.x, f.y, p.x, p.y)) {
+      } else if (LINES[f.kind] && !f.spoke && Math.hypot(f.x - p.x, f.y - p.y) < FOLK.barmanReach && los(f.x, f.y, p.x, p.y)) {
+        // Walk up before the shooting starts and he has something to say, once
+        const [who, ...lines] = LINES[f.kind];
         f.spoke = true;
-        intertitle("barman", "THE BARTENDER", ["“The office is in the back, pal.", "I never saw you.”"]) || say("“The office is in the back, pal. I never saw you.”", 4);
+        intertitle(f.kind, who, lines) || say(lines.join(" "), 4);
       }
     } else if (f.state === "flee") {
       if ((f.t -= dt) > 0) continue;   // a moment of disbelief first

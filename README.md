@@ -4,7 +4,7 @@
 
 A first-person shooter styled as a lost 1931 gangster film: black and white, film grain, projector flicker, silent-movie title cards, scenes that open and close with an iris, and a piano playing along.
 
-Your brother Eddie kept the books at the Blue Note, and kept them honest. The Vitale family pulled him out of the river. Over one night you follow his ledger from the club to the docks to the Hotel Regent, walking the rainy streets between them, and the picture ends at dawn with a chase across the hotel roof: stop Don Vitale before his autogiro flies him out of town.
+Your brother Eddie kept the books at the Blue Note, and kept them honest. The Vitale family pulled him out of the river. Over one night you follow his ledger from the club to the docks to the Hotel Regent, walking the rainy streets between them, and the picture ends at dawn with a chase across the hotel roof: stop Don Vitale before his autogiro flies him out of town. When you have him on his knees, what happens to him is your choice, and the ending and the morning paper follow from it.
 
 **Play it:** https://heidenreich.github.io/mobber/
 
@@ -40,9 +40,11 @@ Not all of them carry tommy guns. A knife man in a flat cap has no gun at all, b
 
 Until something alerts him, a gangster only sees what's in front of him, and now and then he looks behind. If you can see his back, he can't see you: keep out of the lamplight, don't get too close, and you can slip past. A shot at a man who never saw it coming does three times the damage.
 
-Not everyone is in the Vitale outfit. The Blue Note has patrons at its tables, a bartender who'll tell you where the office is, and a man at the piano: his playing is the music in there, and it stops on a fistful of wrong notes when the first shot is fired. The patrons scatter, some for whichever way out is furthest from the gunfire and some for the nearest place to hide, and the staff get their heads down. There's someone out in the rain on Mulberry Street too. A bullet that finds a bystander is counted against you in the morning paper.
+Not everyone is in the Vitale outfit. The Blue Note has patrons at its tables, a bartender who'll tell you where the office is, and a man at the piano: his playing is the music in there, and it stops on a fistful of wrong notes when the first shot is fired. The patrons scatter, some for whichever way out is furthest from the gunfire and some for the nearest place to hide, and the staff get their heads down. There are people in the rest of town too: someone out in the rain on Mulberry Street, working men on the Waterfront and at Pier 9, passers-by and the Regent's doorman on the square (he has something to say), and guests on the hotel's top floor. A bullet that finds a bystander is counted against you in the morning paper.
 
 Cash is worth picking up. On each street a fence deals through a walk-up window at the end of an alley: look for a pawnbroker's three balls and a LOANS sign on the wall by the alley's mouth, and the lit window down it. Walk up and press E (on a phone his list comes up by itself). He sells revolver rounds, tommy gun drums, shells, a visit from a doctor, and a steel vest that takes half of the next 60 points of harm. Click or tap a line to buy it, or press its number. A shot nearby brings his shutter down, and it stays down for a few seconds.
+
+He buys as well. Gangsters sometimes have a pocket watch, cufflinks, a ring or a cigarette case on them, and each of the Don's doubles wears a gold watch. Pick them up (the status bar shows how many you're carrying next to your cash) and the first line of his list sells the lot.
 
 Each chapter has something besides shooting. The ledger at the Blue Note is in the office safe, and partway through working the dial the whole club hears you. The lookouts on the Waterfront can be slipped past. At the Hotel Regent you ride the lift, and Vitale men are waiting at every landing on the way up.
 
@@ -104,7 +106,8 @@ src/
     hud.js            health/ammo bar, crosshair, messages, the touch stick
     cards.js          the title, chapter, dialogue and "CUT!" cards
     paper.js          THE END: the morning paper, with your run as its front page
-    shop.js           the fence: what he sells, and his list
+    shop.js           the fence: what he sells and buys, and his list
+    choice.js         the end of the chase: finish the Don or hand him over
   art/
     bitmap.js         turns canvas drawings into grayscale bitmaps
     textures.js       wall, floor and ceiling textures

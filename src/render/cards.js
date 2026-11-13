@@ -1,6 +1,6 @@
 // Silent-movie title cards: the title, chapter cards, "CUT!" and "THE END".
 import { isTouch, FONTS, CREAM } from "../config.js";
-import { game } from "../state.js";
+import { game, stats } from "../state.js";
 import { LEVELS, STORY } from "../levels.js";
 import { ctx, view } from "../screen.js";
 import { noiseCv } from "./film.js";
@@ -121,7 +121,8 @@ export function drawCard(t) {
   } else if (card.kind === "epilogue") {
     line("EPILOGUE", 84, `${14 * s}px ${DECO}`, 0.85);
     rule(104);
-    STORY.epilogue.forEach((c, i) => line(c, 146 + i * 24, `${i === STORY.epilogue.length - 1 ? "italic 700 " + 15 * s + "px " + SERIF : 12.5 * s + "px " + TYPE}`, 0.92));
+    const lines = stats.mercy ? STORY.epilogueMercy : STORY.epilogue;   // what you did with the Don
+    lines.forEach((c, i) => line(c, 146 + i * 24, `${i === lines.length - 1 ? "italic 700 " + 15 * s + "px " + SERIF : 12.5 * s + "px " + TYPE}`, 0.92));
     prompt("continue");
   } else if (card.kind === "chapter") {
     const L = LEVELS[card.idx];

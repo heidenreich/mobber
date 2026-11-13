@@ -10,6 +10,7 @@ import { tryPush } from "./doors.js";
 import { cam, camera, project, zbuf } from "./render/camera.js";
 import { fadeOut, showCard } from "./flow.js";
 import { knock } from "./fence.js";
+import { offerChoice } from "./render/choice.js";
 import { scare, shootFolk, standing } from "./folk.js";
 
 const ammoLeft = (p, i) => (p.mag[i] || 0) + (p.reserve[i] || 0);
@@ -72,6 +73,7 @@ function dropLoot(e) {
   if (e.type.name === "boss") return at("cash", "cash", { amount: AMMO.bossCash });
   if (e.type.name === "bagman") return at("cash", "cash", { amount: AMMO.bagCash });
   if (e.type.name === "knife") return at("cash", "cash");
+  if (e.type.name === "double") return at("loot", "valuable", { item: AMMO.donsWatch });
   if (e.type.name === "rifleman") return at("rounds", "rounds", { weapon: 0, amount: AMMO.rifleRounds });
   if (e.type.name === "heavy") {
     // The first heavy you put down gives up his sawn-off; after that, shells or revolver rounds
@@ -81,6 +83,7 @@ function dropLoot(e) {
   const r = Math.random();
   if (r < AMMO.goonTommyChance) at("rounds", "tommy", { weapon: 1, amount: AMMO.goonTommyRounds });
   else if (r < AMMO.goonTommyChance + AMMO.goonRoundsChance) at("rounds", "rounds", { weapon: 0, amount: AMMO.goonRounds });
+  else if (Math.random() < AMMO.valuableChance) at("loot", "valuable", { item: AMMO.valuables[(Math.random() * AMMO.valuables.length) | 0] });
   else at("cash", "cash");
 }
 
@@ -106,10 +109,11 @@ function damage(t, dmg) {
       if (game.level.endOnBoss) {
         // The Don goes down and the picture ends: no exit to find
         game.state = "won";
-        // He isn't down yet: he staggers for the nearest stretch of parapet (enemies.js finishes it)
+        // The stretch of parapet nearest him, in case he ends up going over it
         let goal = { x: t.x, y: t.y }, best = Infinity;
         game.map.forEach((row, y) => row.forEach((c, x) => { const d = Math.hypot(x + 0.5 - t.x, y + 0.5 - t.y); if (c === "R" && d < best) { best = d; goal = { x: x + 0.5, y: y + 0.5 }; } }));
-        t.state = "stagger"; t.t = 2.6; t.goal = goal;
+        // He isn't finished yet: he's on his knees, and what happens next is your choice (render/choice.js)
+        offerChoice(t, goal);
       } else say("Don Vitale is finished. Get to the exit.", 4);
     }
   } else if (!t.type.noStagger && t.staggerCd <= 0 && (t.state !== "aim" || Math.random() < 0.4)) {
@@ -348,6 +352,7 @@ export function collectPickups() {
         if (p.mag[p.weapon] === 0 && p.weapon === w) startReload();
       }
     }
+    else if (o.pick === "loot") { p.loot.push(o.item); say(`${o.item[0][0].toUpperCase()}${o.item[0].slice(1)}. The fence will give you something for it.`, 3); }
     else if (o.pick === "ledger") {
       p.ledger = true; say("Got the ledger. Now find the EXIT.", 3.5);
       for (const e of game.enemies) { e.alert = true; e.lx = p.x; e.ly = p.y; }

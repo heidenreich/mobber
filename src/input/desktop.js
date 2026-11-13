@@ -9,6 +9,7 @@ import { switchWeapon, nextWeapon, startReload, use } from "../player.js";
 import { advance, requestLock } from "../flow.js";
 import { chooseDifficultyAt, setDifficulty } from "../render/cards.js";
 import { shopClickAt, buy, closeShop } from "../render/shop.js";
+import { choiceClickAt, decide } from "../render/choice.js";
 
 export function installDesktopInput() {
   window.addEventListener("keydown", e => {
@@ -16,6 +17,8 @@ export function installDesktopInput() {
     if (k === " ") { e.preventDefault(); input.firing = true; }
     if (input.menu) return;
     // Dealing with the fence: a number buys that line; E, Esc or Enter walks away
+    // Deciding about the Don: 1 or 2
+    if (game.choice) { if (!e.repeat && !game.intertitle && (k === "1" || k === "2")) decide(+k - 1); input.keys.clear(); return; }
     if (game.shop) {
       if (!e.repeat) { if (k >= "1" && k <= "9") buy(+k - 1); else if (k === "e" || k === "escape" || k === "enter") closeShop(); }
       input.keys.clear(); return;
@@ -54,6 +57,7 @@ export function installDesktopInput() {
   cv.addEventListener("wheel", () => { if (game.player && game.state === "play") nextWeapon(); });
   cv.addEventListener("click", e => {
     initAudio();
+    if (game.choice) { if (!game.intertitle) choiceClickAt(e.clientX, e.clientY); return; }
     if (game.shop) { shopClickAt(e.clientX, e.clientY); return; }   // on a line of the fence's list it buys; elsewhere you walk away
     if (game.state !== "play" && !input.menu && !chooseDifficultyAt(e.clientX, e.clientY)) advance();
   });

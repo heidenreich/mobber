@@ -48,7 +48,7 @@ export function drawHUD() {
   ctx.font = `${fs(9)}px ${TYPE}`; ctx.fillText(p.vest > 0 ? "ARMORED" : "HEALTH", f.x + 18 * s, base - 13 * s);
   ctx.font = `${fs(17)}px ${DECO}`; ctx.fillStyle = p.hp < 30 && Math.floor(game.timer * 4) % 2 ? "#ffffff" : CREAM;
   ctx.fillText(String(Math.ceil(p.hp)), f.x + 18 * s, base);
-  ctx.fillStyle = CREAM; ctx.font = `${fs(9)}px ${TYPE}`; ctx.fillText("CASH", f.x + 78 * s, base - 13 * s);
+  ctx.fillStyle = CREAM; ctx.font = `${fs(9)}px ${TYPE}`; ctx.fillText(p.loot && p.loot.length ? `CASH +${p.loot.length}` : "CASH", f.x + 78 * s, base - 13 * s);   // +N: valuables to sell to the fence
   ctx.font = `${fs(14)}px ${DECO}`; ctx.fillText("$" + stats.cash.toLocaleString(), f.x + 78 * s, base);
   ctx.textAlign = "center"; ctx.font = `${fs(10)}px ${TYPE}`;
   const left = game.enemies.filter(e => e.hp > 0).length;

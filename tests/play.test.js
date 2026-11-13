@@ -160,6 +160,9 @@ test("taking out the real Don ends the picture: epilogue, then THE END", async (
   await goTo(page, "The Roof");
   await game(page, () => { const M = window.__mobber, d = M.enemies.find(e => e.type.name === "boss"); for (const e of M.enemies) if (e !== d) { e.hp = 0; e.state = "dead"; } const P = M.player; P.x = d.x - 1.5; P.y = d.y; P.a = 0; d.hp = 1; d.cd = 99; });
   await holdUntil(page, " ", () => window.__mobber.enemies.find(e => e.type.name === "boss").hp <= 0);
+  // He's on his knees and the choice is yours: finish it
+  await page.waitForFunction(() => window.__mobber.choice);
+  await page.keyboard.press("1");
   await page.waitForFunction(() => window.__mobber.state === "card", null, { timeout: 10000 });
   assert.equal(await game(page, () => window.__mobber.card.kind), "epilogue");
   await page.waitForFunction(() => window.__mobber.fade >= 0.6);
@@ -283,12 +286,12 @@ test("ammo runs out, gangsters drop more, and an empty gun still swings", async 
   assert.ok(p.mag[0] + p.reserve[0] < 18, "shooting should use up rounds");
   // He leaves loot where he fell; walk over it
   const loot = await game(page, n => window.__mobber.objs.slice(n).find(o => o.pick), setup);
-  assert.ok(loot && ["rounds", "cash"].includes(loot.pick), "a downed goon should drop rounds, a tommy gun or cash");
-  const before = await game(page, () => ({ ammo: window.__mobber.player.reserve.slice(), has: window.__mobber.player.has.slice(), cash: window.__mobber.stats.cash }));
+  assert.ok(loot && ["rounds", "cash", "loot"].includes(loot.pick), "a downed goon should drop rounds, a tommy gun, cash or something to sell");
+  const before = await game(page, () => ({ ammo: window.__mobber.player.reserve.slice(), has: window.__mobber.player.has.slice(), cash: window.__mobber.stats.cash, loot: window.__mobber.player.loot.length }));
   await game(page, () => { const P = window.__mobber.player; P.x = 8.5; P.y = 9.5; });
   await page.waitForFunction(n => !window.__mobber.objs.slice(n).some(o => o.pick), setup);
-  const after = await game(page, () => ({ ammo: window.__mobber.player.reserve.slice(), has: window.__mobber.player.has.slice(), cash: window.__mobber.stats.cash }));
-  assert.notDeepEqual(after, before, "picking up the loot should give ammo, a gun or cash");
+  const after = await game(page, () => ({ ammo: window.__mobber.player.reserve.slice(), has: window.__mobber.player.has.slice(), cash: window.__mobber.stats.cash, loot: window.__mobber.player.loot.length }));
+  assert.notDeepEqual(after, before, "picking up the loot should give ammo, a gun, cash or something to sell");
   // Both guns dry: clicking swings the gun at a goon in arm's reach
   await game(page, () => {
     const M = window.__mobber, P = M.player;

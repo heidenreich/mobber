@@ -131,3 +131,51 @@ test("a steel vest takes half of what hits you until it's used up", async () => 
   assert.equal(hp[2], 0, "a big hit uses it up");
   assert.deepEqual(errors, []);
 });
+
+test("what you lift off a gangster sells at the fence's window", async () => {
+  const { page, errors } = await openGame(browser, srv.url);
+  await rollFilm(page);
+  // A pocket watch lying where a goon fell: walk over it
+  await game(page, async () => {
+    const M = window.__mobber, P = M.player, { OBJ } = await import("/src/art/sprites.js");
+    for (const e of M.enemies) { e.hp = 0; e.state = "dead"; }
+    M.objs.push({ x: P.x, y: P.y, art: OBJ.valuable, scale: 0.6, pick: "loot", item: ["a pocket watch", 120] });
+    M.objs.push({ x: P.x, y: P.y, art: OBJ.valuable, scale: 0.6, pick: "loot", item: ["a signet ring", 90] });
+  });
+  await page.waitForFunction(() => window.__mobber.player.loot.length === 2);
+  await toWindow(page);
+  await page.keyboard.press("e");
+  await page.waitForFunction(() => window.__mobber.shop);
+  await page.keyboard.press("1");   // with something to sell, selling is the first line
+  assert.deepEqual(await game(page, () => [window.__mobber.stats.cash, window.__mobber.player.loot.length]), [210, 0]);
+  // And what's in your pockets comes with you to the next scene
+  await page.keyboard.press("e");
+  await game(page, () => { const M = window.__mobber; M.player.loot.push(["a pair of cufflinks", 60]); M.startLevel(1); });
+  assert.deepEqual(await game(page, () => window.__mobber.player.loot), [["a pair of cufflinks", 60]]);
+  assert.deepEqual(errors, []);
+});
+
+test("there are people in every part of town, and the Regent's doorman has something to say", async () => {
+  const { page, errors } = await openGame(browser, srv.url);
+  await rollFilm(page);
+  const who = await game(page, () => {
+    const M = window.__mobber, out = {};
+    M.LEVELS.forEach((l, i) => { M.startLevel(i); out[l.title] = M.folk.map(f => f.kind).sort().join(); });
+    return out;
+  });
+  assert.match(who["The Waterfront"], /worker.*worker/);
+  assert.match(who["Pier 9"], /worker.*worker/);
+  assert.match(who["Regent Square"], /doorman/);
+  assert.ok(who["Hotel Regent, Top Floor"].split(",").length >= 3, "guests on the top floor: " + who["Hotel Regent, Top Floor"]);
+  assert.equal(who["The Roof"], "", "nobody else is up on the roof");
+  // Walk up to the doorman with dialogue on
+  await game(page, () => {
+    const M = window.__mobber; M.startLevel(M.LEVELS.findIndex(l => l.title === "Regent Square"));
+    for (const e of M.enemies) { e.hp = 0; e.state = "dead"; }
+    const d = M.folk.find(f => f.kind === "doorman"), P = M.player;
+    M.dialogue = true; P.x = d.x; P.y = d.y + 1.5; P.a = -Math.PI / 2;
+  });
+  await page.waitForFunction(() => window.__mobber.intertitle, null, { timeout: 4000 });
+  assert.match(await game(page, () => window.__mobber.intertitle.lines.join(" ")), /isn't receiving/);
+  assert.deepEqual(errors, []);
+});

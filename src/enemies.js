@@ -14,6 +14,7 @@ import { scare } from "./folk.js";
 export function updateEnemy(e, dt) {
   const p = game.player, T = e.type;
   if (e.state === "stagger") { lastSteps(e, dt); return; }
+  if (e.state === "kneel") return;   // the Don, beaten, waiting to hear what you'll do with him
   if (e.state === "dying") { e.t -= dt; if (e.t <= 0) e.state = "dead"; return; }
   if (e.state === "dead") return;
   e.cd -= dt; e.staggerCd = Math.max(0, (e.staggerCd || 0) - dt); e.repath = (e.repath || 0) - dt;

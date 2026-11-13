@@ -137,6 +137,7 @@ export function renderWorld(t) {
       const off = Math.atan2(py - e.y, px - e.x) - e.face;
       if (Math.abs(Math.atan2(Math.sin(off), Math.cos(off))) > 1.7) art = A.back;
     }
+    if (e.state === "kneel") art = A.cower;
     if (e.state === "stagger") art = Math.sin(e.step * 11) > 0 ? A.hurt : A.idle;
     if (e.state === "aim") art = A.aim; else if (e.state === "fire") art = e.t > 0.07 ? A.fire : A.aim;
     else if (e.state === "hurt") art = e.spin ? A.spin[Math.min(3, ((1 - e.t / ENEMY_AI.spinTime) * 4) | 0)] : A.hurt; else if (e.state === "dying") art = e.t > 0.25 ? A.hurt : A.fall;

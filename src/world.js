@@ -157,6 +157,7 @@ export function loadLevel(i) {
     mag: three(prev && prev.mag, [6, 0, 0]), reserve: three(prev && prev.reserve, [AMMO.startRevolverReserve, 0, 0]),
     fireCd: 0, reload: 0, recoil: 0, flash: 0, bob: 0, moving: false, hurt: 0, ledger: false,
     lean: 0, vx: 0, vy: 0,
+    loot: prev && prev.loot ? prev.loot.slice() : [],   // valuables to sell to the fence: [name, value] pairs
     vest: prev ? prev.vest || 0 : 0,   // what's left of a steel vest bought from the dealer
   };
   for (let y = 0; y < game.height; y++) for (let x = 0; x < game.width; x++) {
@@ -171,7 +172,7 @@ export function loadLevel(i) {
   }
   buildLight();
   buildNav();
-  game.timer = 0; game.shop = false; game.cracking = null; game.lift = null; game.alarm = false;
+  game.timer = 0; game.shop = false; game.choice = null; game.cracking = null; game.lift = null; game.alarm = false;
 }
 
 // Put a gangster on the map. He stands watching the longest open view from where he is.

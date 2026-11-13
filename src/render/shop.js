@@ -24,7 +24,14 @@ export const SHOP = [
   { name: "A steel vest", note: "takes half of the next 60 points of harm", price: 700, have: () => true,
     full: p => (p.vest > 0 ? "you're wearing one" : ""), take: p => { p.vest = 60; } },
 ];
-const onOffer = () => SHOP.filter(it => it.have(game.player));
+// He buys, too: whatever you've lifted off the Vitale outfit, in one lot
+const SELL = {
+  sell: true, name: "Sell him what you've lifted", price: 0, have: p => p.loot && p.loot.length > 0, full: () => "",
+  note: p => { const n = p.loot.length; return n === 1 ? p.loot[0][0] : `${p.loot[0][0]} and ${n - 1} other piece${n === 2 ? "" : "s"}`; },
+  worth: p => p.loot.reduce((a, [, v]) => a + v, 0),
+  take: p => { stats.cash += SELL.worth(p); p.loot = []; },
+};
+const onOffer = () => [SELL, ...SHOP].filter(it => it.have(game.player));
 
 export function openShop() {
   if (game.shop || game.state !== "play") return;
@@ -40,7 +47,7 @@ export function closeShop() {
 export function buy(n) {
   const p = game.player, it = onOffer()[n];
   if (!it || stats.cash < it.price || it.full(p)) { if (it) SND.click(); return false; }
-  stats.cash -= it.price; it.take(p); SND.pickup("cash");
+  stats.cash -= it.price; it.take(p); SND.pickup("cash");   // (selling costs nothing and pays in take)
   return true;
 }
 
@@ -71,8 +78,8 @@ export function drawShop(t) {
     ctx.globalAlpha = can ? 1 : 0.4;
     ctx.textAlign = "left"; ctx.font = `${10 * s}px ${TYPE}`; if (!isTouch) ctx.fillText(String(i + 1), x0, y);
     ctx.font = `italic 700 ${13 * s}px ${SERIF}`; ctx.fillText(it.name, x0 + 16 * s, y);
-    ctx.font = `${9 * s}px ${TYPE}`; ctx.fillText(why || (stats.cash < it.price ? `${it.note} (you're short)` : it.note), x0 + 16 * s, y + 10 * s);
-    ctx.textAlign = "right"; ctx.font = `${13 * s}px ${TYPE}`; ctx.fillText(`$${it.price}`, x1, y);
+    ctx.font = `${9 * s}px ${TYPE}`; ctx.fillText(why || (it.sell ? it.note(p) : stats.cash < it.price ? `${it.note} (you're short)` : it.note), x0 + 16 * s, y + 10 * s);
+    ctx.textAlign = "right"; ctx.font = `${13 * s}px ${TYPE}`; ctx.fillText(it.sell ? `+$${it.worth(p)}` : `$${it.price}`, x1, y);
     ctx.globalAlpha = 1;
     shopRows.push({ x0: x0 - 8 * s, x1: x1 + 8 * s, y0: y - 13 * s, y1: y + 13 * s, i });
   });

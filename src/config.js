@@ -92,6 +92,10 @@ export const AMMO = {
   heavyRounds: 6,
   heavyShells: 4,           // a heavy drops his sawn-off the first time, then shells or revolver rounds
   bossCash: 1000,
+  // Things a gangster had on him that the fence will buy. A goon who'd have dropped cash sometimes drops one instead
+  valuables: [["a pocket watch", 120], ["a pair of cufflinks", 60], ["a signet ring", 90], ["a silver cigarette case", 150]],
+  valuableChance: 0.5,
+  donsWatch: ["the Don's gold watch", 400],   // on each of his doubles
   bagCash: 600,             // what the bagman was carrying
   rifleRounds: 6,
 };

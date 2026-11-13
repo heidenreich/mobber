@@ -8,6 +8,7 @@ import { settings, saveSettings, lookSpeed, clearGame } from "../settings.js";
 import { switchWeapon, nextWeapon, startReload, use } from "../player.js";
 import { advance, requestLock } from "../flow.js";
 import { chooseDifficultyAt, setDifficulty } from "../render/cards.js";
+import { shopClickAt, buy } from "../render/shop.js";
 
 export function installDesktopInput() {
   window.addEventListener("keydown", e => {
@@ -15,6 +16,7 @@ export function installDesktopInput() {
     if (k === " ") { e.preventDefault(); input.firing = true; }
     if (input.menu) return;
     if (k === "enter") advance();
+    if (game.state === "card" && game.card.kind === "shop" && k >= "1" && k <= "9" && !e.repeat) buy(+k - 1);   // at the dealer, a number buys that line
     if (k === "m" && !e.repeat) { settings.music = !settings.music; saveSettings(); say(settings.music ? "The pianist is back." : "The pianist takes a break."); }
     if (k === "n" && game.state === "title") clearGame();
     // On the title card the arrow keys pick how hard a night it will be
@@ -46,5 +48,5 @@ export function installDesktopInput() {
     if (input.locked || (input.dragLook && !isTouch)) game.player.a += e.movementX * PLAYER.mouseSensitivity * lookSpeed();
   });
   cv.addEventListener("wheel", () => { if (game.player && game.state === "play") nextWeapon(); });
-  cv.addEventListener("click", e => { initAudio(); if (game.state !== "play" && !input.menu && !chooseDifficultyAt(e.clientX, e.clientY)) advance(); });
+  cv.addEventListener("click", e => { initAudio(); if (game.state !== "play" && !input.menu && !chooseDifficultyAt(e.clientX, e.clientY) && !shopClickAt(e.clientX, e.clientY)) advance(); });
 }

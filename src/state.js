@@ -27,12 +27,14 @@ export const game = {
   lift: null,           // the hotel lift's state while riding it (lift.js)
   alarm: false,         // the bagman got to the bell
   cracking: null,       // { progress, working } while you stand at a safe
+  folk: [],             // bystanders: patrons, the bartender, the pianist (folk.js)
+  wayOut: [2, 2],       // where the scene began: bystanders run for it
   bullets: [],          // gangsters' shots in flight (bullets.js)
   navBlocked: null,     // squares furniture fills, for enemy pathfinding (world.js)
 };
 
-export const stats = { kills: 0, cash: 0, shots: 0, hits: 0, deaths: 0, time: 0, secretsFound: new Set() };
-export function resetStats() { Object.assign(stats, { kills: 0, cash: 0, shots: 0, hits: 0, deaths: 0, time: 0, secretsFound: new Set() }); }
+export const stats = { kills: 0, cash: 0, shots: 0, hits: 0, deaths: 0, time: 0, bystanders: 0, secretsFound: new Set() };
+export function resetStats() { Object.assign(stats, { kills: 0, cash: 0, shots: 0, hits: 0, deaths: 0, time: 0, bystanders: 0, secretsFound: new Set() }); }
 
 export const input = {
   keys: new Set(),

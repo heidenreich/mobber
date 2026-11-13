@@ -11,6 +11,7 @@ import { resetIntertitles } from "./state.js";
 import { music } from "./music.js";
 import { SND } from "./audio.js";
 import { loadGame, saveGame, clearGame } from "./settings.js";
+import { shopOpen } from "./render/shop.js";
 
 export function showCard(kind, idx) {
   game.card = { kind, idx }; game.state = "card"; game.fade = 0; game.fadeDir = 1; game.afterFade = null;
@@ -22,6 +23,9 @@ export function showCard(kind, idx) {
   SND.rain(false); SND.rotor(false);
   if (kind === "end") clearGame();   // the picture is over: next time starts from the top
 }
+
+// On to the next scene, by way of the dealer if you can afford anything he has
+export function nextCard(idx) { showCard(shopOpen(idx) ? "shop" : "chapter", idx); }
 
 // A click, tap or Enter on a card
 export function advance() {
@@ -37,6 +41,7 @@ export function advance() {
   if (game.state !== "card" || game.fade < 0.6) return;
   const c = game.card;
   if (c.kind === "prologue") showCard("controls");
+  else if (c.kind === "shop") showCard("chapter", c.idx);
   else if (c.kind === "controls") showCard("chapter", 0);
   else if (c.kind === "chapter") startLevel(c.idx);
   else if (c.kind === "dead" || c.kind === "escaped") startLevel(c.idx, true);

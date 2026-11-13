@@ -144,6 +144,14 @@ export function renderWorld(t) {
     const up = !e.type.up || e.state === "dead" ? 0 : e.state === "dying" ? e.type.up * Math.min(1, e.t / 0.5) : e.type.up;
     list.push({ x: e.x, y: e.y, up, art, scale: e.type.scale, bob: e.moving ? Math.abs(Math.sin(e.step * 9)) * 0.02 : 0, muzzle: e.state === "fire" && e.t > 0.07, minLit: e.hp > 0 ? 0.6 : 0 });
   }
+  // Bystanders: standing about, running, crouched with their heads down, or hit
+  for (const f of game.folk) {
+    if (f.state === "gone") continue;
+    const A = PEOPLE[f.kind];
+    const art = f.state === "down" ? A.dead : f.state === "cower" ? A.cower : f.state === "flee" && f.t <= 0 ? A.walk[Math.sin(f.step * 11) > 0 ? 0 : 1]
+      : f.kind === "pianist" ? (Math.sin(f.step * 9) > 0 ? A.aim : A.idle) : A.idle;   // the pianist's hands go up and down
+    list.push({ x: f.x, y: f.y, art, scale: f.kind === "lady" ? 0.88 : 0.93, bob: f.state === "flee" ? Math.abs(Math.sin(f.step * 11)) * 0.02 : 0, minLit: f.state === "down" ? 0 : 0.55 });
+  }
   for (const b of game.bullets) list.push({ x: b.x, y: b.y, bullet: b });
   for (const s of list) s.d = (s.x - px) ** 2 + (s.y - py) ** 2;
   list.sort((a, b) => b.d - a.d);

@@ -39,6 +39,14 @@ export const PLAYER = {
   leanTilt: 0.05,           // how far the picture tips with you, radians
 };
 
+// Bystanders (folk.js)
+export const FOLK = {
+  hearing: 14,              // a shot this close sends them running
+  speed: 2.6,               // how fast they run for the door
+  barmanReach: 2.4,         // how close you come before the bartender speaks
+  hitWidth: 0.2,            // how wide a bystander is to a stray bullet
+};
+
 // Gangsters' bullets fly, and you can step out of their way.
 export const BULLETS = {
   speed: 11,                // squares per second (you walk at 3.2)

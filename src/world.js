@@ -8,6 +8,7 @@ import { OBJ } from "./art/sprites.js";
 import { setupDoors, partialSolid } from "./doors.js";
 
 import { WALL_CHARS as WALLS, DOOR, SECRET } from "./tiles.js";
+import { FOLK_LETTERS, spawnFolk } from "./folk.js";
 
 // Map letter -> what gets placed there. `light` is [intensity, radius] for lamps.
 // `cover` props are taller than a person, so they block sight and bullets; you can
@@ -145,7 +146,7 @@ export function loadLevel(i) {
   game.levelIdx = i; game.level = lvl;
   game.height = lvl.map.length; game.width = lvl.map[0].length;
   game.map = lvl.map.map(r => r.split(""));
-  game.objs = []; game.enemies = []; game.bullets = []; game.smashed = new Set();
+  game.objs = []; game.enemies = []; game.folk = []; game.bullets = []; game.smashed = new Set();
   setupDoors(lvl.map);
   // Guns and ammo carry over from the previous scene (flow.js passes the right loadout on a retry)
   const prev = game.player;
@@ -154,12 +155,14 @@ export function loadLevel(i) {
     mag: three(prev && prev.mag, [6, 0, 0]), reserve: three(prev && prev.reserve, [AMMO.startRevolverReserve, 0, 0]),
     fireCd: 0, reload: 0, recoil: 0, flash: 0, bob: 0, moving: false, hurt: 0, ledger: false,
     lean: 0, vx: 0, vy: 0,
+    vest: prev ? prev.vest || 0 : 0,   // what's left of a steel vest bought from the dealer
   };
   for (let y = 0; y < game.height; y++) for (let x = 0; x < game.width; x++) {
     const ch = game.map[y][x], cx = x + 0.5, cy = y + 0.5;
     if (WALLS.includes(ch) || ch === DOOR || ch === SECRET) continue; // doors and secrets stay in the map
     game.map[y][x] = ".";
-    if (ch === "S") { player.x = cx; player.y = cy; player.a = facingOpen(x, y); }
+    if (ch === "S") { player.x = cx; player.y = cy; player.a = facingOpen(x, y); game.wayOut = [cx, cy]; }
+    else if (FOLK_LETTERS.includes(ch)) spawnFolk(ch, cx, cy);
     else if (ENEMY_TYPES[ch]) spawnEnemy(ch, cx, cy);
     else if (ch === "L" && lvl.safe) game.objs.push({ x: cx, y: cy, art: OBJ.safe, scale: 0.8, block: true, size: 0.3, safe: true, progress: 0 });
     else if (SPAWNS[ch]) { const sp = SPAWNS[ch]; game.objs.push({ x: cx, y: cy, ...sp, art: OBJ[sp.art], frames: sp.frames && OBJ[sp.frames] }); }

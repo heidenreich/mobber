@@ -9,6 +9,7 @@ import { nextWeapon } from "../player.js";
 import { advance } from "../flow.js";
 import { lookSpeed } from "../settings.js";
 import { chooseDifficultyAt } from "../render/cards.js";
+import { shopClickAt } from "../render/shop.js";
 
 function lookBy(dx) { if (game.player) game.player.a += dx * TOUCH.lookSensitivity * lookSpeed(); }
 
@@ -19,7 +20,7 @@ export function installTouchInput() {
     if (input.menu) return;
     if (game.state !== "play") {
       const t = e.changedTouches[0];
-      if (!chooseDifficultyAt(t.clientX, t.clientY)) advance();   // a tap on a difficulty name picks it; anywhere else rolls the film
+      if (!chooseDifficultyAt(t.clientX, t.clientY) && !shopClickAt(t.clientX, t.clientY)) advance();   // a tap on a difficulty name picks it; anywhere else rolls the film
       e.preventDefault(); return;
     }
     input.touched = true;

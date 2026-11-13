@@ -1,5 +1,5 @@
 // You: moving, shooting, reloading, looting and leaving through the exit.
-import { W, K, isTouch, PLAYER, TOUCH, AIM_ASSIST, WEAPONS, ROUND_NAMES, ENEMY_AI, AMMO, MELEE } from "./config.js";
+import { W, K, isTouch, FOLK, PLAYER, TOUCH, AIM_ASSIST, WEAPONS, ROUND_NAMES, ENEMY_AI, AMMO, MELEE } from "./config.js";
 import { rand, clamp } from "./util.js";
 import { game, stats, input, say, intertitle, eye } from "./state.js";
 import { LEVELS } from "./levels.js";
@@ -8,7 +8,8 @@ import { SND } from "./audio.js";
 import { los, moveBy, objectiveDone, wallAt, buildLight } from "./world.js";
 import { tryPush } from "./doors.js";
 import { cam, camera, project, zbuf } from "./render/camera.js";
-import { fadeOut, showCard } from "./flow.js";
+import { fadeOut, showCard, nextCard } from "./flow.js";
+import { scare, shootFolk, standing } from "./folk.js";
 
 const ammoLeft = (p, i) => (p.mag[i] || 0) + (p.reserve[i] || 0);
 
@@ -49,6 +50,17 @@ function hitscan(col, maxDist = Infinity) {
     const half = (K / tY) * (isTouch ? TOUCH.hitWidth : PLAYER.hitWidth);
     // Same line-of-sight rule enemies use, so a half-open door hides you both equally
     if (Math.abs(sx - col) < half && tY < bestD && los(cam.x, cam.y, e.x, e.y)) { bestD = tY; best = e; }
+  }
+  return best;
+}
+
+// The nearest bystander under a screen column, in front of any wall
+function bystander(col) {
+  let best = null, bestD = Infinity;
+  for (const f of standing()) {
+    const [, tY, sx] = project(f.x, f.y);
+    if (tY < 0.15 || tY > zbuf[col]) continue;
+    if (Math.abs(sx - col) < (K / tY) * FOLK.hitWidth && tY < bestD && los(cam.x, cam.y, f.x, f.y)) { bestD = tY; best = f; }
   }
   return best;
 }
@@ -136,13 +148,16 @@ function fire() {
   p.mag[p.weapon]--; p.fireCd = w.rate; p.recoil = w.pellets ? 1.5 : 1; p.flash = 0.06; stats.shots++;
   [SND.rev, SND.tommy, SND.sawn][p.weapon]();
   // Gunfire carries: anyone in earshot now knows where you are, and comes looking
+  scare(p.x, p.y);
   const unaware = new Set(game.enemies.filter(e => e.hp > 0 && !e.alert));
   for (const e of game.enemies) if (e.hp > 0 && Math.hypot(e.x - p.x, e.y - p.y) < ENEMY_AI.hearingRange) { e.alert = true; e.lx = p.x; e.ly = p.y; }
   const spread = w.spread * (p.moving ? 1.6 : 1);
   let hitAnyone = false;
   for (let n = 0; n < (w.pellets || 1); n++) {
     const col = clamp((W / 2 + rand(-spread, spread)) | 0, 0, W - 1);
-    const t = hitscan(col);
+    const t = hitscan(col), f = bystander(col);
+    // Someone who isn't a gangster is nearer along that line: the bullet finds them instead
+    if (f && (!t || Math.hypot(f.x - p.x, f.y - p.y) < Math.hypot(t.x - p.x, t.y - p.y))) { shootFolk(f); hitAnyone = true; continue; }
     if (!t || t.hp <= 0) continue;
     hitAnyone = true;
     // Buckshot loses its punch with distance; the Don's vest shrugs off some of a tommy gun
@@ -211,7 +226,7 @@ function checkExit() {
     if (lvl.map[y] && lvl.map[y][x] === "E") {
       if (objectiveDone()) {
         game.state = "leaving"; // you made it: no more hits, pickups or deaths during the fade
-        fadeOut(() => game.levelIdx + 1 < LEVELS.length ? showCard("chapter", game.levelIdx + 1) : showCard("end"));
+        fadeOut(() => game.levelIdx + 1 < LEVELS.length ? nextCard(game.levelIdx + 1) : showCard("end"));
         return;
       }
       if (game.msg.t <= 0) say(lvl.objective === "ledger" ? "Not without the ledger." : lvl.objective === "lift" ? "Not this floor." : "Not while Don Vitale still breathes.");

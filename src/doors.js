@@ -74,6 +74,7 @@ export function updateDoors(dt) {
     let near = Math.hypot(p.x - cx, p.y - cy) < DOORS.reach;
     // Gangsters open doors too, but only once they're after you
     for (const e of game.enemies) if (e.hp > 0 && e.state !== "idle" && Math.hypot(e.x - cx, e.y - cy) < DOORS.reach) near = true;
+    for (const f of game.folk) if (f.state === "flee" && Math.hypot(f.x - cx, f.y - cy) < DOORS.reach) near = true;   // and so do people running for it
     if (d.locked) { near = false; d.hold = 0; }   // the lift gate, between landings
     d.hold = near ? DOORS.holdOpen : d.hold - dt;
     const opening = d.hold > 0 || someoneIn(d); // never close on anyone

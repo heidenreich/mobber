@@ -77,8 +77,15 @@ test("the Don staggers for the parapet before the picture ends, and the paper co
   await page.keyboard.down(" ");
   await page.waitForFunction(() => window.__mobber.enemies.find(e => e.type.name === "boss").hp <= 0, null, { timeout: 5000 });
   await page.keyboard.up(" ");
-  assert.equal(await game(page, () => window.__mobber.enemies.find(e => e.type.name === "boss").state), "stagger");
+  // Beaten, he drops to his knees, and nothing moves until you say what happens to him
+  assert.equal(await game(page, () => window.__mobber.enemies.find(e => e.type.name === "boss").state), "kneel");
   assert.equal(await game(page, () => window.__mobber.state), "won");
+  await page.waitForFunction(() => window.__mobber.choice);
+  await page.mouse.click(200, 200);   // a click that isn't on an answer doesn't choose for you
+  assert.ok(await game(page, () => !!window.__mobber.choice));
+  await page.keyboard.press("1");     // finish it
+  assert.equal(await game(page, () => window.__mobber.enemies.find(e => e.type.name === "boss").state), "stagger");
+  assert.equal(await game(page, () => window.__mobber.stats.mercy), false);
   await page.waitForFunction(() => window.__mobber.state === "card" && window.__mobber.card.kind === "epilogue", null, { timeout: 15000 });
   await page.waitForFunction(() => window.__mobber.fade >= 0.6);
   await page.mouse.click(200, 200);
@@ -118,5 +125,59 @@ test("a hit can spin a man right round before he recovers", async () => {
   await page.keyboard.down(" "); await page.waitForFunction(() => window.__mobber.enemies[0].state === "hurt", null, { timeout: 4000 }); await page.keyboard.up(" ");
   assert.equal(await game(page, () => window.__mobber.enemies[0].spin), true);
   await page.waitForFunction(() => window.__mobber.enemies[0].state !== "hurt", null, { timeout: 4000 });   // and he comes out of it
+  assert.deepEqual(errors, []);
+});
+
+test("hand the Don to the law instead, and the picture ends with him in handcuffs", async () => {
+  const { page, errors } = await start("The Roof");
+  await game(page, () => {
+    const M = window.__mobber, d = M.enemies.find(e => e.type.name === "boss"), P = M.player;
+    for (const e of M.enemies) if (e !== d) { e.hp = 0; e.state = "dead"; }
+    P.hp = 1e9; P.x = d.x - 1.5; P.y = d.y; P.a = 0; d.hp = 1; d.cd = 99; P.mag[0] = 6; P.fireCd = 0;
+  });
+  await page.keyboard.down(" ");
+  await page.waitForFunction(() => window.__mobber.choice, null, { timeout: 5000 });
+  await page.keyboard.up(" ");
+  // Click the second answer
+  await page.waitForFunction(() => window.__mobber.choiceRows.length === 2);
+  const row = await game(page, () => { const r = window.__mobber.choiceRows[1]; return { x: (r.x0 + r.x1) / 2, y: (r.y0 + r.y1) / 2 }; });
+  await page.mouse.click(row.x, row.y);
+  assert.deepEqual(await game(page, () => [window.__mobber.stats.mercy, !!window.__mobber.choice, window.__mobber.enemies.find(e => e.type.name === "boss").state]), [true, false, "kneel"]);
+  await page.waitForFunction(() => window.__mobber.state === "card" && window.__mobber.card.kind === "epilogue", null, { timeout: 15000 });
+  await page.waitForFunction(() => window.__mobber.fade >= 0.6);
+  await page.mouse.click(200, 200);
+  await page.waitForFunction(() => window.__mobber.card.kind === "end");
+  await page.waitForTimeout(1200);
+  assert.deepEqual(errors, []);
+});
+
+test("each chapter has one of Vitale's lieutenants: he speaks when he sees you, and pays well when he falls", async () => {
+  const { page, errors } = await openGame(browser, srv.url);
+  await rollFilm(page);
+  const where = await game(page, () => {
+    const M = window.__mobber, out = {};
+    M.LEVELS.forEach((l, i) => { M.startLevel(i); const lt = M.enemies.filter(e => e.type.lieutenant); if (lt.length) out[l.title] = lt.map(e => e.type.title).join(); });
+    return out;
+  });
+  assert.deepEqual(where, { "The Blue Note Club": "FRANKIE LACE", "Pier 9": "BIG OTTO", "Hotel Regent, Top Floor": "MR. FINCH" });
+  // Face the club's manager with dialogue on
+  await game(page, () => {
+    const M = window.__mobber; M.startLevel(M.LEVELS.findIndex(l => l.title === "The Blue Note Club"));
+    const lt = M.enemies.find(e => e.type.lieutenant), P = M.player;
+    for (const e of M.enemies) if (e !== lt) { e.hp = 0; e.state = "dead"; }
+    M.folk.length = 0; M.dialogue = true; P.hp = 1e9;
+    lt.x = P.x + Math.cos(P.a) * 3; lt.y = P.y + Math.sin(P.a) * 3; lt.face = P.a + Math.PI; lt.turnT = 99; lt.cd = 99;
+  });
+  await page.waitForFunction(() => window.__mobber.intertitle, null, { timeout: 4000 });
+  assert.deepEqual(await game(page, () => [window.__mobber.intertitle.who, /Eddie's brother/.test(window.__mobber.intertitle.lines.join(" "))]), ["FRANKIE LACE", true]);
+  await page.waitForFunction(() => !window.__mobber.intertitle, null, { timeout: 6000 });
+  // He takes more putting down than a goon; when he goes, his bankroll and his stickpin are on the floor
+  const hp = await game(page, () => { const lt = window.__mobber.enemies.find(e => e.type.lieutenant); const h = lt.hp; lt.hp = 1; window.__mobber.player.mag[0] = 6; return h; });
+  assert.ok(hp >= 150, "tougher than the rest");
+  await page.keyboard.down(" ");
+  await page.waitForFunction(() => window.__mobber.enemies.find(e => e.type.lieutenant).hp <= 0, null, { timeout: 5000 });
+  await page.keyboard.up(" ");
+  const left = await game(page, () => ({ n: window.__mobber.stats.lieutenants, drops: window.__mobber.objs.filter(o => o.pick === "cash" && o.amount === 500 || o.pick === "loot").map(o => o.pick).sort() }));
+  assert.deepEqual(left, { n: 1, drops: ["cash", "loot"] });
   assert.deepEqual(errors, []);
 });

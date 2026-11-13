@@ -14,6 +14,7 @@ import { scare } from "./folk.js";
 export function updateEnemy(e, dt) {
   const p = game.player, T = e.type;
   if (e.state === "stagger") { lastSteps(e, dt); return; }
+  if (e.state === "kneel") return;   // the Don, beaten, waiting to hear what you'll do with him
   if (e.state === "dying") { e.t -= dt; if (e.t <= 0) e.state = "dead"; return; }
   if (e.state === "dead") return;
   e.cd -= dt; e.staggerCd = Math.max(0, (e.staggerCd || 0) - dt); e.repath = (e.repath || 0) - dt;
@@ -34,6 +35,7 @@ export function updateEnemy(e, dt) {
     // The first gangster to get a good look at you, and later the Don himself, have something to say
     if (!e.alert && d < 9) {
       if (T.flees) intertitle("don", "DON VITALE", ["“You should have stayed", "out of it, kid.”"]);
+      else if (T.lieutenant) intertitle(T.name, T.title, T.line);   // one of Vitale's lieutenants
       else intertitle("spotted", "A VITALE GUNMAN", ["“It's Eddie's brother!", "Get him!”"]);
     }
     if (!e.alert) raiseAlarm(e, d);
@@ -127,7 +129,7 @@ function raiseAlarm(e, d) {
   const p = game.player;
   let heard = false;
   for (const o of game.enemies) {
-    if (o === e || o.hp <= 0 || o.alert || Math.hypot(o.x - e.x, o.y - e.y) > ENEMY_AI.shoutRange) continue;
+    if (o === e || o.hp <= 0 || o.alert || o.type.lieutenant || Math.hypot(o.x - e.x, o.y - e.y) > ENEMY_AI.shoutRange) continue;
     o.alert = true; o.lx = p.x; o.ly = p.y; heard = true;
   }
   if (heard) SND.shout(d);

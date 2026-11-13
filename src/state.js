@@ -28,6 +28,7 @@ export const game = {
   alarm: false,         // the bagman got to the bell
   windows: [],          // the fence's walk-up windows in this scene (fence.js)
   fenceShut: 0,         // seconds until his shutter goes back up after a shot
+  choice: null,         // { boss, goal } while you decide what happens to the Don (render/choice.js)
   shop: false,          // you're dealing with the fence: the picture stops (render/shop.js)
   cracking: null,       // { progress, working } while you stand at a safe
   folk: [],             // bystanders: patrons, the bartender, the pianist (folk.js)
@@ -36,8 +37,8 @@ export const game = {
   navBlocked: null,     // squares furniture fills, for enemy pathfinding (world.js)
 };
 
-export const stats = { kills: 0, cash: 0, shots: 0, hits: 0, deaths: 0, time: 0, bystanders: 0, secretsFound: new Set() };
-export function resetStats() { Object.assign(stats, { kills: 0, cash: 0, shots: 0, hits: 0, deaths: 0, time: 0, bystanders: 0, secretsFound: new Set() }); }
+export const stats = { kills: 0, cash: 0, shots: 0, hits: 0, deaths: 0, time: 0, bystanders: 0, lieutenants: 0, mercy: false, secretsFound: new Set() };
+export function resetStats() { Object.assign(stats, { kills: 0, cash: 0, shots: 0, hits: 0, deaths: 0, time: 0, bystanders: 0, lieutenants: 0, mercy: false, secretsFound: new Set() }); }
 
 export const input = {
   keys: new Set(),

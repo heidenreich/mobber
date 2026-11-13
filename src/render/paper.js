@@ -39,13 +39,15 @@ export function drawPaper(t) {
   hr(53, 0.5);
   // the headline depends on how the night went
   const grade = stars();
-  const head = grade >= 5 ? ["VITALE OUTFIT SMASHED", "IN A SINGLE NIGHT"] : grade >= 3 ? ["DON VITALE DEAD", "ON HOTEL ROOF"] : ["GANG WAR LEAVES", "CITY REELING"];
+  const head = grade < 3 ? ["GANG WAR LEAVES", "CITY REELING"]
+    : stats.mercy ? (grade >= 5 ? ["VITALE OUTFIT SMASHED", "DON TO STAND TRIAL"] : ["DON VITALE TAKEN", "ON HOTEL ROOF"])
+    : grade >= 5 ? ["VITALE OUTFIT SMASHED", "IN A SINGLE NIGHT"] : ["DON VITALE DEAD", "ON HOTEL ROOF"];
   head.forEach((h, i) => {
     let size = 27; ctx.font = `900 ${size}px ${SERIF}`;
     while (ctx.measureText(h).width > W2 * 2 - 24) { size -= 1; ctx.font = `900 ${size}px ${SERIF}`; }
     ctx.textAlign = "center"; ctx.fillText(h, 0, Y(82 + i * 27));
   });
-  text("Bookkeeper's Brother Hands Ledger to District Attorney", 0, 126, `italic 700 9.5px ${SERIF}`);
+  text(stats.mercy ? "Bookkeeper's Brother Hands Don and Ledger to District Attorney" : "Bookkeeper's Brother Hands Ledger to District Attorney", 0, 126, `italic 700 9.5px ${SERIF}`);
   hr(132, 0.5);
 
   // the photograph: the hotel roof at dawn, the autogiro still on it
@@ -65,7 +67,8 @@ export function drawPaper(t) {
   const acc = stats.shots ? Math.round(stats.hits / stats.shots * 100) : 0, mm = Math.floor(stats.time / 60), ss = Math.floor(stats.time % 60);
   const rooms = stats.secretsFound.size;
   const story = [
-    `${stats.kills} of the Vitale outfit were`, "found where they fell.", "",
+    `${stats.kills} of the Vitale outfit were`, "found where they fell.",
+    stats.lieutenants ? `${stats.lieutenants} of his lieutenant${stats.lieutenants === 1 ? "" : "s"} among them.` : "",
     `Police counted ${stats.shots} shots fired,`, `${acc} in every hundred finding`, "their mark.", "",
     `$${stats.cash.toLocaleString()} in cash was recovered.`, "",
     `It was over in ${mm} min. ${String(ss).padStart(2, "0")} sec.`,

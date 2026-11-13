@@ -109,6 +109,7 @@ function installBot(skill) {
   while (!done && Date.now() - t0 < LIMIT_MIN * 60e3) {
     await page.waitForTimeout(250);
     const s = await page.evaluate(() => ({ state: window.__mobber.state, fade: window.__mobber.fade, card: window.__mobber.card, n: window.__rec.length }));
+    if (await page.evaluate(() => !!window.__mobber.choice && !window.__mobber.intertitle)) await page.keyboard.press("1");   // the Don on his knees: finish it
     if (s.state === "card" && s.fade >= 0.6) {
       cards.push(s.card.kind); await page.evaluate(([n, k]) => { if (window.__rec[n - 1] && !window.__rec[n - 1].result) window.__rec[n - 1].result = k; }, [s.n, s.card.kind]);
       if (s.card.kind === "end") done = true; else await page.mouse.click(200, 200);

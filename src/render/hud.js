@@ -48,7 +48,7 @@ export function drawHUD() {
   ctx.font = `${fs(9)}px ${TYPE}`; ctx.fillText(p.vest > 0 ? "ARMORED" : "HEALTH", f.x + 18 * s, base - 13 * s);
   ctx.font = `${fs(17)}px ${DECO}`; ctx.fillStyle = p.hp < 30 && Math.floor(game.timer * 4) % 2 ? "#ffffff" : CREAM;
   ctx.fillText(String(Math.ceil(p.hp)), f.x + 18 * s, base);
-  ctx.fillStyle = CREAM; ctx.font = `${fs(9)}px ${TYPE}`; ctx.fillText("CASH", f.x + 78 * s, base - 13 * s);
+  ctx.fillStyle = CREAM; ctx.font = `${fs(9)}px ${TYPE}`; ctx.fillText(p.loot && p.loot.length ? `CASH +${p.loot.length}` : "CASH", f.x + 78 * s, base - 13 * s);   // +N: valuables to sell to the fence
   ctx.font = `${fs(14)}px ${DECO}`; ctx.fillText("$" + stats.cash.toLocaleString(), f.x + 78 * s, base);
   ctx.textAlign = "center"; ctx.font = `${fs(10)}px ${TYPE}`;
   const left = game.enemies.filter(e => e.hp > 0).length;
@@ -85,6 +85,18 @@ export function drawHUD() {
     ctx.textAlign = "center"; ctx.font = `${Math.max(11, 10 * film.s)}px ${TYPE}`;
     const tip = ck.working ? "working the dial…" : isTouch ? "stand still to work the dial" : "hold E to work the dial";
     ctx.fillStyle = "rgba(0,0,0,0.7)"; ctx.fillText(tip, x + 1, y + R + 21 * film.s + 1); ctx.fillStyle = CREAM; ctx.fillText(tip, x, y + R + 21 * film.s);
+  }
+  // A lieutenant who has seen you: his name, what he is, and how much fight he has left
+  const lt = game.enemies.find(e => e.type.lieutenant && e.hp > 0 && e.alert);
+  if (lt) {
+    const w = 150 * film.s, x = film.x + film.w / 2 - w / 2, y = film.y + 46 * film.s, h = Math.max(3, 4 * film.s);
+    ctx.textAlign = "center"; ctx.font = `${Math.max(11, 11 * film.s)}px ${DECO}`;
+    ctx.fillStyle = "rgba(0,0,0,0.7)"; ctx.fillText(lt.type.title, x + w / 2 + 1, y - 5 * film.s + 1);
+    ctx.fillStyle = CREAM; ctx.fillText(lt.type.title, x + w / 2, y - 5 * film.s);
+    ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(x - 1, y - 1, w + 2, h + 2);
+    ctx.fillStyle = CREAM; ctx.fillRect(x, y, w * Math.max(0, lt.hp / lt.type.hp), h);
+    ctx.font = `italic 700 ${Math.max(9, 8.5 * film.s)}px ${SERIF}`; ctx.fillStyle = "rgba(0,0,0,0.7)"; ctx.fillText(lt.type.role, x + w / 2 + 1, y + h + 11 * film.s + 1);
+    ctx.fillStyle = CREAM; ctx.fillText(lt.type.role, x + w / 2, y + h + 11 * film.s);
   }
   // Messages ("Find the ledger.", pickups)
   const msg = game.msg;

@@ -111,6 +111,7 @@ export const SND = {
   pickup: what => {
     if (what === "cash") { tone(1568, 0.3, "triangle", 0.05); tone(2093, 0.45, "triangle", 0.05, 0, 0.09); hiss("highpass", 5000, 0.05, 0.03); }   // a cash register
     else if (what === "rounds") { metal(0, 0.03, 3100); metal(0.07, 0.025, 2600); metal(0.13, 0.02, 3400); }
+    else if (what === "loot") { metal(0, 0.03, 3600); tone(2637, 0.3, "triangle", 0.03, 0, 0.05); }
     else if (what === "med") { hiss("lowpass", 900, 0.16, 0.1); tone(660, 0.14, "sine", 0.04, 0, 0.1); }
     else if (what === "ledger") { hiss("bandpass", 2600, 0.2, 0.06); tone(784, 0.2, "triangle", 0.05, 0, 0.12); tone(1175, 0.4, "triangle", 0.05, 0, 0.26); }
     else { tone(880, 0.08); tone(1320, 0.12, "sine", 0.05, 0, 0.07); }

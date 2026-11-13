@@ -242,11 +242,18 @@ LOOKS.heavy = ({ coat: 178, hat: 196, band: 44, pants: 70, tie: 44, skin: 164, w
 LOOKS.knife = ({ coat: 62, hat: 92, band: 30, pants: 44, tie: 150, skin: 168, weapon: "knife", cap: true });
 LOOKS.rifle = ({ coat: 92, hat: 60, band: 20, pants: 60, tie: 30, skin: 170, weapon: "rifle", window: true });
 LOOKS.bagman = ({ coat: 150, hat: 120, band: 40, pants: 84, tie: 40, skin: 174, weapon: "pistol", bag: true, moustache: true });
+// Vitale's lieutenants: the club's manager all in white, the pier's foreman, the Don's bodyguard
+LOOKS.manager = ({ coat: 226, hat: 236, band: 30, pants: 214, tie: 16, skin: 174, weapon: "pistol", moustache: true, spats: true });
+LOOKS.foreman = ({ coat: 78, hat: 56, band: 56, pants: 66, tie: 78, skin: 162, weapon: "shotgun", wide: true, moustache: true, belt: true });
+LOOKS.bodyguard = ({ coat: 22, hat: 22, band: 70, pants: 22, tie: 210, skin: 170, weapon: "tommy" });
 LOOKS.boss = ({ coat: 40, hat: 232, band: 20, pants: 36, tie: 228, skin: 176, weapon: "pistol", stripes: true, cigar: true, wide: true, spats: true });
 // Each kind of gangster, with his hat on and (after a near miss) with it knocked off
 // People with no part in it (folk.js): a patron in a dinner jacket, the bartender, the pianist
 PEOPLE.gent = personSet({ coat: 34, hat: 30, band: 14, pants: 34, tie: 16, skin: 176, weapon: "none", hatless: true });
 PEOPLE.barman = personSet({ coat: 214, hat: 30, band: 14, pants: 44, tie: 18, skin: 170, weapon: "none", hatless: true, moustache: true });
+// A working man in shirtsleeves and braces, and the Regent's doorman in his long coat and braided cap
+PEOPLE.worker = personSet({ coat: 150, hat: 30, band: 14, pants: 76, tie: 150, skin: 166, weapon: "none", hatless: true, moustache: true });
+PEOPLE.doorman = personSet({ coat: 58, hat: 58, band: 220, pants: 58, tie: 58, skin: 172, weapon: "none", belt: true });
 PEOPLE.pianist = personSet({ coat: 84, hat: 30, band: 14, pants: 40, tie: 200, skin: 172, weapon: "none", hatless: true });
 
 // A woman out for the evening: cloche hat, bobbed hair, a drop-waisted dress, a long string of pearls
@@ -556,3 +563,14 @@ OBJ.autogiroSpin = [1, 0.55, 0.15].map(k => bitmap(128, 96, g => {
   g.fillStyle = gray(30); g.fillRect(40, 66, 2, 16); g.fillRect(82, 64, 2, 18);
   for (const x of [41, 83]) { g.fillStyle = gray(15); g.beginPath(); g.arc(x, 84, 7, 0, 6.283); g.fill(); g.fillStyle = gray(150); g.beginPath(); g.arc(x, 84, 2.5, 0, 6.283); g.fill(); }
 }));
+
+// Something a gangster had on him: a pocket watch on its chain, catching the light
+OBJ.valuable = bitmap(64, 64, g => {
+  g.fillStyle = gray(8); g.beginPath(); g.ellipse(32, 62.5, 9, 1.3, 0, 0, 6.283); g.fill();
+  g.strokeStyle = gray(170); g.lineWidth = 1; g.beginPath(); g.moveTo(36, 54); g.quadraticCurveTo(46, 50, 44, 60); g.stroke();   // the chain
+  g.fillStyle = gray(120); g.beginPath(); g.arc(31, 57, 5.6, 0, 6.283); g.fill();
+  g.fillStyle = gray(236); g.beginPath(); g.arc(31, 57, 4.4, 0, 6.283); g.fill();
+  g.strokeStyle = gray(30); g.lineWidth = 0.8; g.beginPath(); g.moveTo(31, 57); g.lineTo(31, 54); g.moveTo(31, 57); g.lineTo(33.2, 58); g.stroke();   // its hands
+  g.fillStyle = gray(150); g.fillRect(30, 50, 2, 2);
+  g.fillStyle = gray(255); g.fillRect(28, 54.4, 1.4, 1.4);
+});

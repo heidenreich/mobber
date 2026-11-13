@@ -10,6 +10,7 @@ import { advance } from "../flow.js";
 import { lookSpeed } from "../settings.js";
 import { chooseDifficultyAt } from "../render/cards.js";
 import { shopClickAt } from "../render/shop.js";
+import { choiceClickAt } from "../render/choice.js";
 
 function lookBy(dx) { if (game.player) game.player.a += dx * TOUCH.lookSensitivity * lookSpeed(); }
 
@@ -18,6 +19,7 @@ export function installTouchInput() {
   cv.addEventListener("touchstart", e => {
     initAudio();
     if (input.menu) return;
+    if (game.choice) { const t = e.changedTouches[0]; if (!game.intertitle) choiceClickAt(t.clientX, t.clientY); e.preventDefault(); return; }   // deciding about the Don
     if (game.shop) { const t = e.changedTouches[0]; shopClickAt(t.clientX, t.clientY); e.preventDefault(); return; }   // dealing with the fence
     if (game.state !== "play") {
       const t = e.changedTouches[0];

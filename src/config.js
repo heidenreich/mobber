@@ -42,10 +42,12 @@ export const PLAYER = {
 // Bystanders (folk.js)
 export const FOLK = {
   hearing: 14,              // a shot this close sends them running
-  speed: 2.6,               // how fast they run for the door
-  barmanReach: 2.4,
+  speed: 2.6,               // how fast they run, give or take (each has their own pace)
+  barmanReach: 2.4,         // how close you come before the bartender or the doorman speaks
   fenceReach: 1.25,         // how close to his window you stand to deal with the fence
-  fenceNerve: 5,            // seconds after a shot before he'll deal again         // how close you come before the bartender speaks
+  fenceNerve: 5,            // seconds after a shot before he'll deal again
+  tooClose: 4,              // a shot this near someone hiding (and in their sight) flushes them out again
+  nerve: 1.5,               // seconds before the same person can be flushed out again
   hitWidth: 0.2,            // how wide a bystander is to a stray bullet
 };
 

@@ -33,9 +33,10 @@ export function updateEnemy(e, dt) {
   if (T.runner && e.alert && !e.rang && !e.cornered) { runForAlarm(e, dt); return; }
   if (sees) {
     // The first gangster to get a good look at you, and later the Don himself, have something to say
-    if (!e.alert && d < 9) {
+    // A lieutenant speaks the first time he sees you close, even if your bullet reached him first
+    if (T.lieutenant) { if (!e.met && d < 9) { e.met = true; intertitle(T.name, T.title, T.line); } }
+    else if (!e.alert && d < 9) {
       if (T.flees) intertitle("don", "DON VITALE", ["“You should have stayed", "out of it, kid.”"]);
-      else if (T.lieutenant) intertitle(T.name, T.title, T.line);   // one of Vitale's lieutenants
       else intertitle("spotted", "A VITALE GUNMAN", ["“It's Eddie's brother!", "Get him!”"]);
     }
     if (!e.alert) raiseAlarm(e, d);
@@ -114,7 +115,7 @@ function runForAlarm(e, dt) {
   if (!bell) { e.rang = true; e.panic = true; return; }
   if (best < 0.95) {
     e.rang = true; e.panic = true; game.alarm = true; SND.alarm(); scare(e.x, e.y);
-    for (const o of game.enemies) if (o.hp > 0) { o.alert = true; o.lx = p.x; o.ly = p.y; }
+    for (const o of game.enemies) if (o.hp > 0 && !o.type.lieutenant) { o.alert = true; o.lx = p.x; o.ly = p.y; }   // a lieutenant holds his post even then
     intertitle("alarm", null, ["The bagman has rung the alarm.", "Every gun in the place is coming."]) || say("The alarm! Every gun in the place is coming.", 3.5);
     return;
   }

@@ -166,7 +166,18 @@ test("each chapter has one of Vitale's lieutenants: he speaks when he sees you, 
     const lt = M.enemies.find(e => e.type.lieutenant), P = M.player;
     for (const e of M.enemies) if (e !== lt) { e.hp = 0; e.state = "dead"; }
     M.folk.length = 0; M.dialogue = true; P.hp = 1e9;
-    lt.x = P.x + Math.cos(P.a) * 3; lt.y = P.y + Math.sin(P.a) * 3; lt.face = P.a + Math.PI; lt.turnT = 99; lt.cd = 99;
+    lt.turnT = 99; lt.cd = 99;
+    // Out of your sight to begin with, and the ledger at your feet
+    M.map.forEach((row, y) => row.forEach((c, x) => { if (c === "." && !M.navBlocked[y * row.length + x] && !M.los(x + 0.5, y + 0.5, P.x, P.y) && Math.hypot(x - P.x, y - P.y) > 6) { lt.x = x + 0.5; lt.y = y + 0.5; } }));
+    M.objs.push({ x: P.x, y: P.y, pick: "ledger", art: M.objs[0].art, scale: 0.5 });
+  });
+  // Picking up the ledger doesn't fetch him, and a bullet that reaches him before he's seen you doesn't cost him his line
+  await page.waitForFunction(() => window.__mobber.player.ledger, null, { timeout: 4000 });
+  await page.waitForTimeout(300);
+  assert.equal(await game(page, () => window.__mobber.enemies.find(e => e.type.lieutenant).alert), false, "the ledger brought the lieutenant");
+  await game(page, () => {
+    const M = window.__mobber, lt = M.enemies.find(e => e.type.lieutenant), P = M.player;
+    lt.x = P.x + Math.cos(P.a) * 3; lt.y = P.y + Math.sin(P.a) * 3; lt.face = P.a + Math.PI; lt.alert = true;
   });
   await page.waitForFunction(() => window.__mobber.intertitle, null, { timeout: 4000 });
   assert.deepEqual(await game(page, () => [window.__mobber.intertitle.who, /Eddie's brother/.test(window.__mobber.intertitle.lines.join(" "))]), ["FRANKIE LACE", true]);

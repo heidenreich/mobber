@@ -47,6 +47,29 @@ test("the first shot stops the piano, scatters the patrons and sends the staff t
   assert.deepEqual(errors, []);
 });
 
+test("someone hiding breaks cover when the shooting comes right up to them, and no two share a hiding place", async () => {
+  const { page, errors } = await club();
+  await game(page, () => { const P = window.__mobber.player; P.x = 9.5; P.y = 9.5; P.a = -Math.PI / 2; P.mag[0] = 6; P.fireCd = 0; });
+  await page.keyboard.down(" "); await page.waitForTimeout(100); await page.keyboard.up(" ");
+  await page.waitForFunction(() => window.__mobber.folk.every(f => f.state === "gone" || f.state === "cower"), null, { timeout: 25000 });
+  const hid = await game(page, () => window.__mobber.folk.filter(f => f.goal && !f.goal.leave).map(f => f.goal.x + "," + f.goal.y));
+  assert.equal(new Set(hid).size, hid.length, "two people in one hiding place: " + hid.join(" "));
+  // Walk up to one of them and fire into the wall beside them
+  const moved = await game(page, () => {
+    const M = window.__mobber, P = M.player, f = M.folk.find(f => f.state === "cower" && f.goal);
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (!M.wallAt(f.x + dx * 1.2, f.y + dy * 1.2) && M.los(f.x, f.y, f.x + dx * 1.2, f.y + dy * 1.2)) { P.x = f.x + dx * 1.2; P.y = f.y + dy * 1.2; P.a = Math.atan2(dy, dx); }
+    P.mag[0] = 6; P.fireCd = 0; window.__who = M.folk.indexOf(f);
+    return Math.hypot(P.x - f.x, P.y - f.y) < 2;
+  });
+  assert.ok(moved, "couldn't stand beside the one hiding");
+  await page.waitForTimeout(1700);   // their nerve steadies first
+  await page.keyboard.down(" "); await page.waitForTimeout(100); await page.keyboard.up(" ");
+  await page.waitForFunction(() => window.__mobber.folk[window.__who].state === "flee", null, { timeout: 3000 });
+  await page.waitForFunction(() => window.__mobber.folk.every(f => f.state === "gone" || f.state === "cower"), null, { timeout: 25000 });
+  assert.equal(await game(page, () => window.__mobber.stats.bystanders), 0);
+  assert.deepEqual(errors, []);
+});
+
 test("a bullet that finds a bystander is counted against you", async () => {
   const { page, errors } = await club();
   await game(page, () => {

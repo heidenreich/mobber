@@ -306,7 +306,7 @@ function crackSafe(dt) {
   const working = isTouch ? !p.moving && !input.firing : input.keys.has("e");
   game.cracking = { progress: s.progress, working };
   if (!working) return;
-  const before = s.progress, everyone = () => { for (const e of game.enemies) { e.alert = true; e.lx = p.x; e.ly = p.y; } };
+  const before = s.progress, everyone = () => { for (const e of game.enemies) if (!e.type.lieutenant) { e.alert = true; e.lx = p.x; e.ly = p.y; } };
   s.progress += dt / PLAYER.safeTime;
   if (Math.floor(s.progress * 14) !== Math.floor(before * 14)) SND.click();   // the tumblers
   if (before < 0.35 && s.progress >= 0.35 && game.enemies.some(e => e.hp > 0)) { everyone(); say("They've heard you at the safe!", 3); }
@@ -358,7 +358,7 @@ export function collectPickups() {
     else if (o.pick === "loot") { p.loot.push(o.item); say(`${o.item[0][0].toUpperCase()}${o.item[0].slice(1)}. The fence will give you something for it.`, 3); }
     else if (o.pick === "ledger") {
       p.ledger = true; say("Got the ledger. Now find the EXIT.", 3.5);
-      for (const e of game.enemies) { e.alert = true; e.lx = p.x; e.ly = p.y; }
+      for (const e of game.enemies) if (!e.type.lieutenant) { e.alert = true; e.lx = p.x; e.ly = p.y; }
     }
     objs.splice(i, 1); SND.pickup(o.pick);
   }

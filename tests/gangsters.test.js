@@ -73,11 +73,11 @@ test("a rifleman keeps to his window, fires a fast shot down at you, and can be 
 });
 
 test("the bagman runs for the bell, and ringing it brings everyone", async () => {
-  const { page, context, errors } = await sceneWith(CLUB, ["bagman", "heavy", "goon"]);
+  const { page, context, errors } = await sceneWith(CLUB, ["bagman", "heavy", "goon", "manager"]);
   // Leave one far-off goon who knows nothing, and let the bagman see you
   const far = await game(page, () => {
     const M = window.__mobber, b = M.enemies.find(e => e.type.name === "bagman");
-    const others = M.enemies.filter(e => e !== b && e.hp > 0).sort((p, q) => Math.hypot(q.x - b.x, q.y - b.y) - Math.hypot(p.x - b.x, p.y - b.y));
+    const others = M.enemies.filter(e => e !== b && e.hp > 0 && !e.type.lieutenant).sort((p, q) => Math.hypot(q.x - b.x, q.y - b.y) - Math.hypot(p.x - b.x, p.y - b.y));
     others.slice(1).forEach(e => { e.hp = 0; e.state = "dead"; });
     Object.assign(M.player, { x: b.x - 3, y: b.y + 3, hp: 1e6 }); M.player.a = Math.atan2(b.y - M.player.y, b.x - M.player.x);
     return M.enemies.indexOf(others[0]);
@@ -87,6 +87,8 @@ test("the bagman runs for the bell, and ringing it brings everyone", async () =>
   const s = await game(page, i => { const M = window.__mobber, b = M.enemies.find(e => e.type.name === "bagman"), bell = M.objs.find(o => o.alarm); return { alert: M.enemies[i].alert, d: Math.hypot(b.x - bell.x, b.y - bell.y), bullets: M.bullets.length }; }, far);
   assert.ok(s.alert, "the far goon never heard the alarm");
   assert.ok(s.d < 1.6, "the bagman wasn't at the bell");
+  // ...everyone but the manager, who holds his post until he sees you
+  assert.deepEqual(await game(page, () => window.__mobber.enemies.filter(e => e.type.lieutenant && e.hp > 0).map(e => e.alert)), [false]);
   assert.deepEqual(errors, []);
   await context.close();
 });

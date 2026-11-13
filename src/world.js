@@ -172,7 +172,30 @@ export function loadLevel(i) {
   }
   buildLight();
   buildNav();
+  setStreetRoles(lvl);
+  // A lookout from the street got in ahead of you: everyone but the lieutenant is ready, and looking at the door you came through
+  player.warnedAt = prev ? prev.warnedAt : undefined;
+  game.warned = player.warnedAt === i;
+  if (game.warned) {
+    for (const e of game.enemies) if (!e.type.lieutenant && !e.type.flees) { e.alert = true; e.lx = player.x; e.ly = player.y; e.face = Math.atan2(player.y - e.y, player.x - e.x); }
+    say("They were warned. They're waiting for you.", 4);
+  }
   game.timer = 0; game.shop = false; game.choice = null; game.cracking = null; game.lift = null; game.alarm = false;
+}
+
+// On a street with `stand: { lookouts: n }`: the n gunmen nearest where you start are lookouts and
+// fight as they always did. The rest are door men: once they know you're here they fall back to
+// the front door and hold it (enemies.js). `game.doorFront` is the square in front of that door.
+function setStreetRoles(lvl) {
+  game.doorFront = null;
+  if (!lvl.stand) return;
+  lvl.map.forEach((row, y) => [...row].forEach((c, x) => {
+    if (c !== "E") return;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if ((game.map[y + dy] || [])[x + dx] === ".") game.doorFront = { x: x + dx + 0.5, y: y + dy + 0.5 };
+  }));
+  const p = game.player, guns = game.enemies.filter(e => !e.type.melee && !e.type.still && !e.type.runner);
+  guns.sort((a, b) => Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(b.x - p.x, b.y - p.y));
+  guns.slice(lvl.stand.lookouts || 0).forEach(e => { e.doorMan = true; });
 }
 
 // Put a gangster on the map. He stands watching the longest open view from where he is.

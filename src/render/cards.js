@@ -6,7 +6,6 @@ import { ctx, view } from "../screen.js";
 import { noiseCv } from "./film.js";
 import { loadGame, settings, saveSettings, DIFFICULTY } from "../settings.js";
 import { drawPaper } from "./paper.js";
-import { drawShop } from "./shop.js";
 
 const { deco: DECO, serif: SERIF, type: TYPE } = FONTS;
 
@@ -39,7 +38,7 @@ const HOW_TO = isTouch
 export function drawCard(t) {
   const f = view.cardRect, s = f.s, card = game.intertitle ? { kind: "intertitle" } : game.card || {};   // no card yet on the title
   if (card.kind === "end") { drawPaper(t); return; }
-  if (card.kind === "shop") { drawShop(t); return; }   // the dealer between scenes (shop.js)   // THE END is the morning paper (paper.js)
+   // THE END is the morning paper (paper.js)
   ctx.fillStyle = "#0b0a09"; ctx.fillRect(f.x, f.y, f.w, f.h);
   const cx = f.x + f.w / 2, Y = v => f.y + v * s;
   // The big cards (title, CUT!, THE END) get a faint sunburst rising behind the lettering

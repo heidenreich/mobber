@@ -2,18 +2,20 @@
 // the man at the piano, someone caught out in the rain. They don't fight. When the
 // shooting starts the patrons run for the way out, and the staff get their heads down.
 //
-// Map letters: e a patron or passer-by, u the bartender, i the pianist (put him beside a piano).
-import { FOLK } from "./config.js";
+// Map letters: e a patron or passer-by, u the bartender, i the pianist (put him beside a piano),
+// f the fence, who sells you what you need (render/shop.js) from a yard off the street.
+import { FOLK, isTouch } from "./config.js";
+import { openShop } from "./render/shop.js";
 import { rand, clamp } from "./util.js";
 import { game, stats, say, intertitle } from "./state.js";
 import { SND } from "./audio.js";
 import { music } from "./music.js";
 import { nextStep, wallAt, los } from "./world.js";
 
-export const FOLK_LETTERS = "eui";
+export const FOLK_LETTERS = "euif";
 
 export function spawnFolk(letter, x, y) {
-  const kind = letter === "u" ? "barman" : letter === "i" ? "pianist" : ((x | 0) + (y | 0)) % 2 ? "lady" : "gent";
+  const kind = letter === "f" ? "fence" : letter === "u" ? "barman" : letter === "i" ? "pianist" : ((x | 0) + (y | 0)) % 2 ? "lady" : "gent";
   game.folk.push({ x, y, kind, state: "idle", step: rand(0, 6), t: 0, spoke: false });
 }
 const up = f => f.state === "idle" || f.state === "flee" || f.state === "cower";   // still on his feet (or knees)
@@ -23,7 +25,9 @@ export const standing = () => game.folk.filter(up);
 export function scare(x, y) {
   let screamed = false;
   for (const f of game.folk) {
-    if (f.state !== "idle" || Math.hypot(f.x - x, f.y - y) > FOLK.hearing) continue;
+    if (Math.hypot(f.x - x, f.y - y) > FOLK.hearing) continue;
+    if (f.kind === "fence" && up(f)) { f.state = "cower"; f.t = FOLK.fenceNerve; continue; }   // he'll deal again when it's been quiet a while
+    if (f.state !== "idle") continue;
     if (f.kind === "pianist") { music.stop(); SND.clang(); }   // the tune stops dead on a fistful of wrong notes
     if (f.kind === "barman" || f.kind === "pianist") f.state = "cower";
     else { f.state = "flee"; f.t = rand(0, 0.5); screamed = true; }
@@ -45,10 +49,17 @@ export function updateFolk(dt) {
       if (f.kind === "pianist") {
         // His playing is the music in here: louder the nearer you are
         music.play("joint", clamp(1.15 - Math.hypot(f.x - p.x, f.y - p.y) / 16, 0.25, 1));
+      } else if (f.kind === "fence") {
+        // Walk up to him and he'll deal: on a phone his list comes up by itself, once each time you approach
+        const d = Math.hypot(f.x - p.x, f.y - p.y), near = d < FOLK.fenceReach && los(f.x, f.y, p.x, p.y);
+        if (near && !f.met) { f.met = true; if (isTouch) openShop(); else say("E: see what the fence is selling", 3); }
+        if (d > FOLK.fenceReach + 1) f.met = false;
       } else if (f.kind === "barman" && !f.spoke && Math.hypot(f.x - p.x, f.y - p.y) < FOLK.barmanReach && los(f.x, f.y, p.x, p.y)) {
         f.spoke = true;
         intertitle("barman", "THE BARTENDER", ["“The office is in the back, pal.", "I never saw you.”"]) || say("“The office is in the back, pal. I never saw you.”", 4);
       }
+    } else if (f.state === "cower" && f.kind === "fence") {
+      if ((f.t -= dt) <= 0) f.state = "idle";
     } else if (f.state === "flee") {
       if ((f.t -= dt) > 0) continue;   // a moment of disbelief first
       // Out the way you came in; once there, they're gone

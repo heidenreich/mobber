@@ -18,9 +18,10 @@ export function installTouchInput() {
   cv.addEventListener("touchstart", e => {
     initAudio();
     if (input.menu) return;
+    if (game.shop) { const t = e.changedTouches[0]; shopClickAt(t.clientX, t.clientY); e.preventDefault(); return; }   // dealing with the fence
     if (game.state !== "play") {
       const t = e.changedTouches[0];
-      if (!chooseDifficultyAt(t.clientX, t.clientY) && !shopClickAt(t.clientX, t.clientY)) advance();   // a tap on a difficulty name picks it; anywhere else rolls the film
+      if (!chooseDifficultyAt(t.clientX, t.clientY)) advance();   // a tap on a difficulty name picks it; anywhere else rolls the film
       e.preventDefault(); return;
     }
     input.touched = true;

@@ -108,6 +108,12 @@ function person(g, o, pose) {
     poly(g, [[cx + 5.4, 18.6], [cx + 3.2, 18.6], [cx + 0.6, 29.6], [cx + 6.6, 25]], gray(o.coat - 20));
   }
 
+  if (o.apron && !back) {                                                               // a shopkeeper's apron over the coat
+    g.fillStyle = across(g, cx - 7.5, cx + 7.5, 222, 20, 60); g.fillRect(cx - 7.5, 31, 15, 20);
+    g.fillStyle = gray(150); g.fillRect(cx - 10.4, 31, 20.8, 1.2);
+    g.strokeStyle = gray(170); g.lineWidth = 0.5; g.strokeRect(cx - 3.5, 38, 7, 6);     // its pocket
+  }
+
   // head: jaw, ears, a face mostly lost in the shadow of the hat brim
   g.fillStyle = gray(o.skin - 60); g.fillRect(cx - 2.4, 16.4, 4.8, 3);                 // neck
   g.fillStyle = across(g, cx - 5.2, cx + 5.2, o.skin, 26, 62);
@@ -247,6 +253,8 @@ LOOKS.boss = ({ coat: 40, hat: 232, band: 20, pants: 36, tie: 228, skin: 176, we
 // People with no part in it (folk.js): a patron in a dinner jacket, the bartender, the pianist
 PEOPLE.gent = personSet({ coat: 34, hat: 30, band: 14, pants: 34, tie: 16, skin: 176, weapon: "none", hatless: true });
 PEOPLE.barman = personSet({ coat: 214, hat: 30, band: 14, pants: 44, tie: 18, skin: 170, weapon: "none", hatless: true, moustache: true });
+// The fence: a careful man in a good hat, with nothing in his hands
+PEOPLE.fence = personSet({ coat: 70, hat: 150, band: 40, pants: 56, tie: 30, skin: 168, weapon: "none", moustache: true, apron: true });
 PEOPLE.pianist = personSet({ coat: 84, hat: 30, band: 14, pants: 40, tie: 200, skin: 172, weapon: "none", hatless: true });
 
 // A woman out for the evening: cloche hat, bobbed hair, a drop-waisted dress, a long string of pearls

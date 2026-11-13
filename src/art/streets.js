@@ -60,6 +60,22 @@ export const FACADES = {
   }),
 };
 
+// The fence's place: a pawnbroker's three balls and a lit sign, beside the mouth of his alley
+FACADES.K = bitmap(64, 128, g => {
+  bricks(g, 0, 128, 80);
+  windowAt(g, 24, 14, 16, 22, false);
+  g.fillStyle = gray(30); g.fillRect(31, 60, 2, 12); g.fillRect(18, 71, 28, 2);                 // the bracket
+  for (const [x, y] of [[20, 80], [32, 86], [44, 80]]) {                                      // three balls
+    g.fillStyle = gray(30); g.fillRect(x - 0.6, 72, 1.2, y - 76);
+    g.fillStyle = gray(236); g.beginPath(); g.arc(x, y, 5, 0, 6.283); g.fill();
+    g.fillStyle = gray(150); g.beginPath(); g.arc(x + 1.4, y + 1.6, 3, 0, 6.283); g.fill();
+    g.fillStyle = gray(255); g.beginPath(); g.arc(x - 1.6, y - 1.8, 1.3, 0, 6.283); g.fill();
+  }
+  sign(g, "LOANS", 8, 98, 48, 14, 11);
+  g.fillStyle = gray(40); g.fillRect(0, 120, 64, 8);
+  speckle(g, 64, 128, 400, 0.3);
+});
+
 // The hotel roof's parapet: a stone balustrade (only the top half shows on a waist-high wall)
 FACADES.R = bitmap(64, 64, g => {
   g.fillStyle = gray(150); g.fillRect(0, 0, 64, 64);

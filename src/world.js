@@ -169,7 +169,7 @@ export function loadLevel(i) {
   }
   buildLight();
   buildNav();
-  game.timer = 0; game.cracking = null; game.lift = null; game.alarm = false;
+  game.timer = 0; game.shop = false; game.cracking = null; game.lift = null; game.alarm = false;
 }
 
 // Put a gangster on the map. He stands watching the longest open view from where he is.

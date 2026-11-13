@@ -42,7 +42,7 @@ Until something alerts him, a gangster only sees what's in front of him, and now
 
 Not everyone is in the Vitale outfit. The Blue Note has patrons at its tables, a bartender who'll tell you where the office is, and a man at the piano: his playing is the music in there, and it stops on a fistful of wrong notes when the first shot is fired. The patrons run for the door and the staff get their heads down. There's someone out in the rain on Mulberry Street too. A bullet that finds a bystander is counted against you in the morning paper.
 
-Cash is worth picking up. Between scenes, if you can afford anything he has, a man in a back room sells revolver rounds, tommy gun drums, shells, a visit from a doctor, and a steel vest that takes half of the next 60 points of harm. Click or tap a line to buy it, or press its number.
+Cash is worth picking up. On each street a fence deals from a yard down an alley: look for a pawnbroker's three balls and a LOANS sign on the wall beside it. Walk up to him and press E (on a phone his list comes up by itself). He sells revolver rounds, tommy gun drums, shells, a visit from a doctor, and a steel vest that takes half of the next 60 points of harm. Click or tap a line to buy it, or press its number. He won't deal for a few seconds after a shot nearby.
 
 Each chapter has something besides shooting. The ledger at the Blue Note is in the office safe, and partway through working the dial the whole club hears you. The lookouts on the Waterfront can be slipped past. At the Hotel Regent you ride the lift, and Vitale men are waiting at every landing on the way up.
 
@@ -87,7 +87,7 @@ src/
   world.js            loading a map, walls, line of sight and cover, the light map, collision, enemy pathfinding
   doors.js            sliding doors and secret walls
   lift.js             the hotel lift: ride, stop at a landing, clear it, ride on
-  folk.js             bystanders: patrons, the bartender, the pianist
+  folk.js             bystanders: patrons, the bartender, the pianist, the fence
   player.js           moving, leaning, shooting, reloading, pickups, cracking the safe, the exit
   enemies.js          gangster behavior: watching, idle -> chase -> aim -> fire, taking cover, running, the knife, the alarm, the Don's last steps
   bullets.js          gangsters' bullets in flight: what stops them, and when they hit you
@@ -103,7 +103,7 @@ src/
     hud.js            health/ammo bar, crosshair, messages, the touch stick
     cards.js          the title, chapter, dialogue and "CUT!" cards
     paper.js          THE END: the morning paper, with your run as its front page
-    shop.js           the dealer between scenes: what he sells and his card
+    shop.js           the fence: what he sells, and his list
   art/
     bitmap.js         turns canvas drawings into grayscale bitmaps
     textures.js       wall, floor and ceiling textures

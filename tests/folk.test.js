@@ -1,4 +1,4 @@
-// Bystanders, the pianist, and the dealer between scenes.
+// Bystanders, the pianist, and the fence.
 const { test, before, after } = require("node:test");
 const assert = require("node:assert");
 const { serve, openGame, rollFilm, game, chromium } = require("./helpers");
@@ -52,32 +52,50 @@ test("a bullet that finds a bystander is counted against you", async () => {
   assert.deepEqual(errors, []);
 });
 
-test("with cash in hand the dealer stops you between scenes, and what you buy comes with you", async () => {
+test("the fence deals from a yard off the street, and what you buy is yours at once", async () => {
   const { page, errors } = await openGame(browser, srv.url);
-  await rollFilm(page);
-  await game(page, async () => {
-    const M = window.__mobber, P = M.player;
+  await rollFilm(page);   // Mulberry Street
+  // Walk up to him with money in your pocket
+  await game(page, () => {
+    const M = window.__mobber, P = M.player, f = M.folk.find(f => f.kind === "fence");
     for (const e of M.enemies) { e.hp = 0; e.state = "dead"; }
     M.stats.cash = 1000; P.hp = 40; P.reserve[0] = 0;
-    (await import("/src/flow.js")).nextCard(1);
+    P.x = f.x + 1.2; P.y = f.y; P.a = Math.PI;
   });
-  await page.waitForFunction(() => window.__mobber.state === "card" && window.__mobber.fade >= 0.6);
-  assert.equal(await game(page, () => window.__mobber.card.kind), "shop");
+  assert.equal(await game(page, () => window.__mobber.shop), false, "he waits to be asked");
+  await page.keyboard.press("e");
+  await page.waitForFunction(() => window.__mobber.shop);
+  const t0 = await game(page, () => window.__mobber.stats.time);
   // 1 is the box of rounds, 2 the doctor (no tommy gun or sawn-off yet, so those lines aren't offered), 3 the vest
   await page.keyboard.press("1"); await page.keyboard.press("2");
-  assert.deepEqual(await game(page, () => { const M = window.__mobber, P = M.player; return [M.stats.cash, P.reserve[0], P.hp]; }), [600, 12, 75]);
+  assert.deepEqual(await game(page, () => { const M = window.__mobber, P = M.player; return [M.stats.cash, P.mag[0] + P.reserve[0], P.hp]; }), [600, 18, 75]);
   await page.keyboard.press("3");
   assert.equal(await game(page, () => window.__mobber.stats.cash), 600, "can't afford the vest");
-  // Clicking a line buys it too; clicking elsewhere walks on to the next scene's card
+  // Clicking a line buys it too
+  await page.waitForFunction(() => window.__mobber.shopRows.length > 0);
   const row = await game(page, () => { const r = window.__mobber.shopRows[0]; return { x: (r.x0 + r.x1) / 2, y: (r.y0 + r.y1) / 2 }; });
   await page.mouse.click(row.x, row.y);
-  assert.deepEqual(await game(page, () => [window.__mobber.stats.cash, window.__mobber.player.reserve[0], window.__mobber.card.kind]), [450, 24, "shop"]);
-  await page.mouse.click(200, 200);
-  await page.waitForFunction(() => window.__mobber.card.kind === "chapter");
-  await page.waitForFunction(() => window.__mobber.fade >= 0.6);
-  await page.mouse.click(200, 200);
-  await page.waitForFunction(() => window.__mobber.state === "play");
-  assert.deepEqual(await game(page, () => { const P = window.__mobber.player; return [P.reserve[0], P.hp]; }), [24, 75], "carried into the next scene");
+  assert.deepEqual(await game(page, () => [window.__mobber.stats.cash, window.__mobber.shop]), [450, true]);
+  assert.equal(await game(page, () => window.__mobber.stats.time), t0, "the clock stops while you deal");
+  // E walks away, and you're back in the street
+  await page.keyboard.press("e");
+  await page.waitForFunction(() => !window.__mobber.shop);
+  assert.equal(await game(page, () => window.__mobber.state), "play");
+  // A shot nearby and he won't deal until it's been quiet a while
+  await game(page, () => { const P = window.__mobber.player; P.mag[0] = 6; P.fireCd = 0; P.a = 0; });
+  await page.keyboard.down(" "); await page.waitForTimeout(100); await page.keyboard.up(" ");
+  await page.waitForFunction(() => window.__mobber.folk.find(f => f.kind === "fence").state === "cower", null, { timeout: 3000 });
+  await page.keyboard.press("e");
+  await page.waitForTimeout(200);
+  assert.equal(await game(page, () => window.__mobber.shop), false);
+  assert.deepEqual(errors, []);
+});
+
+test("every street has a fence you can walk to, with his sign by the alley", async () => {
+  const { page, errors } = await openGame(browser, srv.url);
+  const streets = await game(page, () => window.__mobber.LEVELS.filter(l => l.objective === "reach").map(l => ({ title: l.title, fence: l.map.join("").split("f").length - 1, sign: l.map.join("").includes("K") })));
+  assert.equal(streets.length, 3);
+  for (const s of streets) assert.deepEqual([s.fence, s.sign], [1, true], s.title);
   assert.deepEqual(errors, []);
 });
 

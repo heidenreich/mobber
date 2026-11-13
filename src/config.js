@@ -43,7 +43,9 @@ export const PLAYER = {
 export const FOLK = {
   hearing: 14,              // a shot this close sends them running
   speed: 2.6,               // how fast they run for the door
-  barmanReach: 2.4,         // how close you come before the bartender speaks
+  barmanReach: 2.4,
+  fenceReach: 1.8,          // how close you stand to deal with the fence
+  fenceNerve: 5,            // seconds after a shot before he'll deal again         // how close you come before the bartender speaks
   hitWidth: 0.2,            // how wide a bystander is to a stray bullet
 };
 

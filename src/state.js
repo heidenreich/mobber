@@ -26,6 +26,7 @@ export const game = {
   smashed: new Set(),   // wall squares whose bottles or shop window have been shot out (y * width + x)
   lift: null,           // the hotel lift's state while riding it (lift.js)
   alarm: false,         // the bagman got to the bell
+  shop: false,          // you're dealing with the fence: the picture stops (render/shop.js)
   cracking: null,       // { progress, working } while you stand at a safe
   folk: [],             // bystanders: patrons, the bartender, the pianist (folk.js)
   wayOut: [2, 2],       // where the scene began: bystanders run for it

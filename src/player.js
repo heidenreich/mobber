@@ -157,7 +157,8 @@ function fire() {
   // Gunfire carries: anyone in earshot now knows where you are, and comes looking
   scare(p.x, p.y);
   const unaware = new Set(game.enemies.filter(e => e.hp > 0 && !e.alert));
-  for (const e of game.enemies) if (e.hp > 0 && Math.hypot(e.x - p.x, e.y - p.y) < ENEMY_AI.hearingRange) { e.alert = true; e.lx = p.x; e.ly = p.y; }
+  // (a lieutenant stays where he is until he sees you)
+  for (const e of game.enemies) if (e.hp > 0 && !e.type.lieutenant && Math.hypot(e.x - p.x, e.y - p.y) < ENEMY_AI.hearingRange) { e.alert = true; e.lx = p.x; e.ly = p.y; }
   const spread = w.spread * (p.moving ? 1.6 : 1);
   let hitAnyone = false;
   for (let n = 0; n < (w.pellets || 1); n++) {

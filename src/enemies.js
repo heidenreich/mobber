@@ -129,7 +129,7 @@ function raiseAlarm(e, d) {
   const p = game.player;
   let heard = false;
   for (const o of game.enemies) {
-    if (o === e || o.hp <= 0 || o.alert || Math.hypot(o.x - e.x, o.y - e.y) > ENEMY_AI.shoutRange) continue;
+    if (o === e || o.hp <= 0 || o.alert || o.type.lieutenant || Math.hypot(o.x - e.x, o.y - e.y) > ENEMY_AI.shoutRange) continue;
     o.alert = true; o.lx = p.x; o.ly = p.y; heard = true;
   }
   if (heard) SND.shout(d);

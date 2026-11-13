@@ -60,6 +60,50 @@ export const FACADES = {
   }),
 };
 
+// The fence's place: a pawnbroker's three balls and a lit sign, beside the mouth of his alley
+FACADES.K = bitmap(64, 128, g => {
+  bricks(g, 0, 128, 80);
+  windowAt(g, 24, 14, 16, 22, false);
+  g.fillStyle = gray(30); g.fillRect(31, 60, 2, 12); g.fillRect(18, 71, 28, 2);                 // the bracket
+  for (const [x, y] of [[20, 80], [32, 86], [44, 80]]) {                                      // three balls
+    g.fillStyle = gray(30); g.fillRect(x - 0.6, 72, 1.2, y - 76);
+    g.fillStyle = gray(236); g.beginPath(); g.arc(x, y, 5, 0, 6.283); g.fill();
+    g.fillStyle = gray(150); g.beginPath(); g.arc(x + 1.4, y + 1.6, 3, 0, 6.283); g.fill();
+    g.fillStyle = gray(255); g.beginPath(); g.arc(x - 1.6, y - 1.8, 1.3, 0, 6.283); g.fill();
+  }
+  sign(g, "LOANS", 8, 98, 48, 14, 11);
+  g.fillStyle = gray(40); g.fillRect(0, 120, 64, 8);
+  speckle(g, 64, 128, 400, 0.3);
+});
+
+// The fence's walk-up window, at the end of his alley: a lit hatch with bars and a
+// counter, and the man himself behind it. And the same wall with the shutter down.
+function fenceWindow(open) {
+  return bitmap(64, 128, g => {
+    bricks(g, 0, 128, 78);
+    windowAt(g, 24, 12, 16, 20, false);
+    g.fillStyle = gray(36); g.fillRect(8, 66, 48, 44);                                          // the frame
+    if (open) {
+      g.fillStyle = gray(250); g.fillRect(11, 69, 42, 34);                                      // lamplight inside
+      g.fillStyle = gray(40);                                                                   // the fence: hat, head, shoulders
+      g.beginPath(); g.ellipse(32, 79, 10, 2, 0, 0, 6.283); g.fill(); g.fillRect(27, 72, 10, 7);
+      g.beginPath(); g.ellipse(32, 85, 5, 6, 0, 0, 6.283); g.fill();
+      g.beginPath(); g.moveTo(18, 103); g.quadraticCurveTo(20, 91, 32, 91); g.quadraticCurveTo(44, 91, 46, 103); g.fill();
+      g.fillStyle = gray(250); g.fillRect(29, 92, 6, 4);                                        // his collar
+      g.fillStyle = gray(60); for (let x = 16; x < 52; x += 6) g.fillRect(x, 69, 1.4, 34);        // bars
+      g.fillRect(11, 86, 42, 1.2);
+    } else {
+      for (let y = 69; y < 103; y += 4) { g.fillStyle = gray(70); g.fillRect(11, y, 42, 3); g.fillStyle = gray(110); g.fillRect(11, y, 42, 0.8); }   // the shutter's slats
+    }
+    g.fillStyle = gray(150); g.fillRect(6, 103, 52, 3); g.fillStyle = gray(70); g.fillRect(8, 106, 48, 4);   // the counter
+    sign(g, open ? "BOUGHT & SOLD" : "CLOSED", 8, 52, 48, 11, open ? 6 : 8);
+    g.fillStyle = gray(40); g.fillRect(0, 120, 64, 8);
+    speckle(g, 64, 128, 400, 0.3);
+  });
+}
+FACADES.Q = fenceWindow(true);
+export const FENCE_SHUT = fenceWindow(false);
+
 // The hotel roof's parapet: a stone balustrade (only the top half shows on a waist-high wall)
 FACADES.R = bitmap(64, 64, g => {
   g.fillStyle = gray(150); g.fillRect(0, 0, 64, 64);

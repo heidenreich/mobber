@@ -8,12 +8,18 @@ import { settings, saveSettings, lookSpeed, clearGame } from "../settings.js";
 import { switchWeapon, nextWeapon, startReload, use } from "../player.js";
 import { advance, requestLock } from "../flow.js";
 import { chooseDifficultyAt, setDifficulty } from "../render/cards.js";
+import { shopClickAt, buy, closeShop } from "../render/shop.js";
 
 export function installDesktopInput() {
   window.addEventListener("keydown", e => {
     const k = e.key.toLowerCase(), p = game.player; input.keys.add(k);
     if (k === " ") { e.preventDefault(); input.firing = true; }
     if (input.menu) return;
+    // Dealing with the fence: a number buys that line; E, Esc or Enter walks away
+    if (game.shop) {
+      if (!e.repeat) { if (k >= "1" && k <= "9") buy(+k - 1); else if (k === "e" || k === "escape" || k === "enter") closeShop(); }
+      input.keys.clear(); return;
+    }
     if (k === "enter") advance();
     if (k === "m" && !e.repeat) { settings.music = !settings.music; saveSettings(); say(settings.music ? "The pianist is back." : "The pianist takes a break."); }
     if (k === "n" && game.state === "title") clearGame();
@@ -34,7 +40,7 @@ export function installDesktopInput() {
   document.addEventListener("pointerlockchange", () => { input.locked = document.pointerLockElement === cv; if (input.locked) input.wasLocked = true; });
   cv.addEventListener("mousedown", e => {
     initAudio();
-    if (game.state !== "play" || input.menu) return;
+    if (game.state !== "play" || input.menu || game.shop) return;
     if (!input.locked) requestLock();
     if (input.wasLocked && !input.locked) return; // first click after a pause just resumes
     if (e.button === 0) input.firing = true;
@@ -46,5 +52,9 @@ export function installDesktopInput() {
     if (input.locked || (input.dragLook && !isTouch)) game.player.a += e.movementX * PLAYER.mouseSensitivity * lookSpeed();
   });
   cv.addEventListener("wheel", () => { if (game.player && game.state === "play") nextWeapon(); });
-  cv.addEventListener("click", e => { initAudio(); if (game.state !== "play" && !input.menu && !chooseDifficultyAt(e.clientX, e.clientY)) advance(); });
+  cv.addEventListener("click", e => {
+    initAudio();
+    if (game.shop) { shopClickAt(e.clientX, e.clientY); return; }   // on a line of the fence's list it buys; elsewhere you walk away
+    if (game.state !== "play" && !input.menu && !chooseDifficultyAt(e.clientX, e.clientY)) advance();
+  });
 }

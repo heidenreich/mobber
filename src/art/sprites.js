@@ -154,14 +154,16 @@ function person(g, o, pose) {
     sleeve(cx - 13, 21, 5.4, 11.5, 10); sleeve(cx + 7.6, 21, 5.4, 11.5, 30);
     poly(g, [[cx - 12.6, 30], [cx - 7.4, 30], [cx - 2.4, 27], [cx - 3.4, 31.6], [cx - 9, 34]], gray(o.coat - 6));
     poly(g, [[cx + 12.6, 30], [cx + 7.4, 30], [cx + 2.4, 27], [cx + 3.4, 31.6], [cx + 9, 34]], gray(o.coat - 34));
-    if (o.weapon === "tommy") { g.fillStyle = gray(20); g.beginPath(); g.ellipse(cx, 33.6, 6.2, 5, 0, 0, 6.283); g.fill(); g.strokeStyle = gray(88); g.lineWidth = 0.7; g.beginPath(); g.ellipse(cx, 33.6, 4.4, 3.5, 0, 0, 6.283); g.stroke(); }
-    const r = o.weapon === "shotgun" ? 2 : 2.5;
-    g.fillStyle = gray(44); g.beginPath(); g.roundRect(cx - 3.2, 24.4, 6.4, 6.6, 1.4); g.fill();
-    g.fillStyle = gray(150); g.fillRect(cx - 3.2, 24.4, 6.4, 0.8);
-    g.fillStyle = gray(4);
-    if (o.weapon === "shotgun") { g.beginPath(); g.arc(cx - 1.5, 27.6, 1.35, 0, 6.283); g.arc(cx + 1.5, 27.6, 1.35, 0, 6.283); g.fill(); }
-    else { g.beginPath(); g.arc(cx, 27.6, r * 0.62, 0, 6.283); g.fill(); }
-    g.fillStyle = gray(120); g.fillRect(cx - 0.4, 23.2, 0.8, 1.4);                     // front sight
+    if (o.weapon !== "none") {   // (unarmed people use this pose with empty hands: the pianist at his keys)
+      if (o.weapon === "tommy") { g.fillStyle = gray(20); g.beginPath(); g.ellipse(cx, 33.6, 6.2, 5, 0, 0, 6.283); g.fill(); g.strokeStyle = gray(88); g.lineWidth = 0.7; g.beginPath(); g.ellipse(cx, 33.6, 4.4, 3.5, 0, 0, 6.283); g.stroke(); }
+      const r = o.weapon === "shotgun" ? 2 : 2.5;
+      g.fillStyle = gray(44); g.beginPath(); g.roundRect(cx - 3.2, 24.4, 6.4, 6.6, 1.4); g.fill();
+      g.fillStyle = gray(150); g.fillRect(cx - 3.2, 24.4, 6.4, 0.8);
+      g.fillStyle = gray(4);
+      if (o.weapon === "shotgun") { g.beginPath(); g.arc(cx - 1.5, 27.6, 1.35, 0, 6.283); g.arc(cx + 1.5, 27.6, 1.35, 0, 6.283); g.fill(); }
+      else { g.beginPath(); g.arc(cx, 27.6, r * 0.62, 0, 6.283); g.fill(); }
+      g.fillStyle = gray(120); g.fillRect(cx - 0.4, 23.2, 0.8, 1.4);                     // front sight
+    }
     hand(cx - 4.4, 31.4); hand(cx + 4.4, 30.6);
     // a rifleman taking aim gives himself away: the lamplight in his scope
     if (o.weapon === "rifle" && pose === "aim") { g.fillStyle = gray(255); g.beginPath(); g.arc(cx, 21.6, 1.7, 0, 6.283); g.fill(); g.fillRect(cx - 4.6, 21.3, 9.2, 0.6); g.fillRect(cx - 0.3, 17, 0.6, 9.2); }
@@ -170,6 +172,10 @@ function person(g, o, pose) {
       for (let i = 0; i < 18; i++) { const a = i * Math.PI / 9 + 0.2, rr = i % 2 ? 4.2 : 9 + (i * 7 % 5); g.lineTo(cx + Math.cos(a) * rr, 27.4 + Math.sin(a) * rr); }
       g.closePath(); g.fill();
     }
+  } else if (o.weapon === "none") {
+    // nothing in his hands
+    sleeve(cx - 13.4, 21, 5, 16.5, 10); sleeve(cx + 8.4, 21, 5, 16.5, 30);
+    hand(cx - 10.9, 38.6); hand(cx + 10.9, 38.6);
   } else if (o.weapon === "pistol") {
     sleeve(cx - 13.4, 21, 5, 17, 10); sleeve(cx + 8.4, 21, 5, 15.5, 30);
     hand(cx - 10.9, 38.6); hand(cx + 10.9, 37);
@@ -206,6 +212,8 @@ function personSet(look) {
     idle: f("idle"), back, walk: [f("walk1"), f("walk2")], aim: f("aim"), fire: f("fire"), hurt,
     // Spun round by a hit: reeling one way, his back, reeling the other way, and facing you again
     spin: [hurt, back, mirrored(hurt), hurt],
+    // down on his knees with his head low: the same figure, squashed
+    cower: bitmap(P_RES, P_RES, g => { g.translate(0, P_RES * 0.42); g.scale(1, 0.58); person(g, o, "hurt"); }),
     fall: bitmap(P_RES, P_RES, g => { g.translate(50 * k, 64 * k); g.rotate(-0.72); g.translate(-32 * k, -64 * k); person(g, o, "hurt"); }),
     // sprawled on his back, hat rolled away
     dead: bitmap(P_RES, P_RES, g => {
@@ -236,6 +244,59 @@ LOOKS.rifle = ({ coat: 92, hat: 60, band: 20, pants: 60, tie: 30, skin: 170, wea
 LOOKS.bagman = ({ coat: 150, hat: 120, band: 40, pants: 84, tie: 40, skin: 174, weapon: "pistol", bag: true, moustache: true });
 LOOKS.boss = ({ coat: 40, hat: 232, band: 20, pants: 36, tie: 228, skin: 176, weapon: "pistol", stripes: true, cigar: true, wide: true, spats: true });
 // Each kind of gangster, with his hat on and (after a near miss) with it knocked off
+// People with no part in it (folk.js): a patron in a dinner jacket, the bartender, the pianist
+PEOPLE.gent = personSet({ coat: 34, hat: 30, band: 14, pants: 34, tie: 16, skin: 176, weapon: "none", hatless: true });
+PEOPLE.barman = personSet({ coat: 214, hat: 30, band: 14, pants: 44, tie: 18, skin: 170, weapon: "none", hatless: true, moustache: true });
+PEOPLE.pianist = personSet({ coat: 84, hat: 30, band: 14, pants: 40, tie: 200, skin: 172, weapon: "none", hatless: true });
+
+// A woman out for the evening: cloche hat, bobbed hair, a drop-waisted dress, a long string of pearls
+function lady(g, pose) {
+  const cx = 32, stride = pose === "walk1" ? 1 : pose === "walk2" ? -1 : 0;
+  g.save(); g.scale(P_RES / 64, P_RES / 64);
+  g.fillStyle = gray(8); g.beginPath(); g.ellipse(cx + 1, 62.6, 10, 1.5, 0, 0, 6.283); g.fill();
+  if (stride) g.translate(0, -0.6);
+  for (const side of [-1, 1]) {                                                          // stockinged legs, strapped shoes
+    const fwd = stride * side, x = cx + side * 2.6 - 1.3, len = 11 + fwd * 1.2;
+    g.fillStyle = across(g, x, x + 2.6, 190 - (fwd < 0 ? 20 : 0), 20, 40); g.fillRect(x, 50, 2.6, len);
+    g.fillStyle = gray(20); g.beginPath(); g.ellipse(x + 1.3 + side * 0.4, 50 + len + 0.8, 2.6, 1.4, 0, 0, 6.283); g.fill();
+  }
+  const dress = [[cx - 6.6, 21.5], [cx - 3, 19.4], [cx + 3, 19.4], [cx + 6.6, 21.5], [cx + 7.2, 38], [cx + 9, 51.5], [cx - 9, 51.5], [cx - 7.2, 38]];
+  poly(g, dress, across(g, cx - 9, cx + 9, 150, 60, 70));
+  g.fillStyle = gray(60); g.fillRect(cx - 7.3, 38, 14.6, 2.2);                             // the sash at the hip
+  g.strokeStyle = gray(96); g.lineWidth = 0.6; for (const x of [-5, -1.5, 2, 5.5]) { g.beginPath(); g.moveTo(cx + x, 41); g.lineTo(cx + x * 1.2, 51.5); g.stroke(); }   // pleats
+  for (const side of [-1, 1]) {                                                          // bare arms
+    g.fillStyle = across(g, cx + side * 8.4 - 1.3, cx + side * 8.4 + 1.3, side < 0 ? 176 : 150, 20, 40);
+    g.beginPath(); g.roundRect(cx + side * 8.4 - 1.3, 22, 2.6, 15.5, 1.3); g.fill();
+  }
+  g.fillStyle = gray(150); g.fillRect(cx - 1.8, 16.6, 3.6, 3.2);                           // neck
+  g.fillStyle = gray(244); for (let i = 0; i <= 10; i++) { const a = Math.PI * i / 10; g.beginPath(); g.arc(cx - Math.cos(a) * 3.4, 20.5 + Math.sin(a) * 9, 0.55, 0, 6.283); g.fill(); }   // pearls
+  g.fillStyle = across(g, cx - 4.6, cx + 4.6, 186, 22, 56);                               // face
+  g.beginPath(); g.moveTo(cx - 4.4, 9); g.lineTo(cx + 4.4, 9); g.quadraticCurveTo(cx + 4.6, 15, cx + 1.8, 17.6); g.lineTo(cx - 1.8, 17.6); g.quadraticCurveTo(cx - 4.6, 15, cx - 4.4, 9); g.fill();
+  g.fillStyle = gray(26); g.fillRect(cx - 5.4, 9.5, 1.6, 6); g.fillRect(cx + 3.8, 9.5, 1.6, 6);   // bobbed hair at the cheeks
+  g.fillRect(cx - 2.7, 11.6, 1.6, 0.9); g.fillRect(cx + 1.1, 11.6, 1.6, 0.9);                     // eyes
+  g.fillStyle = gray(50); g.fillRect(cx - 1.2, 15, 2.4, 0.9);                              // dark lips
+  g.fillStyle = across(g, cx - 6, cx + 6, 70, 50, 30);                                    // the cloche, pulled low
+  g.beginPath(); g.moveTo(cx - 6, 11); g.quadraticCurveTo(cx - 6.4, 2, cx, 1.8); g.quadraticCurveTo(cx + 6.4, 2, cx + 6, 11); g.lineTo(cx + 4.6, 9.6); g.lineTo(cx - 4.6, 9.6); g.closePath(); g.fill();
+  g.fillStyle = gray(200); g.fillRect(cx - 5.9, 7.2, 11.8, 1.6);
+  g.restore();
+}
+{
+  const f = pose => bitmap(P_RES, P_RES, g => lady(g, pose)), k = P_RES / 64;
+  PEOPLE.lady = {
+    idle: f("idle"), walk: [f("walk1"), f("walk2")],
+    cower: bitmap(P_RES, P_RES, g => { g.translate(0, P_RES * 0.42); g.scale(1, 0.58); lady(g, "idle"); }),
+    dead: bitmap(P_RES, P_RES, g => {
+      g.scale(k, k);
+      g.fillStyle = gray(6); g.beginPath(); g.ellipse(30, 59.6, 22, 3.6, 0, 0, 6.283); g.fill();
+      g.fillStyle = across(g, 40, 56, 190, 20, 40); g.fillRect(42, 57, 13, 2.2); g.fillRect(42, 60, 12, 2.2);
+      const body = g.createLinearGradient(0, 54, 0, 62); body.addColorStop(0, gray(200)); body.addColorStop(1, gray(96));
+      g.fillStyle = body; g.beginPath(); g.ellipse(30, 58.2, 14, 4, 0, 0, 6.283); g.fill();
+      g.fillStyle = gray(180); g.beginPath(); g.ellipse(13.5, 57.6, 3.4, 3, 0, 0, 6.283); g.fill();
+      g.fillStyle = gray(70); g.beginPath(); g.ellipse(11.4, 56.6, 3.6, 3, 0, Math.PI * 0.6, Math.PI * 1.9); g.fill();
+    }),
+  };
+}
+
 for (const [k, look] of Object.entries(LOOKS)) { PEOPLE[k] = personSet(look); PEOPLE[k + "Bare"] = personSet({ ...look, hatless: true }); }
 
 export const OBJ = {

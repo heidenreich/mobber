@@ -5,7 +5,7 @@ import { clamp } from "../util.js";
 import { game } from "../state.js";
 import { FLOORS, CEILS, TEX, WALL_TEXTURES, DOOR_TEX, SECRET_TEXTURES, SMASHED_TEXTURES } from "../art/textures.js";
 import { PEOPLE } from "../art/sprites.js";
-import { ENTRANCES, makeSky } from "../art/streets.js";
+import { ENTRANCES, makeSky, FENCE_SHUT } from "../art/streets.js";
 import { GUN_ART } from "../art/guns.js";
 import { lightMap, lightAt } from "../world.js";
 import { partialBox, secretTex } from "../doors.js";
@@ -99,7 +99,8 @@ export function renderWorld(t) {
       wallX = side === 0 ? py + perp * rdy : px + perp * rdx;
       wallX -= Math.floor(wallX);
       tex = c === "!" ? SECRET_TEXTURES[secretTex(mx, my)] : c === "E" ? exitTex : WALL_TEXTURES[c] || TEX.brick;
-      if (SMASHED_TEXTURES[c] && game.smashed.has(my * MW + mx)) tex = SMASHED_TEXTURES[c];   // shot-out bottles or shop window
+      if (SMASHED_TEXTURES[c] && game.smashed.has(my * MW + mx)) tex = SMASHED_TEXTURES[c];
+      if (c === "Q" && game.fenceShut > 0) tex = FENCE_SHUT;   // the fence has pulled his shutter down   // shot-out bottles or shop window
     }
     perp = Math.max(0.01, perp);
     zbuf[x] = perp;
@@ -143,6 +144,14 @@ export function renderWorld(t) {
     // Gangsters stay readable in the dark: they're never lit below a floor brightness
     const up = !e.type.up || e.state === "dead" ? 0 : e.state === "dying" ? e.type.up * Math.min(1, e.t / 0.5) : e.type.up;
     list.push({ x: e.x, y: e.y, up, art, scale: e.type.scale, bob: e.moving ? Math.abs(Math.sin(e.step * 9)) * 0.02 : 0, muzzle: e.state === "fire" && e.t > 0.07, minLit: e.hp > 0 ? 0.6 : 0 });
+  }
+  // Bystanders: standing about, running, crouched with their heads down, or hit
+  for (const f of game.folk) {
+    if (f.state === "gone") continue;
+    const A = PEOPLE[f.kind];
+    const art = f.state === "down" ? A.dead : f.state === "cower" ? A.cower : f.state === "flee" && f.t <= 0 ? A.walk[Math.sin(f.step * 11) > 0 ? 0 : 1]
+      : f.kind === "pianist" ? (Math.sin(f.step * 9) > 0 ? A.aim : A.idle) : A.idle;   // the pianist's hands go up and down
+    list.push({ x: f.x, y: f.y, art, scale: f.kind === "lady" ? 0.88 : 0.93, bob: f.state === "flee" ? Math.abs(Math.sin(f.step * 11)) * 0.02 : 0, minLit: f.state === "down" ? 0 : 0.55 });
   }
   for (const b of game.bullets) list.push({ x: b.x, y: b.y, bullet: b });
   for (const s of list) s.d = (s.x - px) ** 2 + (s.y - py) ** 2;

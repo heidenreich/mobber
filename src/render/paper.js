@@ -11,7 +11,7 @@ const INK = "#1b1815", PAPER = "#e6dfcc";
 // How the run went, as a number: accuracy, retakes, pace and how hard you made it
 function stars() {
   const acc = stats.shots ? stats.hits / stats.shots : 0;
-  return 3 + (acc >= 0.5) + (stats.deaths === 0) - (stats.deaths >= 4) + (stats.time < 12 * 60) - (stats.time > 25 * 60) + [-1, 0, 1][settings.difficulty];
+  return 3 - Math.min(2, stats.bystanders || 0) + (acc >= 0.5) + (stats.deaths === 0) - (stats.deaths >= 4) + (stats.time < 12 * 60) - (stats.time > 25 * 60) + [-1, 0, 1][settings.difficulty];
 }
 const VERDICTS = ["a flop.", "a flop.", "a flop.", "a B picture.", "a solid programmer.", "a hit!", "a box office smash!", "the picture of the year!"];
 export const rating = () => VERDICTS[Math.max(0, Math.min(7, stars()))];
@@ -70,7 +70,7 @@ export function drawPaper(t) {
     `$${stats.cash.toLocaleString()} in cash was recovered.`, "",
     `It was over in ${mm} min. ${String(ss).padStart(2, "0")} sec.`,
     `${rooms} hidden room${rooms === 1 ? "" : "s"} came to light.`,
-    `Retakes: ${stats.deaths}.`,
+    stats.bystanders ? `${stats.bystanders} bystander${stats.bystanders === 1 ? " was" : "s were"} hit. Retakes: ${stats.deaths}.` : `Retakes: ${stats.deaths}.`,
   ];
   story.forEach((l, i) => text(l, px + pw + 9, 147 + i * 8.4, `6.6px ${TYPE}`, "left"));   // the column beside the photograph
 

@@ -9,6 +9,7 @@ import { nextWeapon } from "../player.js";
 import { advance } from "../flow.js";
 import { lookSpeed } from "../settings.js";
 import { chooseDifficultyAt } from "../render/cards.js";
+import { shopClickAt } from "../render/shop.js";
 
 function lookBy(dx) { if (game.player) game.player.a += dx * TOUCH.lookSensitivity * lookSpeed(); }
 
@@ -17,6 +18,7 @@ export function installTouchInput() {
   cv.addEventListener("touchstart", e => {
     initAudio();
     if (input.menu) return;
+    if (game.shop) { const t = e.changedTouches[0]; shopClickAt(t.clientX, t.clientY); e.preventDefault(); return; }   // dealing with the fence
     if (game.state !== "play") {
       const t = e.changedTouches[0];
       if (!chooseDifficultyAt(t.clientX, t.clientY)) advance();   // a tap on a difficulty name picks it; anywhere else rolls the film

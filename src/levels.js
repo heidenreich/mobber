@@ -26,6 +26,9 @@
 // ! secret wall: looks like the wall next to it; walking into it slides it back up
 //   to two squares, so leave open floor behind it
 // R roof parapet
+// Bystanders (folk.js): e a patron or passer-by  u the bartender  i the pianist, beside a piano
+// Q the fence's walk-up window (he sells ammunition, a doctor's visit and a vest): put it at the end of an alley,
+// with K, the wall with his pawnbroker's sign, beside the alley's mouth
 // j knife man  b bagman (runs for the alarm bell: x)  y rifleman at an upstairs window (streets only, on a square beside a building)
 // S start  g goon  G heavy  v the Don's body double  V the Don  c table  k crate  p piano  l floor lamp  * hanging lamp  o barrel
 // $ cash  + first aid  a tommy gun drum (the first gives you the gun)  r box of revolver rounds  L ledger
@@ -49,23 +52,23 @@ export const STORY = {
 
 export const LEVELS = [
   { chapter: "EXT. MULBERRY STREET — NIGHT", title: "Mulberry Street", ambient: 0.3, goal: "Get to the Blue Note", entrance: "bluenote",
-    card: ["Rain on Mulberry Street.", "Eddie's ledger is still in the Blue Note's back office.", "Vitale lookouts are posted out front. Get to the club."],
+    card: ["Rain on Mulberry Street.", "Eddie's ledger is still in the Blue Note's back office.", "Vitale lookouts are posted out front. Get to the club.", "A fence deals from a window down an alley: look for the three balls."],
     floor: "cobbles", sky: true, wallHeight: 2, rain: true, objective: "reach",
     map: [
       "HHHHHHFFFFHHHHHHFFFFHHHHHHFFFFHHUUUUUUUU",
       "HHHHHHFFFFHHHHHHFFFFHHHHHHFFFFHHUUUUUUUU",
       "HHHHHHFFFFHHHHHHFFFFHHHHHHFFFFHHUUUEUUUU",
       "H.......m...n....y..m...t.......m......H",
-      "H..r...........C.......................H",
+      "H..r.....e.....C.......................H",
       "H........................g........g....H",
       "H.S..........g.........................H",
       "H..................g..........g........H",
       "H.....C.....................C.........rH",
       "H...m......h..m....t......m..........m.H",
-      "HHHHHHHHFFFFHHHHHHFFFF..####FFFFHHHHHHHH",
-      "HHHHHHHHFFFFHHHHHHFFFF..####FFFFHHHHHHHH",
-      "HHHHHHHHFFFFHHHHH#####..#####FFFHHHHHHHH",
-      "HHHHHHHHFFFFHHHHH#.+...r...m#FFFHHHHHHHH",
+      "HHHHH.KHFFFFHHHHHHFFFF..####FFFFHHHHHHHH",
+      "HHHHH.HHFFFFHHHHHHFFFF..####FFFFHHHHHHHH",
+      "HHHHH.HHFFFFHHHHH#####..#####FFFHHHHHHHH",
+      "HHHHHQHHFFFFHHHHH#.+...r...m#FFFHHHHHHHH",
       "HHHHHHHHFFFFHHHHH#...g....$.#FFFHHHHHHHH",
       "HHHHHHHHFFFFHHHHH############FFFHHHHHHHH",
     ] },
@@ -73,17 +76,17 @@ export const LEVELS = [
     card: ["The Vitales keep Eddie's ledger", "in the back office of the Blue Note.", "It's in the office safe. Work the dial, take it, walk out.", "Eddie always said the place was full of hidden rooms."],
     map: [
       "BBBBBBBBBBBBBBWWWWWWWPPPPPPPPP",
-      "Wl....x....$.Bk..aW..Pl......P",
+      "Wl.u..x....$.Bk..aW..Pl......P",
       "W...g........!....W.*P...c.L.P",
       "W......c..g..B..$.W..P..g....P",
       "W............Bk..*W..D.......P",
       "WWWWWWWWWDWWWWWWWWW..P.......P",
       "Wl...............lW..P.....g.P",
-      "W.........g..bp...W.*P+......P",
-      "W..c...c..........W..PPPP!PPPP",
+      "W.........g..bpi..W.*P+......P",
+      "W..ce..ce.........W..PPPP!PPPP",
       "W....g....*.......D..PP$...*PP",
       "W............g....W.rPP.....PP",
-      "W..c...c...c......W..PP$...$PP",
+      "W..ce..c.e.c......W..PP$...$PP",
       "W.................Wg.#########",
       "Wl.......r...j...lW..#......o#",
       "WWWWDWWWWWWWWWWDWWW*.#.kk....#",
@@ -109,9 +112,9 @@ export const LEVELS = [
       "#................g........k................#",
       "#....r..C..........................oo......#",
       "#.................m.....h.............m....#",
-      "##########HHHHHH##############....##########",
-      "##########HHHHHH##############.$+.##########",
-      "##########HHHHHH############################",
+      "##.K######HHHHHH##############....##########",
+      "##.#######HHHHHH##############.$+.##########",
+      "##Q#######HHHHHH############################",
       "##########HHHHHH############################",
     ] },
   { chapter: "CHAPTER TWO", title: "Pier 9", floor: "concrete", ceil: "beams", ambient: 0.42, objective: "ledger",
@@ -158,9 +161,9 @@ export const LEVELS = [
       "H..S.........C........g.C.........C....F",
       "H......................................F",
       "H.....t.....a...........y.....h.....m..F",
-      "HHHHHHHHHHHHFFFFFFFFHHHHHHHHFFFFFFFFFFFF",
-      "HHHHHHHHHHHHFFFFFFFFHHHHHHHHFFFFFFFFFFFF",
-      "HHHHHHHHHHHHFFFFFFFFHHHHHHHHFFFFFFFFFFFF",
+      "HHHH.KHHHHHHFFFFFFFFHHHHHHHHFFFFFFFFFFFF",
+      "HHHH.HHHHHHHFFFFFFFFHHHHHHHHFFFFFFFFFFFF",
+      "HHHHQHHHHHHHFFFFFFFFHHHHHHHHFFFFFFFFFFFF",
       "HHHHHHHHHHHHFFFFFFFFHHHHHHHHFFFFFFFFFFFF",
     ] },
   // The lift: no map letters for the gangsters; `lift` lists who is waiting at each landing

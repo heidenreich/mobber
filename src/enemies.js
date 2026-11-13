@@ -9,6 +9,7 @@ import { los, moveBy, nextStep, lightAt } from "./world.js";
 import { fadeOut, showCard } from "./flow.js";
 import { difficulty, buzz } from "./settings.js";
 import { spawnBullet } from "./bullets.js";
+import { scare } from "./folk.js";
 
 export function updateEnemy(e, dt) {
   const p = game.player, T = e.type;
@@ -110,7 +111,7 @@ function runForAlarm(e, dt) {
   for (const o of game.objs) { const bd = Math.hypot(o.x - e.x, o.y - e.y); if (o.alarm && bd < best) { best = bd; bell = o; } }
   if (!bell) { e.rang = true; e.panic = true; return; }
   if (best < 0.95) {
-    e.rang = true; e.panic = true; game.alarm = true; SND.alarm();
+    e.rang = true; e.panic = true; game.alarm = true; SND.alarm(); scare(e.x, e.y);
     for (const o of game.enemies) if (o.hp > 0) { o.alert = true; o.lx = p.x; o.ly = p.y; }
     intertitle("alarm", null, ["The bagman has rung the alarm.", "Every gun in the place is coming."]) || say("The alarm! Every gun in the place is coming.", 3.5);
     return;
@@ -218,6 +219,7 @@ function shoot(e, d, sees) {
     return;
   }
   shotgun ? SND.shotgun(d) : SND.enemy(d);
+  scare(e.x, e.y);
   if (game.state !== "play") return; // no more rounds at a player who's already down
   const speed = T.bulletSpeed || BULLETS.speed;
   let tx = e.lx, ty = e.ly;
@@ -238,6 +240,8 @@ function shoot(e, d, sees) {
 export function hurtPlayer(dmg) {
   const p = game.player;
   if (game.state !== "play") return;
+  // A steel vest takes half of what hits you until it's used up
+  if (p.vest > 0) { const took = Math.min(p.vest, dmg * 0.5); p.vest -= took; dmg -= took; }
   p.hp -= dmg; p.hurt = 0.3; SND.hurt(); buzz(40);
   if (p.hp <= 0) {
     p.hp = 0; game.state = "dying"; stats.deaths++;

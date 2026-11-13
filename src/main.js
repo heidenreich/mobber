@@ -10,6 +10,9 @@ import { AMMO, PLAYER } from "./config.js";
 import { updatePlayer, collectPickups, tickPlayerEffects } from "./player.js";
 import { updateEnemy, hurtPlayer } from "./enemies.js";
 import { updateBullets, spawnBullet } from "./bullets.js";
+import { updateFolk } from "./folk.js";
+import { updateFence } from "./fence.js";
+import { shopRows, drawShop } from "./render/shop.js";
 import { updateDoors, updateSecrets } from "./doors.js";
 import { startLevel, tickFade } from "./flow.js";
 import { installDesktopInput } from "./input/desktop.js";
@@ -41,6 +44,7 @@ function update(dt) {
   if (alive) updateLift(dt);
   for (const e of game.enemies) updateEnemy(e, dt);
   updateBullets(dt);
+  if (alive) { updateFolk(dt); updateFence(dt); }
   if (alive) collectPickups();
   if (game.msg.t > 0) game.msg.t -= dt;
 }
@@ -49,7 +53,7 @@ let last = performance.now(), t = 0;
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
   resizeIfChanged();
-  const paused = input.menu || (game.state === "play" && input.wasLocked && !input.locked && !isTouch);
+  const paused = input.menu || game.shop || (game.state === "play" && input.wasLocked && !input.locked && !isTouch);
   // A dialogue card stops the action (and any fade) while it holds the screen
   const it = game.intertitle;
   if (it) { if (!paused) it.t -= dt; if (it.t <= 0) game.intertitle = null; }
@@ -65,6 +69,10 @@ function frame(now) {
     ctx.save(); ctx.globalAlpha = Math.min(1, (it.dur - it.t) / 0.12, it.t / 0.12) * flicker;
     drawCard(t);
     ctx.restore();
+    projector(0.8);
+  } else if (game.shop) {
+    // Dealing with the fence: his list holds the screen
+    ctx.save(); ctx.globalAlpha = flicker; drawShop(t); ctx.restore();
     projector(0.8);
   } else if (["play", "dying", "won", "leaving"].includes(game.state) && game.level) {
     const p = game.player;
@@ -104,6 +112,6 @@ requestAnimationFrame(frame);
 // Hook for the automated tests in tests/
 window.__mobber = {
   get state() { return game.state; }, get player() { return game.player; }, get enemies() { return game.enemies; },
-  get objs() { return game.objs; }, get level() { return game.level; }, get card() { return game.card; }, get map() { return game.map; }, get doors() { return game.doors; }, get fade() { return game.fade; }, get navBlocked() { return game.navBlocked; }, get intertitle() { return game.intertitle; }, get smashed() { return game.smashed; }, get bullets() { return game.bullets; }, get alarm() { return game.alarm; }, spawnBullet, titleChoices, get lift() { return game.lift; }, get cracking() { return game.cracking; }, lightAt, set dialogue(v) { game.dialogue = v; }, stats, LEVELS, AMMO, music, settings, startLevel, wallAt, los, hurtPlayer,
+  get objs() { return game.objs; }, get level() { return game.level; }, get card() { return game.card; }, get map() { return game.map; }, get doors() { return game.doors; }, get fade() { return game.fade; }, get navBlocked() { return game.navBlocked; }, get intertitle() { return game.intertitle; }, get smashed() { return game.smashed; }, get folk() { return game.folk; }, get shop() { return game.shop; }, get windows() { return game.windows; }, get fenceShut() { return game.fenceShut; }, shopRows, get bullets() { return game.bullets; }, get alarm() { return game.alarm; }, spawnBullet, titleChoices, get lift() { return game.lift; }, get cracking() { return game.cracking; }, lightAt, set dialogue(v) { game.dialogue = v; }, stats, LEVELS, AMMO, music, settings, startLevel, wallAt, los, hurtPlayer,
   TILES: { walls: WALL_CHARS, sideWalls: SIDE_WALL_CHARS, blockers: Object.keys(SPAWNS).filter(k => SPAWNS[k].block).join("") },
 };

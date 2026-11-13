@@ -45,7 +45,7 @@ export function drawHUD() {
   ctx.textBaseline = "alphabetic";
   const base = by + bh - 9 * s;
   ctx.fillStyle = CREAM; ctx.textAlign = "left";
-  ctx.font = `${fs(9)}px ${TYPE}`; ctx.fillText("HEALTH", f.x + 18 * s, base - 13 * s);
+  ctx.font = `${fs(9)}px ${TYPE}`; ctx.fillText(p.vest > 0 ? "ARMORED" : "HEALTH", f.x + 18 * s, base - 13 * s);
   ctx.font = `${fs(17)}px ${DECO}`; ctx.fillStyle = p.hp < 30 && Math.floor(game.timer * 4) % 2 ? "#ffffff" : CREAM;
   ctx.fillText(String(Math.ceil(p.hp)), f.x + 18 * s, base);
   ctx.fillStyle = CREAM; ctx.font = `${fs(9)}px ${TYPE}`; ctx.fillText("CASH", f.x + 78 * s, base - 13 * s);

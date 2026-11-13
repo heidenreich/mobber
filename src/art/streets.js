@@ -153,6 +153,61 @@ export const ENTRANCES = {
   }),
 };
 
+// The harbour (levels with `harbour: true`). The freighter tied up at the quay is a
+// wall like any other, in three lengths: J plain hull under a deck rail, Y the
+// deckhouse with its lit windows, X the funnel. Above the deck the sky shows through.
+function hull(g, top) {
+  top(g);
+  g.fillStyle = gray(34); g.fillRect(0, 46, 64, 82);                       // plates
+  g.fillStyle = gray(24); for (const y of [66, 88, 108]) g.fillRect(0, y, 64, 1);
+  for (const x of [0, 32]) g.fillRect(x, 46, 1, 82);
+  g.fillStyle = gray(70); for (let y = 50; y < 126; y += 22) for (let x = 3; x < 64; x += 5) g.fillRect(x, y + (x % 2), 1, 1);   // rivets
+  for (const x of [16, 48]) {                                               // portholes, some lit
+    g.fillStyle = gray(80); g.beginPath(); g.arc(x, 76, 5, 0, 6.283); g.fill();
+    g.fillStyle = gray(Math.random() < 0.55 ? 250 : 14); g.beginPath(); g.arc(x, 76, 3.2, 0, 6.283); g.fill();
+  }
+  g.fillStyle = gray(58); g.fillRect(0, 118, 64, 10);                       // boot topping at the waterline
+  g.fillStyle = "rgba(0,0,0,0.3)"; for (let i = 0; i < 6; i++) g.fillRect(rand(0, 60), rand(48, 100), 2, rand(10, 28));   // rust streaks
+  g.fillStyle = gray(90); g.fillRect(0, 44, 64, 3);                         // the deck's edge
+}
+function rail(g, x0 = 0, x1 = 64) {
+  g.fillStyle = gray(120);
+  for (let x = x0; x < x1; x += 16) g.fillRect(x, 32, 1, 12);
+  g.fillRect(x0, 32, x1 - x0, 1); g.fillRect(x0, 38, x1 - x0, 1);
+}
+export const HARBOUR = {
+  J: bitmap(64, 128, g => hull(g, g => rail(g))),
+  Y: bitmap(64, 128, g => hull(g, g => {
+    g.fillStyle = gray(150); g.fillRect(0, 10, 64, 34);
+    g.fillStyle = gray(95); g.fillRect(0, 8, 64, 3); g.fillRect(0, 26, 64, 1);
+    for (const x of [6, 26, 46]) { g.fillStyle = gray(50); g.fillRect(x - 1, 14, 12, 10); g.fillStyle = gray(Math.random() < 0.7 ? 250 : 20); g.fillRect(x, 15, 10, 8); }
+    g.fillStyle = gray(60); g.fillRect(30, 28, 9, 16);                      // a door on to the deck
+  })),
+  X: bitmap(64, 128, g => hull(g, g => {
+    rail(g, 0, 14); rail(g, 50, 64);
+    g.fillStyle = gray(130); g.fillRect(12, 30, 40, 14);
+    g.fillStyle = gray(52); g.fillRect(20, 0, 24, 30);                      // the funnel
+    g.fillStyle = gray(200); g.fillRect(20, 6, 24, 7);
+    g.fillStyle = gray(30); g.fillRect(20, 0, 24, 2); g.fillRect(41, 0, 3, 30);
+  })),
+  // The quay's stone edge: only this much of the wall is drawn, so you see over it
+  "=": bitmap(64, 16, g => {
+    g.fillStyle = gray(120); g.fillRect(0, 0, 64, 16);
+    g.fillStyle = gray(175); g.fillRect(0, 0, 64, 2);
+    g.fillStyle = gray(70); for (let x = 0; x < 64; x += 16) g.fillRect(x, 2, 1, 14);
+    g.fillStyle = gray(60); g.fillRect(0, 13, 64, 3);
+    speckle(g, 64, 16, 120, 0.3);
+  }),
+  // Black water with the odd glint on it
+  water: bitmap(64, 64, g => {
+    g.fillStyle = gray(13); g.fillRect(0, 0, 64, 64);
+    for (let i = 0; i < 46; i++) { g.fillStyle = gray(rand(24, 62)); g.fillRect(rand(0, 60), rand(0, 64), rand(3, 9), 1); }
+    for (let i = 0; i < 5; i++) { g.fillStyle = gray(rand(90, 150)); g.fillRect(rand(0, 60), rand(0, 64), rand(2, 4), 1); }
+  }),
+};
+for (const k of "JYX") HARBOUR[k].clear = true;   // the sky shows wherever nothing was painted
+export const KERB = 0.14;   // how high the quay's edge stands, in wall heights
+
 // Night sky panorama, wrapped all the way around the horizon. Height is the top half of the view.
 export function makeSky(width, height, dawn = false) {
   return bitmap(width, height, g => {

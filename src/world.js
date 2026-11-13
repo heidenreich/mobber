@@ -32,6 +32,7 @@ export const SPAWNS = {
   m: { art: "lamppost", scale: 1.8, block: true, size: 0.15, glow: true, light: [1.3, 6], lampWidth: 0.14 },
   h: { art: "hydrant", scale: 0.6, block: true, size: 0.2 },
   t: { art: "trash", scale: 0.7, block: true, size: 0.25 },
+  s: { art: "bollard", scale: 0.6, block: true, size: 0.22 },
   n: { art: "newsstand", scale: 0.9, block: true, size: 0.45 },
   x: { art: "alarm", scale: 0.8, block: true, size: 0.2, alarm: true },
   // The hotel roof

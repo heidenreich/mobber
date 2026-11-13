@@ -37,8 +37,8 @@ export const game = {
   navBlocked: null,     // squares furniture fills, for enemy pathfinding (world.js)
 };
 
-export const stats = { kills: 0, cash: 0, shots: 0, hits: 0, deaths: 0, time: 0, bystanders: 0, mercy: false, secretsFound: new Set() };
-export function resetStats() { Object.assign(stats, { kills: 0, cash: 0, shots: 0, hits: 0, deaths: 0, time: 0, bystanders: 0, mercy: false, secretsFound: new Set() }); }
+export const stats = { kills: 0, cash: 0, shots: 0, hits: 0, deaths: 0, time: 0, bystanders: 0, lieutenants: 0, mercy: false, secretsFound: new Set() };
+export function resetStats() { Object.assign(stats, { kills: 0, cash: 0, shots: 0, hits: 0, deaths: 0, time: 0, bystanders: 0, lieutenants: 0, mercy: false, secretsFound: new Set() }); }
 
 export const input = {
   keys: new Set(),

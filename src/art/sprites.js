@@ -242,6 +242,10 @@ LOOKS.heavy = ({ coat: 178, hat: 196, band: 44, pants: 70, tie: 44, skin: 164, w
 LOOKS.knife = ({ coat: 62, hat: 92, band: 30, pants: 44, tie: 150, skin: 168, weapon: "knife", cap: true });
 LOOKS.rifle = ({ coat: 92, hat: 60, band: 20, pants: 60, tie: 30, skin: 170, weapon: "rifle", window: true });
 LOOKS.bagman = ({ coat: 150, hat: 120, band: 40, pants: 84, tie: 40, skin: 174, weapon: "pistol", bag: true, moustache: true });
+// Vitale's lieutenants: the club's manager all in white, the pier's foreman, the Don's bodyguard
+LOOKS.manager = ({ coat: 226, hat: 236, band: 30, pants: 214, tie: 16, skin: 174, weapon: "pistol", moustache: true, spats: true });
+LOOKS.foreman = ({ coat: 78, hat: 56, band: 56, pants: 66, tie: 78, skin: 162, weapon: "shotgun", wide: true, moustache: true, belt: true });
+LOOKS.bodyguard = ({ coat: 22, hat: 22, band: 70, pants: 22, tie: 210, skin: 170, weapon: "tommy" });
 LOOKS.boss = ({ coat: 40, hat: 232, band: 20, pants: 36, tie: 228, skin: 176, weapon: "pistol", stripes: true, cigar: true, wide: true, spats: true });
 // Each kind of gangster, with his hat on and (after a near miss) with it knocked off
 // People with no part in it (folk.js): a patron in a dinner jacket, the bartender, the pianist

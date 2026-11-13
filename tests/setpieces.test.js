@@ -150,3 +150,34 @@ test("hand the Don to the law instead, and the picture ends with him in handcuff
   await page.waitForTimeout(1200);
   assert.deepEqual(errors, []);
 });
+
+test("each chapter has one of Vitale's lieutenants: he speaks when he sees you, and pays well when he falls", async () => {
+  const { page, errors } = await openGame(browser, srv.url);
+  await rollFilm(page);
+  const where = await game(page, () => {
+    const M = window.__mobber, out = {};
+    M.LEVELS.forEach((l, i) => { M.startLevel(i); const lt = M.enemies.filter(e => e.type.lieutenant); if (lt.length) out[l.title] = lt.map(e => e.type.title).join(); });
+    return out;
+  });
+  assert.deepEqual(where, { "The Blue Note Club": "FRANKIE LACE", "Pier 9": "BIG OTTO", "Hotel Regent, Top Floor": "MR. FINCH" });
+  // Face the club's manager with dialogue on
+  await game(page, () => {
+    const M = window.__mobber; M.startLevel(M.LEVELS.findIndex(l => l.title === "The Blue Note Club"));
+    const lt = M.enemies.find(e => e.type.lieutenant), P = M.player;
+    for (const e of M.enemies) if (e !== lt) { e.hp = 0; e.state = "dead"; }
+    M.folk.length = 0; M.dialogue = true; P.hp = 1e9;
+    lt.x = P.x + Math.cos(P.a) * 3; lt.y = P.y + Math.sin(P.a) * 3; lt.face = P.a + Math.PI; lt.turnT = 99; lt.cd = 99;
+  });
+  await page.waitForFunction(() => window.__mobber.intertitle, null, { timeout: 4000 });
+  assert.deepEqual(await game(page, () => [window.__mobber.intertitle.who, /Eddie's brother/.test(window.__mobber.intertitle.lines.join(" "))]), ["FRANKIE LACE", true]);
+  await page.waitForFunction(() => !window.__mobber.intertitle, null, { timeout: 6000 });
+  // He takes more putting down than a goon; when he goes, his bankroll and his stickpin are on the floor
+  const hp = await game(page, () => { const lt = window.__mobber.enemies.find(e => e.type.lieutenant); const h = lt.hp; lt.hp = 1; window.__mobber.player.mag[0] = 6; return h; });
+  assert.ok(hp >= 150, "tougher than the rest");
+  await page.keyboard.down(" ");
+  await page.waitForFunction(() => window.__mobber.enemies.find(e => e.type.lieutenant).hp <= 0, null, { timeout: 5000 });
+  await page.keyboard.up(" ");
+  const left = await game(page, () => ({ n: window.__mobber.stats.lieutenants, drops: window.__mobber.objs.filter(o => o.pick === "cash" && o.amount === 500 || o.pick === "loot").map(o => o.pick).sort() }));
+  assert.deepEqual(left, { n: 1, drops: ["cash", "loot"] });
+  assert.deepEqual(errors, []);
+});

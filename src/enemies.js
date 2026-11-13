@@ -35,6 +35,7 @@ export function updateEnemy(e, dt) {
     // The first gangster to get a good look at you, and later the Don himself, have something to say
     if (!e.alert && d < 9) {
       if (T.flees) intertitle("don", "DON VITALE", ["“You should have stayed", "out of it, kid.”"]);
+      else if (T.lieutenant) intertitle(T.name, T.title, T.line);   // one of Vitale's lieutenants
       else intertitle("spotted", "A VITALE GUNMAN", ["“It's Eddie's brother!", "Get him!”"]);
     }
     if (!e.alert) raiseAlarm(e, d);

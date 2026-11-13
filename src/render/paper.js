@@ -67,7 +67,8 @@ export function drawPaper(t) {
   const acc = stats.shots ? Math.round(stats.hits / stats.shots * 100) : 0, mm = Math.floor(stats.time / 60), ss = Math.floor(stats.time % 60);
   const rooms = stats.secretsFound.size;
   const story = [
-    `${stats.kills} of the Vitale outfit were`, "found where they fell.", "",
+    `${stats.kills} of the Vitale outfit were`, "found where they fell.",
+    stats.lieutenants ? `${stats.lieutenants} of his lieutenant${stats.lieutenants === 1 ? "" : "s"} among them.` : "",
     `Police counted ${stats.shots} shots fired,`, `${acc} in every hundred finding`, "their mark.", "",
     `$${stats.cash.toLocaleString()} in cash was recovered.`, "",
     `It was over in ${mm} min. ${String(ss).padStart(2, "0")} sec.`,

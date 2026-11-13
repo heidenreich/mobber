@@ -96,6 +96,7 @@ export const AMMO = {
   valuables: [["a pocket watch", 120], ["a pair of cufflinks", 60], ["a signet ring", 90], ["a silver cigarette case", 150]],
   valuableChance: 0.5,
   donsWatch: ["the Don's gold watch", 400],   // on each of his doubles
+  lieutenantCash: 500,      // a lieutenant's bankroll, on top of his prize
   bagCash: 600,             // what the bagman was carrying
   rifleRounds: 6,
 };
@@ -123,6 +124,14 @@ export const ENEMY_TYPES = {
   // The bagman doesn't fight: he runs for the nearest alarm bell (x on the map). Stop him before he rings it
   b: { name: "bagman", art: "bagman", hp: 35, speed: 2.7, dmg: [5, 9], cd: [1.2, 2.0], range: 9, aim: 0.5, burst: 1, scale: 0.93, runner: true },
   // Body doubles dressed as the Don, waiting in the penthouse
+  // Vitale's lieutenants, one to a chapter. Each has a name (shown with his health while you fight him),
+  // something to say when he sees you (`line`), and something worth taking off him (`prize`: [name, value]).
+  M: { name: "manager", art: "manager", hp: 170, speed: 1.6, dmg: [9, 14], cd: [0.8, 1.4], range: 12, aim: 0.4, burst: 2, scale: 1.0,
+    lieutenant: true, title: "FRANKIE LACE", role: "who runs the Blue Note", line: ["“Eddie's brother. He said you'd come.", "He said a lot of things, at the end.”"], prize: ["a diamond stickpin", 300] },
+  O: { name: "foreman", art: "foreman", hp: 240, speed: 1.05, dmg: [13, 20], cd: [1.4, 2.1], range: 8, aim: 0.55, burst: 1, scale: 1.1, noStagger: true,
+    lieutenant: true, title: "BIG OTTO", role: "foreman of Pier 9", line: ["“Nobody walks off my pier", "with my book.”"], prize: ["a gold watch chain", 250] },
+  Z: { name: "bodyguard", art: "bodyguard", hp: 190, speed: 2.0, dmg: [6, 10], cd: [1.0, 1.5], range: 13, aim: 0.4, burst: 4, scale: 1.05,
+    lieutenant: true, title: "MR. FINCH", role: "the Don's own man", line: ["“The Don said you'd get this far.", "He said it wouldn't matter.”"], prize: ["a silver hip flask", 200] },
   v: { name: "double", art: "boss", hp: 120, speed: 1.05, dmg: [6, 10], cd: [1.1, 1.8], range: 13, aim: 0.45, burst: 3, scale: 1.05 },
   // The real Don runs for his getaway along the level's `route`, stopping to fire
   // He wears a vest under the pinstripes: tommy gun rounds do only `tommyResist` of their damage

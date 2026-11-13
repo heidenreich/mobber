@@ -29,6 +29,7 @@
 // Bystanders (folk.js): e a patron, hotel guest or passer-by  d a working man  u the bartender  i the pianist, beside a piano  z the hotel doorman
 // Q the fence's walk-up window (he sells ammunition, a doctor's visit and a vest): put it at the end of an alley,
 // with K, the wall with his pawnbroker's sign, beside the alley's mouth
+// Vitale's lieutenants, one to a chapter: M the Blue Note's manager  O the pier's foreman  Z the Don's bodyguard
 // j knife man  b bagman (runs for the alarm bell: x)  y rifleman at an upstairs window (streets only, on a square beside a building)
 // S start  g goon  G heavy  v the Don's body double  V the Don  c table  k crate  p piano  l floor lamp  * hanging lamp  o barrel
 // $ cash  + first aid  a tommy gun drum (the first gives you the gun)  r box of revolver rounds  L ledger
@@ -85,7 +86,7 @@ export const LEVELS = [
       "BBBBBBBBBBBBBBWWWWWWWPPPPPPPPP",
       "Wl.u..x....$.Bk..aW..Pl......P",
       "W...g........!....W.*P...c.L.P",
-      "W......c..g..B..$.W..P..g....P",
+      "W......c..g..B..$.W..P..M....P",
       "W............Bk..*W..D.......P",
       "WWWWWWWWWDWWWWWWWWW..P.......P",
       "Wl...............lW..P.....g.P",
@@ -138,7 +139,7 @@ export const LEVELS = [
       "I..g.j.I..k..k..k.d....I",
       "I..*...I..r............I",
       "I.o....IIII.IIIIIPPPP.PP",
-      "I.......g...I...Pl.....P",
+      "I.......g...I...Pl...O.P",
       "I..$........I.G.P..L...P",
       "IIII.IIII.*.I...P......P",
       "I.......I...I...PPP.PPPP",
@@ -206,7 +207,7 @@ export const LEVELS = [
       "WWWW.WWWWWW.WWWWWWW.WWWW",
       "P...........r..........P",
       "P..l..ce...c.....cv..l.P",
-      "P......g......v........P",
+      "P......Z......v........P",
       "P..+..c....c.....c..g..P",
       "P.l........l.......l...P",
       "PPPPPPPPPPPPPPPPPPPPPEPP",

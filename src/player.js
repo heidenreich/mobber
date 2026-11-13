@@ -72,6 +72,7 @@ function dropLoot(e) {
   const at = (pick, art, extra) => game.objs.push({ x: e.x, y: e.y, art: OBJ[art], scale: 0.6, pick, ...extra });
   if (e.type.name === "boss") return at("cash", "cash", { amount: AMMO.bossCash });
   if (e.type.name === "bagman") return at("cash", "cash", { amount: AMMO.bagCash });
+  if (e.type.lieutenant) { at("cash", "cash", { amount: AMMO.lieutenantCash }); return at("loot", "valuable", { item: e.type.prize }); }
   if (e.type.name === "knife") return at("cash", "cash");
   if (e.type.name === "double") return at("loot", "valuable", { item: AMMO.donsWatch });
   if (e.type.name === "rifleman") return at("rounds", "rounds", { weapon: 0, amount: AMMO.rifleRounds });
@@ -94,6 +95,7 @@ function damage(t, dmg) {
   t.alert = true; t.lx = p.x; t.ly = p.y;
   if (t.hp <= 0) {
     t.state = "dying"; t.t = 0.5; stats.kills++; SND.down();
+    if (t.type.lieutenant) { stats.lieutenants = (stats.lieutenants || 0) + 1; say(`${t.type.title[0]}${t.type.title.slice(1).toLowerCase().replace(/\b[a-z]/g, c => c.toUpperCase())} is finished.`, 3.5); }
     dropLoot(t);
     // The last man standing, if he's only a hired gun, loses his nerve
     const alive = game.enemies.filter(e => e.hp > 0);
@@ -123,7 +125,7 @@ function damage(t, dmg) {
     t.state = "hurt"; t.t = t.spin ? ENEMY_AI.spinTime : 0.18; t.staggerCd = ENEMY_AI.staggerCooldown;
   }
   // Sometimes a hit takes his hat off
-  if (t.hp > 0 && !t.hatless && Math.random() < ENEMY_AI.hatChance) {
+  if (t.hp > 0 && !t.hatless && !t.type.noHat && Math.random() < ENEMY_AI.hatChance) {
     t.hatless = true;
     game.objs.push({ x: t.x + rand(-0.35, 0.35), y: t.y + rand(-0.35, 0.35), art: OBJ.hats[t.type.art], scale: 0.6 });
   }

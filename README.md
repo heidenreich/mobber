@@ -114,7 +114,7 @@ src/
     bitmap.js         turns canvas drawings into grayscale bitmaps
     textures.js       wall, floor and ceiling textures
     sprites.js        gangsters, furniture, lamps, pickups and street props
-    streets.js        the night sky, two-story building fronts and entrances
+    streets.js        the night sky, two-story building fronts and entrances, the harbour (water, quay edge, freighter)
     guns.js           the revolver, the tommy gun and the sawn-off: small 3D models drawn from your point of view
   input/
     desktop.js        keyboard, mouse, pointer lock
@@ -129,6 +129,6 @@ All the art and sound are generated in code when the page loads; there are no im
 
 - **Difficulty:** the three difficulty levels are `DIFFICULTY` in `src/settings.js`; everything else is in `src/config.js`. Enemy health, damage and reaction time, how fast their bullets fly and how wide of the mark they go (`BULLETS`), player speed, how strong the phone aim assist is, and how much ammo you start with, find and loot (`AMMO`).
 - **The story:** the prologue and epilogue are `STORY` in `src/levels.js`, and each scene's title card is its `card` lines.
-- **A new level:** add an entry to `src/levels.js`. For a street scene, set `sky`, `wallHeight: 2`, `rain` and `objective: "reach"`, and pick an `entrance` for the door at the end. The legend at the top lists every map character. `npm test` checks that the map is sealed, that everything in it can be reached, and that the objective and exit never depend on finding a secret.
+- **A new level:** add an entry to `src/levels.js`. For a street scene, set `sky`, `wallHeight: 2`, `rain` and `objective: "reach"`, and pick an `entrance` for the door at the end. Set `harbour: true` to make the top edge the water: `=` is open water past the quay's edge and `J`, `Y`, `X` are a moored freighter. The legend at the top lists every map character. `npm test` checks that the map is sealed, that everything in it can be reached, and that the objective and exit never depend on finding a secret.
 - **Doors and secrets:** put `D` between two walls for a door, and `!` in a wall (with open floor behind it) for a secret. Their timing and speed are in `DOORS` in `src/config.js`.
 - **New furniture or pickups:** draw it in `src/art/sprites.js`, then give it a map letter in the `SPAWNS` table in `src/world.js`.

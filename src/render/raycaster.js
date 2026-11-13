@@ -5,7 +5,7 @@ import { clamp } from "../util.js";
 import { game } from "../state.js";
 import { FLOORS, CEILS, TEX, WALL_TEXTURES, DOOR_TEX, SECRET_TEXTURES, SMASHED_TEXTURES } from "../art/textures.js";
 import { PEOPLE } from "../art/sprites.js";
-import { ENTRANCES, makeSky, FENCE_SHUT } from "../art/streets.js";
+import { ENTRANCES, makeSky, FENCE_SHUT, HARBOUR, KERB } from "../art/streets.js";
 import { GUN_ART } from "../art/guns.js";
 import { lightMap, lightAt } from "../world.js";
 import { partialBox, secretTex } from "../doors.js";
@@ -17,6 +17,8 @@ const NIGHT_SKY = makeSky(2048, HALF), DAWN_SKY = makeSky(2048, HALF, true);
 const COL_ANGLE = Float32Array.from({ length: W }, (_, x) => Math.atan((2 * x / W - 1) * PLANE));
 // What each screen column's wall looked like this frame, kept for reflections in wet streets
 const colTex = new Array(W), colTx = new Uint8Array(W), colLit = new Float32Array(W);
+// Which column of the sky panorama is behind each screen column, for its reflection in the harbour
+const skyU = new Int32Array(W);
 
 export function renderWorld(t) {
   camera();
@@ -25,6 +27,7 @@ export function renderWorld(t) {
   const fl = FLOORS[lvl.floor].L, ce = lvl.sky ? null : CEILS[lvl.ceil].L;
   const light = lightMap.data, LW = lightMap.w, LH = lightMap.h, LSUB = lightMap.sub;
   const wallH = lvl.wallHeight || 1;
+  const harbour = !!lvl.harbour && ce === null, water = HARBOUR.water.L;
   const exitTex = lvl.entrance ? ENTRANCES[lvl.entrance] : TEX.door;
 
   // Outdoors: the sky, which turns with you
@@ -33,6 +36,7 @@ export function renderWorld(t) {
     for (let x = 0; x < W; x++) {
       const a = (p.a + COL_ANGLE[x]) / (Math.PI * 2);
       const u = (((a - Math.floor(a)) * SKY.w) | 0) % SKY.w;
+      skyU[x] = u;
       for (let y = 0; y < HALF; y++) luma[y * W + x] = SKY.L[y * SKY.w + u];
     }
   }
@@ -44,7 +48,17 @@ export function renderWorld(t) {
     let fx = px + rowDist * (dirX - planeX), fy = py + rowDist * (dirY - planeY);
     const sx = rowDist * 2 * planeX / W, sy = rowDist * 2 * planeY / W;
     const rf = y * W, rc = (H - 1 - y) * W;
+    // The harbour: past the quay's edge the "floor" is black water, mirroring the skyline across it
+    const mirror = harbour ? clamp(2 * HALF - y + Math.round(Math.sin(y * 0.7 + t * 2.2) * 1.2), 0, HALF - 1) * SKY.w : 0;
+    const drift = harbour ? Math.round(Math.sin(y * 1.3 + t * 3) * 1.5) : 0;
     for (let x = 0; x < W; x++) {
+      if (harbour && (fy < 0 || fx < 0 || fy >= MH || fx >= MW || map[fy | 0][fx | 0] === "=")) {
+        const ripple = water[((((fy * 40 + Math.sin(fx * 1.7 + t * 1.4) * 5) | 0) & 63) << 6) | (((fx * 14 + t * 5) | 0) & 63)];
+        const lamp = light[clamp((fy * LSUB) | 0, 0, LH - 1) * LW + clamp((fx * LSUB) | 0, 0, LW - 1)];
+        luma[rf + x] = ripple * (0.5 + lamp * 0.9) * fog + SKY.L[mirror + (skyU[x] + drift + SKY.w) % SKY.w] * 0.5;
+        fx += sx; fy += sy;
+        continue;
+      }
       const ti = ((((fy * 64) | 0) & 63) << 6) | (((fx * 64) | 0) & 63);
       const li = light[clamp((fy * LSUB) | 0, 0, LH - 1) * LW + clamp((fx * LSUB) | 0, 0, LW - 1)] * fog;
       luma[rf + x] = fl[ti] * li;
@@ -110,14 +124,22 @@ export function renderWorld(t) {
     // Mirror where needed so textures (and the lettering on signs) read left to right
     if ((side === 0 && rdx < 0) || (side === 1 && rdy > 0)) tx = 63 - tx;
     const lit = lightAt(px + rdx * (perp - 0.06), py + rdy * (perp - 0.06)) * Math.exp(-perp * FOG) * (side ? 0.8 : 1);
+    const ye = Math.min(H, Math.ceil(HALF + lineH / 2));
+    if (c === "=" && !part) {
+      // The quay's edge: just a kerb, with the water and the far shore showing over it
+      colTex[x] = null;
+      const yk = HALF + lineH / 2 - lineH * KERB, kstep = tex.h / (lineH * KERB);
+      for (let y = Math.max(0, yk | 0); y < ye; y++) luma[y * W + x] = tex.L[(clamp(((y - yk) * kstep) | 0, 0, tex.h - 1) << 6) | tx] * lit;
+      continue;
+    }
     colTex[x] = tex; colTx[x] = tx; colLit[x] = lit;
-    const ys = Math.max(0, y0 | 0), ye = Math.min(H, Math.ceil(HALF + lineH / 2));
+    const ys = Math.max(0, y0 | 0);
     // 64-high textures repeat once per story; taller ones (facades) stretch over the whole wall
     const texH = tex.h, L = tex.L, step = (texH === 64 ? 64 * wallH : texH) / (lineH * wallH);
     let ty = (ys - y0) * step;
     for (let y = ys; y < ye; y++) {
-      const v = L[(((ty | 0) % texH) << 6) | tx];
-      luma[y * W + x] = v > GLOW ? v : v * lit; // lit windows and signs shine on their own
+      const i = (((ty | 0) % texH) << 6) | tx, v = L[i];
+      if (!tex.clear || tex.A[i] > 110) luma[y * W + x] = v > GLOW ? v : v * lit; // lit windows and signs shine on their own
       ty += step;
     }
   }
@@ -176,7 +198,9 @@ function wetStreet(t, wallH) {
       if (r >= perp) continue;
       const h = 0.5 * (perp - r) / r;                      // the height on the wall the reflection shows
       if (h >= wallH) continue;
-      const tex = colTex[xs], texH = tex.h;
+      const tex = colTex[xs];
+      if (!tex) continue;   // open water: nothing there to mirror
+      const texH = tex.h;
       const ty = ((wallH - h) * (texH === 64 ? 64 : texH / wallH)) | 0;
       const v = tex.L[((ty % texH) << 6) | colTx[xs]];
       luma[row + x] += (v > GLOW ? v : v * colLit[xs]) * strength;

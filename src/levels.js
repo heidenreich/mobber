@@ -16,7 +16,7 @@
 // Health carries over between scenes; `fullHealth` restores it on arrival (the finale).
 //
 // Street scenes also set: sky (true for night, "dawn" for the morning sky)
-// instead of a ceiling, wallHeight (2 for two-story buildings, 0.5 for the roof's
+// instead of a ceiling, harbour (true if the top edge is the water), wallHeight (2 for two-story buildings, 0.5 for the roof's
 // waist-high parapet), rain, and `entrance`, the facade drawn on the E square
 // ("bluenote", "pier" or "hotel").
 //
@@ -34,6 +34,8 @@
 // S start  g goon  G heavy  v the Don's body double  V the Don  c table  k crate  p piano  l floor lamp  * hanging lamp  o barrel
 // $ cash  + first aid  a tommy gun drum (the first gives you the gun)  r box of revolver rounds  L ledger
 // Streets: C parked car  m street lamp  h hydrant  t trash can  n newsstand
+// The harbour (a level with `harbour: true`, along its top edge): = open water past the quay's edge
+//   J Y X the moored freighter (plain hull, deckhouse, funnel)  s mooring bollard
 // Roof: w water tower  q chimney  N the REGENT sign  A the Don's autogiro
 // Title cards before the first scene and after the last
 export const STORY = {
@@ -109,11 +111,11 @@ export const LEVELS = [
     ] },
   { chapter: "EXT. THE WATERFRONT — LATER", title: "The Waterfront", ambient: 0.28, goal: "Get to Pier 9", entrance: "pier",
     card: ["Eddie's last entry: a shipment, Pier 9, Tuesday night.", "The night they pulled him out of the river.", "Their lookouts haven't seen you yet.", "Keep behind their backs and out of the lamplight."],
-    floor: "cobbles", sky: true, wallHeight: 2, rain: true, objective: "reach",
+    floor: "cobbles", sky: true, wallHeight: 2, rain: true, harbour: true, objective: "reach",
     map: [
-      "HHHHHHHH###########HHHHHHHH#################",
-      "HHHHHHHH#####k.m..kHHHHHHHH#################",
-      "HHHHHHHH#####.g.a..HHHHHHHH#################",
+      "IIIIIIII===========JJJJYYXYYJJJJJJ======####",
+      "IIIIIIIIs....s....s.k..s....s..k.s....s.####",
+      "IIIIIIII.......m......kk.g.a....m.......####",
       "#.....m....t.............r..m............m.#",
       "#...............d...kk........C............#",
       "#.........g............g...............G...#",

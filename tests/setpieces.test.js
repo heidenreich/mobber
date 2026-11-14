@@ -192,3 +192,25 @@ test("each chapter has one of Vitale's lieutenants: he speaks when he sees you, 
   assert.deepEqual(left, { n: 1, drops: ["cash", "loot"] });
   assert.deepEqual(errors, []);
 });
+
+test("the Waterfront's top edge is the harbour: a freighter at the quay, open water you can see over but not walk into", async () => {
+  const { page, errors } = await openGame(browser, srv.url);
+  await rollFilm(page);
+  const s = await game(page, () => {
+    const M = window.__mobber, i = M.LEVELS.findIndex(l => l.title === "The Waterfront"), top = M.LEVELS[i].map[0];
+    M.startLevel(i);
+    for (const e of M.enemies) { e.hp = 0; e.state = "dead"; }
+    const x = top.indexOf("=") + 2, P = M.player;
+    P.x = x + 0.5; P.y = 1.5; P.a = -Math.PI / 2;   // on the quay, facing the water
+    return { harbour: M.LEVELS[i].harbour, top, ship: /[JYX]{6,}/.test(top), water: M.wallAt(x + 0.5, 0.5), bollards: M.objs.filter(o => o.block && o.y < 2 && o.size === 0.22).length };
+  });
+  assert.equal(s.harbour, true);
+  assert.ok(/^[I#=JYX]+$/.test(s.top) && s.ship && s.top.includes("="), s.top);
+  assert.ok(s.water, "the water's edge stops you");
+  assert.ok(s.bollards >= 4, "bollards along the quay");
+  await page.keyboard.down("w"); await page.waitForTimeout(900); await page.keyboard.up("w");
+  assert.ok(await game(page, () => window.__mobber.player.y) > 1, "walked into the harbour");
+  // Looking out over the water and along the ship both draw without trouble
+  for (const a of [-Math.PI / 2, -0.3, Math.PI - 0.3]) { await game(page, a => { window.__mobber.player.a = a; }, a); await page.waitForTimeout(150); }
+  assert.deepEqual(errors, []);
+});

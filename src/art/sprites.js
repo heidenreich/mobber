@@ -427,6 +427,13 @@ OBJ.hydrant = bitmap(64, 64, g => {
   g.beginPath(); g.arc(32, 42, 6, Math.PI, 0); g.fill();
   g.fillStyle = gray(170); g.fillRect(28, 44, 2, 16);
 });
+OBJ.bollard = bitmap(64, 64, g => {
+  // A mooring bollard with a turn of rope round it
+  g.fillStyle = gray(58); g.fillRect(25, 40, 14, 24); g.fillRect(21, 60, 22, 4);
+  g.beginPath(); g.ellipse(32, 40, 11, 5, 0, 0, 6.283); g.fill();
+  g.fillStyle = gray(96); g.fillRect(27, 42, 2, 18); g.fillRect(23, 37, 14, 1);
+  g.fillStyle = gray(150); g.fillRect(24, 50, 16, 2); g.fillRect(24, 54, 16, 2);
+});
 OBJ.trash = bitmap(64, 64, g => {
   g.fillStyle = gray(96); g.fillRect(22, 40, 20, 24);
   g.fillStyle = gray(70); for (let x = 24; x < 42; x += 4) g.fillRect(x, 42, 1, 22);

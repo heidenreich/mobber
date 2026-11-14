@@ -55,3 +55,35 @@ test("the runner who reaches the door warns the Blue Note; stop him and they kno
   assert.deepEqual(await game(page, () => { const M = window.__mobber; return [M.warned, M.enemies.some(e => e.alert)]; }), [false, false]);
   assert.deepEqual(errors, []);
 });
+
+test("a club that was warned has been cleared: no customers, no piano, the staff with their heads down", async () => {
+  const { page, errors } = await openGame(browser, srv.url);
+  await rollFilm(page);
+  // The lookout got in ahead of you
+  await game(page, () => { const M = window.__mobber; M.player.warnedAt = 1; M.startLevel(1); });
+  const club = await game(page, () => ({ title: window.__mobber.level.title, folk: window.__mobber.folk.map(f => f.kind + ":" + f.state).sort() }));
+  assert.equal(club.title, "The Blue Note Club");
+  assert.ok(club.folk.includes("barman:cower") && club.folk.includes("pianist:cower"), club.folk.join());
+  assert.ok(club.folk.filter(k => /^(gent|lady)/.test(k)).every(k => k.endsWith(":gone")), "the customers have gone: " + club.folk.join());
+  await page.waitForTimeout(700);
+  assert.equal(await game(page, () => window.__mobber.music.playing), null, "nobody is playing");
+  // Walk in unannounced and it's the club as usual
+  await game(page, () => { const M = window.__mobber; M.player.warnedAt = undefined; M.startLevel(1); });
+  await page.waitForFunction(() => window.__mobber.music.playing === "joint", null, { timeout: 5000 });
+  assert.ok(await game(page, () => window.__mobber.folk.some(f => (f.kind === "gent" || f.kind === "lady") && f.state === "idle")));
+  assert.deepEqual(errors, []);
+});
+
+test("the Waterfront's men make a stand at the pier door too", async () => {
+  const { page, errors } = await openGame(browser, srv.url);
+  await rollFilm(page);
+  const roles = await game(page, () => {
+    const M = window.__mobber; M.startLevel(M.LEVELS.findIndex(l => l.title === "The Waterfront"));
+    const guns = M.enemies.filter(e => !e.type.melee && !e.type.still && !e.type.runner);
+    return { doorMen: guns.filter(e => e.doorMan).length, lookouts: guns.filter(e => !e.doorMan).length, knives: M.enemies.filter(e => e.type.melee).length, door: !!M.doorFront };
+  });
+  assert.equal(roles.lookouts, 2);
+  assert.ok(roles.doorMen >= 4, "the rest hold the door: " + JSON.stringify(roles));
+  assert.ok(roles.knives >= 1 && roles.door);
+  assert.deepEqual(errors, []);
+});

@@ -8,7 +8,7 @@ import { OBJ } from "./art/sprites.js";
 import { setupDoors, partialSolid } from "./doors.js";
 
 import { WALL_CHARS as WALLS, DOOR, SECRET } from "./tiles.js";
-import { FOLK_LETTERS, spawnFolk } from "./folk.js";
+import { FOLK_LETTERS, spawnFolk, clearOut } from "./folk.js";
 import { findWindows } from "./fence.js";
 
 // Map letter -> what gets placed there. `light` is [intensity, radius] for lamps.
@@ -179,6 +179,7 @@ export function loadLevel(i) {
   game.warned = player.warnedAt === i;
   if (game.warned) {
     for (const e of game.enemies) if (!e.type.lieutenant && !e.type.flees) { e.alert = true; e.lx = player.x; e.ly = player.y; e.face = Math.atan2(player.y - e.y, player.x - e.x); }
+    clearOut();   // and nobody who doesn't have to be here still is
     say("They were warned. They're waiting for you.", 4);
   }
   game.timer = 0; game.shop = false; game.choice = null; game.cracking = null; game.lift = null; game.alarm = false;

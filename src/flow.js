@@ -67,7 +67,9 @@ export function startLevel(i, retry) {
     if (i > 0) saveGame({ idx: i, player: prevLoadout, stats: { ...stats, secretsFound: [...stats.secretsFound] } });
   }
   game.state = "play"; game.fade = 0; game.fadeDir = 1; input.touched = false;
-  music.play(game.level.endOnBoss ? "chase" : game.level.rain ? "street" : "joint");
+  // (a club that was warned has no music: the pianist isn't at his keys)
+  if (game.warned && game.folk.some(f => f.kind === "pianist")) music.stop();
+  else music.play(game.level.endOnBoss ? "chase" : game.level.rain ? "street" : "joint");
   SND.rain(!!game.level.rain); SND.rotor(!!game.level.endOnBoss);
   if (game.level.lift) startLift(game.level.lift);
   requestLock();

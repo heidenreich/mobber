@@ -94,6 +94,12 @@ function pickGoal(f, sx, sy, n) {
   return n % 2 ? hide || run : run || hide;
 }
 
+// The place was warned before you walked in: the customers have been cleared out, the
+// piano is shut, and the staff are keeping their heads down behind whatever they can.
+export function clearOut() {
+  for (const f of game.folk) f.state = STAFF.includes(f.kind) ? "cower" : "gone";
+}
+
 // A bullet of yours found someone who had nothing to do with it
 export function shootFolk(f) {
   f.state = "down"; stats.bystanders = (stats.bystanders || 0) + 1;

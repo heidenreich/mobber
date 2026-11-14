@@ -1,5 +1,5 @@
 // You: moving, shooting, reloading, looting and leaving through the exit.
-import { W, K, isTouch, FOLK, PLAYER, TOUCH, AIM_ASSIST, WEAPONS, ROUND_NAMES, ENEMY_AI, AMMO, MELEE } from "./config.js";
+import { W, K, isTouch, FOLK, PLAYER, TOUCH, AIM_ASSIST, WEAPONS, ROUND_NAMES, ENEMY_AI, AMMO, MELEE, CHASE } from "./config.js";
 import { rand, clamp } from "./util.js";
 import { game, stats, input, say, intertitle, eye } from "./state.js";
 import { LEVELS } from "./levels.js";
@@ -152,13 +152,13 @@ function fire() {
     if (other >= 0) { const was = WEAPONS[p.weapon].name; switchWeapon(other); say(`${was} is empty.`); return; }
     pistolWhip(); return;
   }
-  p.mag[p.weapon]--; p.fireCd = w.rate; p.recoil = w.pellets ? 1.5 : 1; p.flash = 0.06; stats.shots++;
+  p.mag[p.weapon]--; p.fireCd = w.rate; p.recoil = w.pellets ? 1.5 : 1; p.flash = 0.06; p.shown = ENEMY_AI.flashShows; stats.shots++;
   [SND.rev, SND.tommy, SND.sawn][p.weapon]();
   // Gunfire carries: anyone in earshot now knows where you are, and comes looking
   scare(p.x, p.y);
   const unaware = new Set(game.enemies.filter(e => e.hp > 0 && !e.alert));
   // (a lieutenant stays where he is until he sees you)
-  for (const e of game.enemies) if (e.hp > 0 && !e.type.lieutenant && Math.hypot(e.x - p.x, e.y - p.y) < ENEMY_AI.hearingRange) { e.alert = true; e.lx = p.x; e.ly = p.y; }
+  for (const e of game.enemies) if (e.hp > 0 && !e.type.lieutenant && (e.doorMan || Math.hypot(e.x - p.x, e.y - p.y) < ENEMY_AI.hearingRange)) { e.alert = true; e.lx = p.x; e.ly = p.y; }
   const spread = w.spread * (p.moving ? 1.6 : 1);
   let hitAnyone = false;
   for (let n = 0; n < (w.pellets || 1); n++) {
@@ -170,7 +170,8 @@ function fire() {
     hitAnyone = true;
     // Buckshot loses its punch with distance; the Don's vest shrugs off some of a tommy gun
     const reach = w.pellets ? clamp(1.25 - Math.hypot(t.x - p.x, t.y - p.y) * 0.12, 0.2, 1) : 1;
-    damage(t, w.dmg * rand(0.85, 1.15) * reach * (p.weapon === 1 ? t.type.tommyResist ?? 1 : 1) * (unaware.delete(t) ? ENEMY_AI.ambush : 1));
+    damage(t, w.dmg * rand(0.85, 1.15) * reach * (p.weapon === 1 ? t.type.tommyResist ?? 1 : 1) * (unaware.delete(t) ? ENEMY_AI.ambush : 1)
+      * (t.type.flees && game.chase && !t.standing ? CHASE.graze : 1));   // a running man is hard to hit square
     if (n > 0) stats.hits--;   // a blast counts as one shot on target, however many pellets land
   }
   if (!hitAnyone) smash();
@@ -246,6 +247,13 @@ function checkExit() {
 export function updatePlayer(dt) {
   const p = game.player, keys = input.keys, touch = input.touch;
   game.timer += dt; stats.time += dt;
+  // The autogiro's rotor winds up for as long as the chase lasts
+  const ch = game.chase;
+  if (ch) {
+    ch.t = Math.min(ch.len, ch.t + dt);
+    if (ch.told < CHASE.warn.length && ch.t / ch.len >= CHASE.warn[ch.told]) say(ch.told++ ? "The autogiro is nearly ready to fly!" : "The rotor is picking up speed.", 3.5);
+    SND.rotor(0.25 + 0.75 * ch.t / ch.len);
+  }
   camera();
   let fw = 0, st = 0, turn = 0;
   if (keys.has("w") || keys.has("arrowup")) fw += 1;
@@ -320,7 +328,7 @@ function crackSafe(dt) {
 export function tickPlayerEffects(dt) {
   const p = game.player;
   p.fireCd = Math.max(0, p.fireCd - dt);
-  p.flash = Math.max(0, p.flash - dt);
+  p.flash = Math.max(0, p.flash - dt); p.shown = Math.max(0, (p.shown || 0) - dt);
   p.recoil = Math.max(0, p.recoil - dt * 7);
   p.hurt = Math.max(0, p.hurt - dt);
 }

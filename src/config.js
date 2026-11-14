@@ -58,6 +58,17 @@ export const STREET = {
   runnerWait: 0.9,          // seconds the runner takes to make up his mind before he bolts
 };
 
+// The chase across the roof (levels with `route` and `takeoff`)
+export const CHASE = {
+  runSpeed: 3.0,            // how fast the Don runs between stands (you walk at 3.2)
+  tooClose: 4.5,            // get this near the Don where he's made a stand and he runs again
+  graze: 0.3,               // a hit on the Don while he's running does only this share of its harm
+  giveUp: 0.2,             // ...or cost him this share of his health there
+  warn: [0.5, 0.85],        // how far along the rotor is when you're told about it
+  dark: 0.78, light: 1.1,   // how bright the picture is when the chase starts, and when the rotor is ready
+  darkSky: 0.5, lightSky: 1.15,
+};
+
 // Gangsters' bullets fly, and you can step out of their way.
 export const BULLETS = {
   speed: 11,                // squares per second (you walk at 3.2)
@@ -145,9 +156,9 @@ export const ENEMY_TYPES = {
   Z: { name: "bodyguard", art: "bodyguard", hp: 190, speed: 1.7, dmg: [5, 9], cd: [1.4, 2.0], range: 13, aim: 0.45, burst: 3, scale: 1.05,
     lieutenant: true, title: "MR. FINCH", role: "the Don's own man", line: ["“The Don said you'd get this far.", "He said it wouldn't matter.”"], prize: ["a silver hip flask", 200] },
   v: { name: "double", art: "boss", hp: 120, speed: 1.05, dmg: [6, 10], cd: [1.1, 1.8], range: 13, aim: 0.45, burst: 3, scale: 1.05 },
-  // The real Don runs for his getaway along the level's `route`, stopping to fire
+  // The real Don runs for his getaway along the level's `route`, turning to fight where it tells him to (CHASE)
   // He wears a vest under the pinstripes: tommy gun rounds do only `tommyResist` of their damage
-  V: { name: "boss", art: "boss", hp: 420, speed: 1.7, dmg: [7, 12], cd: [2.0, 2.8], range: 14, aim: 0.45, burst: 3, scale: 1.05, flees: true, noStagger: true, tommyResist: 0.6 },
+  V: { name: "boss", art: "boss", hp: 520, speed: 1.7, dmg: [5, 9], cd: [2.2, 3.0], range: 14, aim: 0.45, burst: 3, scale: 1.05, flees: true, noStagger: true, tommyResist: 0.6 },
 };
 
 export const DOORS = {
@@ -169,6 +180,7 @@ export const ENEMY_AI = {
   senseRange: 2.2,          // ...or anyone who gets this close
   ambush: 3,                // damage multiplier for a shot at a man who hasn't noticed you
   shoutRange: 6.5,          // the first to see you shouts, and anyone this close to him comes too
+  flashShows: 1.5,          // after you fire, the dark doesn't hide you for this many seconds
   darkSight: 0.6,           // how much of sightRange they keep when you stand in the dark
   coverChance: 0.5,         // how often a goon ducks out of sight between bursts
   spinChance: 0.3,          // how often a hit that staggers a man spins him right round

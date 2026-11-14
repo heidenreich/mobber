@@ -1,6 +1,6 @@
 // Draws the 3D view into the film's luma buffer: floor and ceiling, walls (one
 // ray per screen column), sprites sorted far to near, then the gun in your hand.
-import { W, H, HALF, K, PLANE, FOG, GLOW, WEAPONS, ENEMY_AI, PLAYER } from "../config.js";
+import { W, H, HALF, K, PLANE, FOG, GLOW, WEAPONS, ENEMY_AI, PLAYER, CHASE } from "../config.js";
 import { clamp } from "../util.js";
 import { game } from "../state.js";
 import { FLOORS, CEILS, TEX, WALL_TEXTURES, DOOR_TEX, SECRET_TEXTURES, SMASHED_TEXTURES } from "../art/textures.js";
@@ -33,11 +33,13 @@ export function renderWorld(t) {
   // Outdoors: the sky, which turns with you
   const SKY = lvl.sky === "dawn" ? DAWN_SKY : NIGHT_SKY;
   if (ce === null) {
+    // On the roof the sky starts well short of morning and lightens as the chase goes on
+    const ch = game.chase, skyK = ch ? (CHASE.darkSky + (CHASE.lightSky - CHASE.darkSky) * ch.t / ch.len) / (CHASE.dark + (CHASE.light - CHASE.dark) * ch.t / ch.len) : 1;
     for (let x = 0; x < W; x++) {
       const a = (p.a + COL_ANGLE[x]) / (Math.PI * 2);
       const u = (((a - Math.floor(a)) * SKY.w) | 0) % SKY.w;
       skyU[x] = u;
-      for (let y = 0; y < HALF; y++) luma[y * W + x] = SKY.L[y * SKY.w + u];
+      for (let y = 0; y < HALF; y++) luma[y * W + x] = SKY.L[y * SKY.w + u] * skyK;
     }
   }
 

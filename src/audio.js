@@ -3,7 +3,7 @@
 import { rand, clamp } from "./util.js";
 import { settings } from "./settings.js";
 
-let actx = null, noise = null, sfx = null, rainGain = null, rotorGain = null;
+let actx = null, noise = null, sfx = null, rainGain = null, rotorGain = null, rotorBeat = null, rotorAt = -1;
 
 // For music.js, which schedules its own notes. Null until the first click or tap.
 export const audioContext = () => actx;
@@ -38,7 +38,7 @@ export function initAudio() {
   const beat = actx.createOscillator(); beat.type = "sawtooth"; beat.frequency.value = 6;
   const bg = actx.createGain(); bg.gain.value = 0.5; beat.connect(bg).connect(chop.gain);
   rotorGain = actx.createGain(); rotorGain.gain.value = 0;
-  ro.connect(rl).connect(chop).connect(rotorGain).connect(sfx); ro.start(); beat.start();
+  ro.connect(rl).connect(chop).connect(rotorGain).connect(sfx); ro.start(); beat.start(); rotorBeat = beat;
 }
 export function setSoundOn(on) { if (sfx) sfx.gain.setTargetAtTime(on ? 1 : 0, actx.currentTime, 0.05); }
 
@@ -102,7 +102,14 @@ export const SND = {
     else if (surface === "soft") hiss("lowpass", 220, 0.09, 0.16);
     else { hiss("bandpass", 1400, 0.035, 0.07, 0, 1.5); tone(95, 0.06, "sine", 0.07, 60); }
   },
-  rotor: on => { if (rotorGain) rotorGain.gain.setTargetAtTime(on ? 0.5 : 0, actx.currentTime, 0.8); },
+  // How fast it's turning, 0 (stopped, silent) to 1 (ready to fly): louder and quicker as it winds up
+  rotor: k => {
+    k = +k || 0;
+    if (!rotorGain || Math.abs(k - rotorAt) < 0.02) return;
+    rotorAt = k;
+    rotorGain.gain.setTargetAtTime(k ? 0.12 + 0.5 * k : 0, actx.currentTime, 0.8);
+    rotorBeat.frequency.setTargetAtTime(2.5 + 5 * k, actx.currentTime, 0.8);
+  },
   // The lift: a motor winding up for as long as the ride lasts, and a bell at each landing
   lift: dur => { tone(62, dur, "sawtooth", 0.035, 84); hiss("lowpass", 180, dur, 0.12); },
   bell: () => { tone(1319, 0.9, "triangle", 0.07); tone(2637, 0.5, "sine", 0.02); },

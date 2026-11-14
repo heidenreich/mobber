@@ -15,6 +15,8 @@
 // With `safe: true` the L is a safe you have to crack, not a book lying on a desk.
 // Health carries over between scenes; `fullHealth` restores it on arrival (the finale).
 //
+// The roof sets: route (where the Don runs; a third number at a point is how many seconds he stands and fights there)
+// and takeoff (seconds until the autogiro can fly; the sky lightens as they pass)
 // Street scenes also set: sky (true for night, "dawn" for the morning sky)
 // instead of a ceiling, harbour (true if the top edge is the water), stand ({ lookouts: n }: the n gunmen nearest the start fight where they are, the rest
 // fall back to the front door and hold it; put an f on the map to run and warn the next scene), wallHeight (2 for two-story buildings, 0.5 for the roof's
@@ -113,17 +115,17 @@ export const LEVELS = [
     ] },
   { chapter: "EXT. THE WATERFRONT — LATER", title: "The Waterfront", ambient: 0.28, goal: "Get to Pier 9", entrance: "pier",
     card: ["Eddie's last entry: a shipment, Pier 9, Tuesday night.", "The night they pulled him out of the river.", "Their lookouts haven't seen you yet.", "Keep behind their backs and out of the lamplight."],
-    floor: "cobbles", sky: true, wallHeight: 2, rain: true, harbour: true, objective: "reach",
+    floor: "cobbles", sky: true, wallHeight: 2, rain: true, harbour: true, objective: "reach", stand: { lookouts: 2 },
     map: [
       "IIIIIIII===========JJJJYYXYYJJJJJJ======####",
       "IIIIIIIIs....s....s.k..s....s..k.s....s.####",
       "IIIIIIII.......m......kk.g.a....m.......####",
       "#.....m....t.............r..m............m.#",
-      "#...............d...kk........C............#",
+      "#...............d...kkj.......C............#",
       "#.........g............g...............G...#",
       "#.S.............................g..........E",
       "#................g........k................#",
-      "#....r..C........................d.oo......#",
+      "#....r..C........................d.oo.g....#",
       "#.................m.....h.............m....#",
       "##.K######HHHHHH##############....##########",
       "##.#######HHHHHH##############.$+.##########",
@@ -218,25 +220,29 @@ export const LEVELS = [
       "PPPPPPPPPPPPPPPPPPPPPEPP",
     ] },
   { chapter: "EXT. HOTEL REGENT ROOF — DAWN", title: "The Roof", floor: "tar", sky: "dawn", wallHeight: 0.5, ambient: 0.62, objective: "boss", endOnBoss: true, fullHealth: true,
-    goal: "Stop Don Vitale before he reaches the autogiro",
-    route: [[13.5, 6.5], [18.5, 9.5], [24.5, 6.5], [29.2, 8.5]],   // zigzagging between the water towers
-    card: ["It was a double. The real Don is running for the roof,", "where an autogiro is warming up to fly him out of town.", "Don't let him reach it."],
+    goal: "Stop Don Vitale before the autogiro is ready to fly",
+    // Three stretches of roof: the stairhead, the water towers, the landing pad. The Don runs
+    // each one, then turns and fights from where a third number says how long he'll stand there.
+    // At the last point he holds the pad until the rotor is up to speed (`takeoff` seconds).
+    route: [[18.5, 8.5], [26.5, 5.5, 16], [39.5, 12.5], [45.5, 9.5, 16], [53.2, 8.5]],
+    takeoff: 80,
+    card: ["It was a double. The real Don is running for the roof,", "where an autogiro is warming up to fly him out of town.", "Stop him before its rotor is up to speed."],
     map: [
-      "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
-      "R..................N.............R",
-      "R................................R",
-      "R...r.....q...w.....a............R",
-      "R......................g.........R",
-      "R...........g..............G.....R",
-      "R................................R",
-      "R................................R",
-      "R.S.......V....r...............A.R",
-      "R................................R",
-      "R................................R",
-      "R...............g..........g.....R",
-      "R.....q...............w..q.......R",
-      "R...+............q...........+...R",
-      "R................................R",
-      "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+      "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+      "R.................R..........N.........R.................R",
+      "R.................R....................R.................R",
+      "R...r.....q...w...R.......w.......q....R.....q...........R",
+      "R.................R...............................g......R",
+      "R..a..............R............q.......R.................R",
+      "R.................R....................R....q............R",
+      "R.................R...g................R.................R",
+      "R.S..........V.........................R...............A.R",
+      "R.................R....................R.................R",
+      "R..+.....g........R...w................R.........q.......R",
+      "R.................R...........g........R.................R",
+      "R.....q.................q.................g..............R",
+      "R............r....R....+......r........R.....+....a......R",
+      "R.................R....................R.................R",
+      "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
     ] },
 ];

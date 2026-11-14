@@ -46,11 +46,11 @@ Cash is worth picking up. On each street a fence deals through a walk-up window 
 
 He buys as well. Gangsters sometimes have a pocket watch, cufflinks, a ring or a cigarette case on them, and each of the Don's doubles wears a gold watch. Pick them up (the status bar shows how many you're carrying next to your cash) and the first line of his list sells the lot.
 
-Each chapter has something besides shooting. The ledger at the Blue Note is in the office safe, and partway through working the dial the whole club hears you. The lookouts on the Waterfront can be slipped past. At the Hotel Regent you ride the lift, and Vitale men are waiting at every landing on the way up.
+Each chapter has something besides shooting. The ledger at the Blue Note is in the office safe, and partway through working the dial the whole club hears you. The lookouts on the Waterfront can be slipped past. Fire a shot there and the men at the pier door hear it, and get into their places to hold it. At the Hotel Regent you ride the lift, and Vitale men are waiting at every landing on the way up.
 
 Each chapter has one of Vitale's lieutenants: Frankie Lace, who runs the Blue Note; Big Otto, foreman of Pier 9; and Mr. Finch, the Don's own man, on the hotel's top floor. Each has something to say when he sees you, takes a good deal more putting down than the rest, and shows his name and how much fight he has left while you're at it. Each leaves a bankroll and something for the fence.
 
-A shot that misses can still hit something. Lamps can be shot out, and gangsters see less far when you stand in the dark. The bottles behind a bar and shop windows shatter. Crates, cars, water towers and other solid props are cover: they block bullets and sight both ways.
+A shot that misses can still hit something. Lamps can be shot out, and gangsters see less far when you stand in the dark. The dark stops hiding you when you shoot: the flash of your gun shows them where you are for a moment. The bottles behind a bar and shop windows shatter. Crates, cars, water towers and other solid props are cover: they block bullets and sight both ways.
 
 ## Running it locally
 

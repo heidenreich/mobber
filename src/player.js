@@ -152,13 +152,13 @@ function fire() {
     if (other >= 0) { const was = WEAPONS[p.weapon].name; switchWeapon(other); say(`${was} is empty.`); return; }
     pistolWhip(); return;
   }
-  p.mag[p.weapon]--; p.fireCd = w.rate; p.recoil = w.pellets ? 1.5 : 1; p.flash = 0.06; stats.shots++;
+  p.mag[p.weapon]--; p.fireCd = w.rate; p.recoil = w.pellets ? 1.5 : 1; p.flash = 0.06; p.shown = ENEMY_AI.flashShows; stats.shots++;
   [SND.rev, SND.tommy, SND.sawn][p.weapon]();
   // Gunfire carries: anyone in earshot now knows where you are, and comes looking
   scare(p.x, p.y);
   const unaware = new Set(game.enemies.filter(e => e.hp > 0 && !e.alert));
   // (a lieutenant stays where he is until he sees you)
-  for (const e of game.enemies) if (e.hp > 0 && !e.type.lieutenant && Math.hypot(e.x - p.x, e.y - p.y) < ENEMY_AI.hearingRange) { e.alert = true; e.lx = p.x; e.ly = p.y; }
+  for (const e of game.enemies) if (e.hp > 0 && !e.type.lieutenant && (e.doorMan || Math.hypot(e.x - p.x, e.y - p.y) < ENEMY_AI.hearingRange)) { e.alert = true; e.lx = p.x; e.ly = p.y; }
   const spread = w.spread * (p.moving ? 1.6 : 1);
   let hitAnyone = false;
   for (let n = 0; n < (w.pellets || 1); n++) {
@@ -320,7 +320,7 @@ function crackSafe(dt) {
 export function tickPlayerEffects(dt) {
   const p = game.player;
   p.fireCd = Math.max(0, p.fireCd - dt);
-  p.flash = Math.max(0, p.flash - dt);
+  p.flash = Math.max(0, p.flash - dt); p.shown = Math.max(0, (p.shown || 0) - dt);
   p.recoil = Math.max(0, p.recoil - dt * 7);
   p.hurt = Math.max(0, p.hurt - dt);
 }

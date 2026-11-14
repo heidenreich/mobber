@@ -19,8 +19,9 @@ export function updateEnemy(e, dt) {
   if (e.state === "dead") return;
   e.cd -= dt; e.staggerCd = Math.max(0, (e.staggerCd || 0) - dt); e.repath = (e.repath || 0) - dt;
   const dx = p.x - e.x, dy = p.y - e.y, d = Math.hypot(dx, dy);
-  // They see less far when you're standing in the dark (shoot out a lamp and find out)
-  const range = ENEMY_AI.sightRange * (lightAt(p.x, p.y) < 0.5 && p.flash <= 0 ? ENEMY_AI.darkSight : 1);
+  // They see less far when you're standing in the dark (shoot out a lamp and find out),
+  // but the flash of your own gun shows them where you are for a moment
+  const range = ENEMY_AI.sightRange * (lightAt(p.x, p.y) < 0.5 && !(p.shown > 0) ? ENEMY_AI.darkSight : 1);
   // Until something alerts him he only sees what's in front of him, and now and then he looks behind
   if (!e.alert && (e.turnT -= dt) <= 0) { e.face += Math.PI; e.lookBack = !e.lookBack; e.turnT = e.lookBack ? rand(2, 3.5) : rand(4, 8); }
   // He sees you if he can see where you stand, or your head leaning out of cover
@@ -183,7 +184,7 @@ function raiseAlarm(e, d) {
   const p = game.player;
   let heard = false;
   for (const o of game.enemies) {
-    if (o === e || o.hp <= 0 || o.alert || o.type.lieutenant || Math.hypot(o.x - e.x, o.y - e.y) > ENEMY_AI.shoutRange) continue;
+    if (o === e || o.hp <= 0 || o.alert || o.type.lieutenant || (!o.doorMan && Math.hypot(o.x - e.x, o.y - e.y) > ENEMY_AI.shoutRange)) continue;   // the men on the door are listening for it
     o.alert = true; o.lx = p.x; o.ly = p.y; heard = true;
   }
   if (heard) SND.shout(d);

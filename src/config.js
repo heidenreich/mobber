@@ -169,6 +169,7 @@ export const ENEMY_AI = {
   senseRange: 2.2,          // ...or anyone who gets this close
   ambush: 3,                // damage multiplier for a shot at a man who hasn't noticed you
   shoutRange: 6.5,          // the first to see you shouts, and anyone this close to him comes too
+  flashShows: 1.5,          // after you fire, the dark doesn't hide you for this many seconds
   darkSight: 0.6,           // how much of sightRange they keep when you stand in the dark
   coverChance: 0.5,         // how often a goon ducks out of sight between bursts
   spinChance: 0.3,          // how often a hit that staggers a man spins him right round

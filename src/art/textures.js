@@ -1,7 +1,7 @@
 // 64x64 wall, floor and ceiling textures, drawn in code when the page loads.
 import { rand } from "../util.js";
 import { gray, bitmap, speckle } from "./bitmap.js";
-import { FACADES } from "./streets.js";
+import { FACADES, HARBOUR } from "./streets.js";
 
 export const TEX = {
   brick: bitmap(64, 64, g => {
@@ -133,7 +133,7 @@ export const CEILS = {
 };
 
 // Map letter -> wall texture (see levels.js for the legend)
-export const WALL_TEXTURES = { "#": TEX.brick, W: TEX.paper, P: TEX.panel, B: TEX.bar, T: TEX.deco, I: TEX.iron, E: TEX.door, ...FACADES };
+export const WALL_TEXTURES = { "#": TEX.brick, W: TEX.paper, P: TEX.panel, B: TEX.bar, T: TEX.deco, I: TEX.iron, E: TEX.door, ...FACADES, "=": HARBOUR["="], J: HARBOUR.J, Y: HARBOUR.Y, X: HARBOUR.X };
 
 // Sliding door: wood with a frosted glass panel and a brass pull
 export const DOOR_TEX = bitmap(64, 64, g => {

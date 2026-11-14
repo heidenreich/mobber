@@ -70,7 +70,7 @@ export function startLevel(i, retry) {
   // (a club that was warned has no music: the pianist isn't at his keys)
   if (game.warned && game.folk.some(f => f.kind === "pianist")) music.stop();
   else music.play(game.level.endOnBoss ? "chase" : game.level.rain ? "street" : "joint");
-  SND.rain(!!game.level.rain); SND.rotor(!!game.level.endOnBoss);
+  SND.rain(!!game.level.rain); SND.rotor(game.chase ? 0.25 : 0);
   if (game.level.lift) startLift(game.level.lift);
   requestLock();
   if (isTouch) fireBtn.style.display = "block"; // SWAP appears once you have a second gun (hud.js)

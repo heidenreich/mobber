@@ -6,7 +6,7 @@ import { LEVELS } from "./levels.js";
 import { ctx, view, watchScreen, resizeIfChanged } from "./screen.js";
 import { wallAt, los, lightAt, SPAWNS } from "./world.js";
 import { WALL_CHARS, SIDE_WALL_CHARS } from "./tiles.js";
-import { AMMO, PLAYER } from "./config.js";
+import { AMMO, PLAYER, CHASE } from "./config.js";
 import { updatePlayer, collectPickups, tickPlayerEffects } from "./player.js";
 import { updateEnemy, hurtPlayer } from "./enemies.js";
 import { updateBullets, spawnBullet } from "./bullets.js";
@@ -85,6 +85,8 @@ function frame(now) {
     // Scenes open and close with an iris (below); the picture itself only dims a little
     let bright = flicker * (0.5 + 0.5 * game.fade) * (p.flash > 0 ? 1.25 : 1) * (1 - p.hurt * 1.2);
     if (game.state === "dying") bright *= 0.7;
+    // On the roof the morning comes up as the chase goes on
+    if (game.chase) bright *= CHASE.dark + (CHASE.light - CHASE.dark) * game.chase.t / game.chase.len;
     // Riding the lift: the landings' lights slide past the gate
     const riding = game.lift && game.lift.phase === "ride" && !game.lift.done;
     if (riding) bright *= 0.62 + 0.38 * Math.abs(Math.sin(t * 2.6));
@@ -117,6 +119,6 @@ requestAnimationFrame(frame);
 // Hook for the automated tests in tests/
 window.__mobber = {
   get state() { return game.state; }, get player() { return game.player; }, get enemies() { return game.enemies; },
-  get objs() { return game.objs; }, get level() { return game.level; }, get card() { return game.card; }, get map() { return game.map; }, get doors() { return game.doors; }, get fade() { return game.fade; }, get navBlocked() { return game.navBlocked; }, get intertitle() { return game.intertitle; }, get smashed() { return game.smashed; }, get folk() { return game.folk; }, get shop() { return game.shop; }, get choice() { return game.choice; }, choiceRows, decide, get windows() { return game.windows; }, get fenceShut() { return game.fenceShut; }, shopRows, get bullets() { return game.bullets; }, get alarm() { return game.alarm; }, get doorFront() { return game.doorFront; }, get warned() { return game.warned; }, spawnBullet, titleChoices, get lift() { return game.lift; }, get cracking() { return game.cracking; }, lightAt, set dialogue(v) { game.dialogue = v; }, stats, LEVELS, AMMO, music, settings, startLevel, wallAt, los, hurtPlayer,
+  get objs() { return game.objs; }, get level() { return game.level; }, get card() { return game.card; }, get map() { return game.map; }, get doors() { return game.doors; }, get fade() { return game.fade; }, get navBlocked() { return game.navBlocked; }, get intertitle() { return game.intertitle; }, get smashed() { return game.smashed; }, get folk() { return game.folk; }, get shop() { return game.shop; }, get choice() { return game.choice; }, choiceRows, decide, get windows() { return game.windows; }, get fenceShut() { return game.fenceShut; }, shopRows, get bullets() { return game.bullets; }, get alarm() { return game.alarm; }, get doorFront() { return game.doorFront; }, get warned() { return game.warned; }, spawnBullet, titleChoices, get lift() { return game.lift; }, get chase() { return game.chase; }, get cracking() { return game.cracking; }, lightAt, set dialogue(v) { game.dialogue = v; }, stats, LEVELS, AMMO, music, settings, startLevel, wallAt, los, hurtPlayer,
   TILES: { walls: WALL_CHARS, sideWalls: SIDE_WALL_CHARS, blockers: Object.keys(SPAWNS).filter(k => SPAWNS[k].block).join("") },
 };

@@ -1,6 +1,7 @@
 // Crosshair, the health/cash/objective/ammo bar, messages, the touch stick and
 // the pause screen. Drawn at full screen resolution on top of the film.
 import { isTouch, FONTS, CREAM, TOUCH, WEAPONS } from "../config.js";
+import { clamp } from "../util.js";
 import { game, stats, input } from "../state.js";
 import { ctx, view, swapBtn } from "../screen.js";
 import { objectiveDone } from "../world.js";
@@ -97,6 +98,21 @@ export function drawHUD() {
     ctx.fillStyle = CREAM; ctx.fillRect(x, y, w * Math.max(0, lt.hp / lt.type.hp), h);
     ctx.font = `italic 700 ${Math.max(9, 8.5 * film.s)}px ${SERIF}`; ctx.fillStyle = "rgba(0,0,0,0.7)"; ctx.fillText(lt.type.role, x + w / 2 + 1, y + h + 11 * film.s + 1);
     ctx.fillStyle = CREAM; ctx.fillText(lt.type.role, x + w / 2, y + h + 11 * film.s);
+  }
+  // The roof: how near the autogiro is to flying, and once he's seen you, how much fight the Don has left
+  const ch = game.chase;
+  if (ch && game.state === "play") {
+    const k = ch.t / ch.len, w = 150 * film.s, x = film.x + film.w / 2 - w / 2, y = film.y + 62 * film.s, h = Math.max(3, 4 * film.s);
+    const don = game.enemies.find(e => e.type.flees && e.hp > 0 && e.alert);
+    const bar = (label, y, f, blink) => {
+      ctx.textAlign = "center"; ctx.font = `${Math.max(11, 11 * film.s)}px ${DECO}`;
+      ctx.fillStyle = "rgba(0,0,0,0.7)"; ctx.fillText(label, x + w / 2 + 1, y - 5 * film.s + 1);
+      ctx.fillStyle = blink ? "#ffffff" : CREAM; ctx.fillText(label, x + w / 2, y - 5 * film.s);
+      ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(x - 1, y - 1, w + 2, h + 2);
+      ctx.fillStyle = blink ? "#ffffff" : CREAM; ctx.fillRect(x, y, w * clamp(f, 0, 1), h);
+    };
+    bar(k >= 1 ? "THE AUTOGIRO IS READY" : "THE AUTOGIRO'S ROTOR", y, k, k > 0.85 && Math.floor(game.timer * 4) % 2);
+    if (don) bar("DON VITALE", y + 24 * film.s, don.hp / don.type.hp, false);
   }
   // Messages ("Find the ledger.", pickups)
   const msg = game.msg;

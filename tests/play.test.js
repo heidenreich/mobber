@@ -146,8 +146,10 @@ test("on the roof, the Don runs for the autogiro and escapes if you let him", as
   const don = () => game(page, () => { const d = window.__mobber.enemies.find(e => e.type.name === "boss"); return { x: d.x, state: d.state }; });
   const start = await don();
   // Stay out of sight behind him: everyone else is gone, and the Don can't see us
-  await game(page, () => { const M = window.__mobber; for (const e of M.enemies) if (e.type.name !== "boss") { e.hp = 0; e.state = "dead"; } M.player.hp = 1e9; });
+  // (and the autogiro is nearly ready, so he doesn't stop to fight on the way)
+  await game(page, () => { const M = window.__mobber; for (const e of M.enemies) if (e.type.name !== "boss") { e.hp = 0; e.state = "dead"; } M.player.hp = 1e9; M.chase.len = 32; });
   await page.waitForFunction(() => window.__mobber.state === "card", null, { timeout: 60000 });
+  assert.ok(await game(page, () => window.__mobber.chase.t >= 32), "he couldn't leave until the rotor was up to speed");
   assert.equal(await game(page, () => window.__mobber.card.kind), "escaped", "letting him reach the autogiro shows HE GOT AWAY");
   assert.ok(start.x < 15, "he starts well short of the autogiro");
   await clickCard(page);
@@ -330,7 +332,7 @@ test("the Don can't be pinned down with a tommy gun", async () => {
     (function watch() { if (d.state === "hurt") window.__flinched = true; if (d.hp > 0) requestAnimationFrame(watch); })();
   });
   await page.keyboard.down(" "); await page.waitForTimeout(1500); await page.keyboard.up(" ");
-  assert.ok(await game(page, () => window.__mobber.enemies.find(e => e.type.name === "boss").hp < 480), "he should have been hit");
+  assert.ok(await game(page, () => window.__mobber.enemies.find(e => e.type.name === "boss").hp < window.__mobber.enemies.find(e => e.type.name === "boss").type.hp), "he should have been hit");
   assert.equal(await game(page, () => window.__flinched), false, "the Don never flinches");
   await context.close();
 });
@@ -341,7 +343,7 @@ test("standing in the Don's way doesn't stop him", async () => {
   await game(page, () => {
     const M = window.__mobber, d = M.enemies.find(e => e.type.name === "boss"), P = M.player, [x, y] = M.level.route[1];
     for (const e of M.enemies) if (e !== d) { e.hp = 0; e.state = "dead"; }
-    d.cd = 1e9; P.hp = 1e9; P.x = x; P.y = y; // right on his route
+    d.cd = 1e9; P.hp = 1e9; P.x = x; P.y = y; M.chase.len = 34; // right on his route
   });
   await page.waitForFunction(() => window.__mobber.card && window.__mobber.card.kind === "escaped", null, { timeout: 60000 });
   await context.close();
@@ -355,7 +357,7 @@ test("tall props are cover; you can shoot over a parked car", async () => {
   assert.equal(car, false, "a car doesn't block the shot");
   // A water tower on the roof does
   await goTo(page, "The Roof");
-  const tower = await game(page, () => { const M = window.__mobber, w = M.objs.find(o => o.cover && o.size === 0.8 && o.scale > 2); return { blocked: !M.los(w.x - 1.2, w.y, w.x + 1.2, w.y), beside: !M.los(w.x - 1.2, w.y - 1.1, w.x + 1.2, w.y - 1.1) }; });
+  const tower = await game(page, () => { const M = window.__mobber, w = M.objs.find(o => o.cover && o.size === 0.7 && o.scale > 2); return { blocked: !M.los(w.x - 1.2, w.y, w.x + 1.2, w.y), beside: !M.los(w.x - 1.2, w.y - 1.1, w.x + 1.2, w.y - 1.1) }; });
   assert.deepEqual(tower, { blocked: true, beside: false });
   await context.close();
 });

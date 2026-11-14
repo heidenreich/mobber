@@ -214,3 +214,47 @@ test("the Waterfront's top edge is the harbour: a freighter at the quay, open wa
   for (const a of [-Math.PI / 2, -0.3, Math.PI - 0.3]) { await game(page, a => { window.__mobber.player.a = a; }, a); await page.waitForTimeout(150); }
   assert.deepEqual(errors, []);
 });
+
+test("the roof chase: the Don runs, turns to fight from his stands, and runs again when you close in", async () => {
+  const { page, errors } = await start("The Roof");
+  const don = () => game(page, () => { const M = window.__mobber, d = M.enemies.find(e => e.type.flees); return { x: d.x, y: d.y, wp: d.wp, standing: !!d.standing, state: d.state, hp: d.hp, t: M.chase.t, len: M.chase.len, bullets: M.bullets.length }; });
+  await game(page, () => {
+    const M = window.__mobber;
+    for (const e of M.enemies) if (!e.type.flees) { e.hp = 0; e.state = "dead"; }
+    M.player.hp = 1e9;
+    // Count every bullet he fires while he's on the run
+    window.__ranShots = 0; const d = M.enemies.find(e => e.type.flees);
+    (function watch() { if (!d.standing && (d.state === "aim" || d.state === "fire")) window.__ranShots++; requestAnimationFrame(watch); })();
+  });
+  // Something to start you off at the stairhead: a first-aid kit and a drum
+  const near = await game(page, () => { const M = window.__mobber, P = M.player; return M.objs.filter(o => o.pick && Math.hypot(o.x - P.x, o.y - P.y) < 4).map(o => o.pick + (o.weapon || "")).sort(); });
+  assert.deepEqual(near, ["med", "rounds1"]);
+  // He runs the first stretch without firing, in plain view, and makes his first stand past the gap
+  await page.waitForFunction(() => window.__mobber.enemies.find(e => e.type.flees).standing, null, { timeout: 30000 });
+  const first = await don();
+  assert.equal(first.wp, 1);
+  assert.equal(await game(page, () => window.__ranShots), 0, "no shooting on the run");
+  assert.ok(first.t < first.len * 0.3, "with most of the clock still to go");
+  // Where he stands, he fights: walk into view at a distance and he opens up
+  await game(page, () => { const M = window.__mobber, d = M.enemies.find(e => e.type.flees), P = M.player; P.x = d.x - 7; P.y = d.y; P.a = 0; d.cd = 0; });
+  await page.waitForFunction(() => ["aim", "fire"].includes(window.__mobber.enemies.find(e => e.type.flees).state), null, { timeout: 5000 });
+  assert.equal((await don()).standing, true, "and stays where he is");
+  // Get close and he breaks for the next stretch
+  await game(page, () => { const M = window.__mobber, d = M.enemies.find(e => e.type.flees), P = M.player; P.x = d.x - 3; P.y = d.y; });
+  await page.waitForFunction(() => { const d = window.__mobber.enemies.find(e => e.type.flees); return !d.standing && d.wp === 2; }, null, { timeout: 5000 });
+  // The second stand: hurt him enough there and he runs again
+  await game(page, () => { const P = window.__mobber.player; P.x = 2.5; P.y = 8.5; });
+  await page.waitForFunction(() => { const d = window.__mobber.enemies.find(e => e.type.flees); return d.standing && d.wp === 3; }, null, { timeout: 30000 });
+  await game(page, () => { const d = window.__mobber.enemies.find(e => e.type.flees); d.hp -= d.type.hp * 0.3; });
+  await page.waitForFunction(() => window.__mobber.enemies.find(e => e.type.flees).wp === 4, null, { timeout: 5000 });
+  // At the machine he has to wait for the rotor: he holds the pad, and the picture isn't over
+  await page.waitForFunction(() => { const d = window.__mobber.enemies.find(e => e.type.flees); return d.standing && d.wp === 4; }, null, { timeout: 20000 });
+  const pad = await don();
+  assert.ok(pad.t < pad.len, "the rotor isn't ready");
+  await page.waitForTimeout(1500);
+  assert.equal(await game(page, () => window.__mobber.state), "play");
+  // The moment it is, he's gone
+  await game(page, () => { const c = window.__mobber.chase; c.t = c.len - 0.5; });
+  await page.waitForFunction(() => window.__mobber.card && window.__mobber.card.kind === "escaped", null, { timeout: 15000 });
+  assert.deepEqual(errors, []);
+});

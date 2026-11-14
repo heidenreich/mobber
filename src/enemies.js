@@ -1,7 +1,7 @@
 // The Vitale outfit. Each gangster runs a small state machine:
 // idle -> chase -> aim -> fire -> chase ... with hurt/dying/dead on top.
 // They raise their gun ("aim") before firing, which gives you a moment to react.
-import { ENEMY_AI, BULLETS, STREET } from "./config.js";
+import { ENEMY_AI, BULLETS, STREET, CHASE } from "./config.js";
 import { rand } from "./util.js";
 import { game, stats, say, intertitle, eye } from "./state.js";
 import { SND } from "./audio.js";
@@ -50,7 +50,9 @@ export function updateEnemy(e, dt) {
     case "idle": if (e.alert) e.state = "chase"; break;
     case "hurt": e.t -= dt; if (e.t <= 0) e.state = "chase"; break;
     case "chase": {
-      if (sees && d < T.range && e.cd <= 0) { e.state = "aim"; e.t = T.aim; e.burstLeft = T.burst; break; }
+      // (the Don on the roof only fires from where he's made a stand: between them he runs)
+      const onTheRun = T.flees && game.level.route && !e.standing;
+      if (sees && d < T.range && e.cd <= 0 && !onTheRun) { e.state = "aim"; e.t = T.aim; e.burstLeft = T.burst; break; }
       if (T.still) break;   // a man at a window stays there
       if (T.flees && game.level.route) { flee(e, dt); break; }
       if (e.hold) {
@@ -226,23 +228,41 @@ function runForIt(e, dt, d) {
   }
 }
 
-function walk(e, tx, ty, gd, dt, weave) {
+function walk(e, tx, ty, gd, dt, weave, speed = e.type.speed) {
   e.step += dt;
   const ux = (tx - e.x) / gd, uy = (ty - e.y) / gd, wv = weave ? Math.sin(e.step * 2.2) * 0.45 : 0; // a slight weave when in the open
-  moveBy(e, (ux - uy * wv) * e.type.speed * dt, (uy + ux * wv) * e.type.speed * dt, 0.22);
+  moveBy(e, (ux - uy * wv) * speed * dt, (uy + ux * wv) * speed * dt, 0.22);
   e.moving = true;
 }
 
 // The Don makes for his getaway, waypoint by waypoint, finding a way around anyone
-// or anything in his path. If he gets there, he's gone.
+// or anything in his path. Where the route gives a point a time, he turns and fights
+// from there until the time is up, you get too close, or you've hurt him enough;
+// then he runs again. At the last point he holds the pad until the autogiro's rotor
+// is up to speed, and then he's gone.
 function flee(e, dt) {
-  if (e.wp >= game.level.route.length) return; // already gone
-  const route = game.level.route, last = e.wp >= route.length - 1, [tx, ty] = route[Math.min(e.wp, route.length - 1)];
-  const p = game.player;
+  const route = game.level.route, ch = game.chase, p = game.player;
+  if (e.wp >= route.length) return; // already gone
+  const last = e.wp >= route.length - 1, [tx, ty, hold] = route[e.wp];
+  const ready = !ch || ch.t >= ch.len;
+  if (e.standing) {
+    if (last) { if (ready) escaped(); return; }
+    // How long the rest of the run would take him: he won't stand here so long that he misses his flight
+    let left = Math.hypot(tx - e.x, ty - e.y);
+    for (let i = e.wp; i < route.length - 1; i++) left += Math.hypot(route[i + 1][0] - route[i][0], route[i + 1][1] - route[i][1]);
+    const late = ch && ch.len - ch.t < left / CHASE.runSpeed + 3;
+    const rushed = Math.hypot(p.x - e.x, p.y - e.y) < CHASE.tooClose, hurt = e.standHp - e.hp > e.type.hp * CHASE.giveUp;
+    if (game.timer < e.standEnd && !late && !rushed && !hurt) return;
+    e.standing = false; e.wp++; e.stuck = 0; e.repath = 0;
+    return;
+  }
   // Reached it, or it's taken (you're standing on it) or he's been stuck: on to the next one
   e.stuck = (e.stuck || 0) + dt;
-  const blocked = !last && (Math.hypot(p.x - tx, p.y - ty) < 0.9 || e.stuck > 1.2);
+  // (but a place he means to fight from he doesn't give up just because one of his own men is in the way)
+  const blocked = !last && (Math.hypot(p.x - tx, p.y - ty) < 0.9 || e.stuck > (hold ? 3.5 : 1.2));
   if (Math.hypot(tx - e.x, ty - e.y) < 0.45 || blocked) {
+    if (last && !ready) { e.standing = true; e.cd = Math.min(e.cd, 0.5); return; }   // at the machine, waiting on its rotor
+    if (hold && !blocked) { e.standing = true; e.standEnd = game.timer + hold; e.standHp = e.hp; e.cd = Math.min(e.cd, 0.5); return; }
     e.wp++; e.stuck = 0; e.repath = 0;
     if (e.wp >= route.length) escaped();
     return;
@@ -251,9 +271,9 @@ function flee(e, dt) {
   const gd = Math.hypot(e.wp2.x - e.x, e.wp2.y - e.y);
   if (gd < 0.1) { e.repath = 0; return; }
   const bx = e.x, by = e.y;
-  walk(e, e.wp2.x, e.wp2.y, gd, dt, false);
+  walk(e, e.wp2.x, e.wp2.y, gd, dt, false, CHASE.runSpeed);
   // Boxed in for a moment? Look for another way next frame
-  if (Math.hypot(e.x - bx, e.y - by) < 0.2 * e.type.speed * dt) e.repath = 0;
+  if (Math.hypot(e.x - bx, e.y - by) < 0.2 * CHASE.runSpeed * dt) e.repath = 0;
   else e.stuck = 0;
 }
 function escaped() {

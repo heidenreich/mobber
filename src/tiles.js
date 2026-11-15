@@ -3,8 +3,8 @@
 
 // Solid walls, including the exit door and the roof parapet. "=" is the harbour's edge (a low kerb you see over, with
 // water beyond) and J, Y, X are lengths of the freighter moored against it
-export const WALL_CHARS = "#WPBTEFHURIKQ=JYX";
+export const WALL_CHARS = "#WPBTEFHURIKQ=JYX&";   // (& is the Hotel Regent's stone front)
 // Walls that can sit beside a door or hide a secret (everything but the exit)
-export const SIDE_WALL_CHARS = "#WPBTFHURIKQ=JYX";
+export const SIDE_WALL_CHARS = "#WPBTFHURIKQ=JYX&";
 export const DOOR = "D";
 export const SECRET = "!";

@@ -47,6 +47,28 @@ export const FACADES = {
     for (let x = 0; x < 64; x += 8) { g.fillStyle = gray(x % 16 ? 70 : 165); g.fillRect(x, 66, 8, 12); } // striped awning
     g.fillStyle = gray(40); g.fillRect(0, 78, 64, 2); g.fillRect(0, 120, 64, 8);
   }),
+  // The Hotel Regent's front: pale stone, fluted pilasters, tall windows upstairs and an arched one at street level
+  "&": bitmap(64, 128, g => {
+    g.fillStyle = gray(168); g.fillRect(0, 0, 64, 128);
+    g.fillStyle = gray(150); for (let y = 68; y < 128; y += 10) g.fillRect(0, y, 64, 1);                       // rusticated ground floor
+    for (const x of [0, 56]) { g.fillStyle = gray(186); g.fillRect(x, 0, 8, 128); g.fillStyle = gray(140); for (let i = 1; i < 8; i += 2) g.fillRect(x + i, 6, 1, 116); }
+    g.fillStyle = gray(120); g.fillRect(0, 0, 64, 5); g.fillStyle = gray(200); g.fillRect(0, 5, 64, 2);        // cornice
+    g.fillStyle = gray(120); g.fillRect(0, 60, 64, 3); g.fillStyle = gray(204); g.fillRect(0, 63, 64, 3);       // the band between the floors
+    // upstairs: a tall window with a little iron balcony
+    const lit = Math.random() < 0.55;
+    g.fillStyle = gray(96); g.fillRect(20, 12, 24, 40);
+    g.fillStyle = gray(lit ? 246 : 30); g.fillRect(22, 14, 20, 36);
+    g.fillStyle = gray(lit ? 150 : 66); g.fillRect(31, 14, 2, 36); g.fillRect(22, 30, 20, 2);
+    if (lit) { g.fillStyle = gray(205); g.fillRect(22, 14, 6, 36); g.fillRect(36, 14, 6, 36); }                // curtains
+    g.strokeStyle = gray(34); g.lineWidth = 1.4; g.strokeRect(17, 44, 30, 9); for (let x = 20; x < 46; x += 4) { g.beginPath(); g.moveTo(x, 44); g.lineTo(x, 53); g.stroke(); }
+    // street level: an arched window, lit from the lobby
+    g.fillStyle = gray(96); g.beginPath(); g.moveTo(16, 118); g.lineTo(16, 88); g.arc(32, 88, 16, Math.PI, 0); g.lineTo(48, 118); g.closePath(); g.fill();
+    g.fillStyle = gray(238); g.beginPath(); g.moveTo(19, 116); g.lineTo(19, 88); g.arc(32, 88, 13, Math.PI, 0); g.lineTo(45, 116); g.closePath(); g.fill();
+    g.fillStyle = gray(120); g.fillRect(31, 75, 2, 41); g.fillRect(19, 96, 26, 2);
+    g.fillStyle = gray(186); g.fillRect(22, 100, 5, 16); g.fillRect(37, 104, 5, 12);                            // a palm and a lamp inside
+    g.fillStyle = gray(110); g.fillRect(0, 120, 64, 8);
+    speckle(g, 64, 128, 500, 0.12);
+  }),
   // The Blue Note's front: black lacquer, chrome strips and a lit poster
   U: bitmap(64, 128, g => {
     g.fillStyle = gray(22); g.fillRect(0, 0, 64, 128);

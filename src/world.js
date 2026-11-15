@@ -33,10 +33,14 @@ export const SPAWNS = {
   h: { art: "hydrant", scale: 0.6, block: true, size: 0.2 },
   t: { art: "trash", scale: 0.7, block: true, size: 0.25 },
   s: { art: "bollard", scale: 0.6, block: true, size: 0.22 },
-  n: { art: "newsstand", scale: 0.9, block: true, size: 0.45 },
+  n: { art: "newsstand", scale: 0.9, block: true, size: 0.45, cover: true },
   x: { art: "alarm", scale: 0.8, block: true, size: 0.2, alarm: true },
   // A load slung from the warehouse crane: shoot it and it drops on whoever is under it (crane.js)
   "^": { art: "load", scale: 0.5, hang: true, load: true },
+  // Regent Square: the fountain in the middle, the trees and benches round it
+  "@": { art: "fountain", scale: 1.8, block: true, size: 0.9, cover: true },
+  "%": { art: "tree", scale: 2.3, block: true, size: 0.22, cover: true },
+  _: { art: "bench", scale: 0.55, block: true, size: 0.4 },
   // The hotel roof
   w: { art: "watertower", scale: 2.6, block: true, size: 0.7, cover: true },   // (0.7: a man can get along the square next to it)
   q: { art: "chimney", scale: 1.1, block: true, size: 0.3, cover: true },

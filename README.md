@@ -28,7 +28,7 @@ The gear opens the projection booth: music, sound effects, look speed, difficult
 
 Doors open by themselves as you walk up to them. Some walls hide rooms: look for faint scrape marks near the floor.
 
-Ammo is limited, and so is what you can carry. You start with a loaded revolver and 12 spare rounds. Boxes of rounds and tommy gun drums are lying around, and gangsters you put down leave something behind: a few revolver rounds, sometimes their tommy gun, sometimes cash. The first heavy you put down gives up his sawn-off shotgun, which settles things up close and does little at a distance. With both guns empty, a click swings the gun at anyone in arm's reach. Your health carries over from scene to scene, so first-aid kits matter.
+Ammo is limited, and so is what you can carry. You start with a loaded revolver and 12 spare rounds. A few boxes of rounds are lying around, and gangsters you put down leave something behind: sometimes a few revolver rounds, sometimes their tommy gun, sometimes cash or something the fence will buy. The first heavy you put down gives up his sawn-off shotgun, which settles things up close and does little at a distance. With both guns empty, a click swings the gun at anyone in arm's reach. Your health carries over from scene to scene, and first-aid kits are rare.
 
 Gangsters who hear gunfire come looking for you, finding their way around walls and through doors. The first to see you shouts for the others near him. Between bursts a goon may duck out of your line of fire, a hit may knock his hat off, and the last hired gun left standing loses his nerve and runs.
 

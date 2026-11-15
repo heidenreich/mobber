@@ -394,7 +394,8 @@ test("full pockets leave the rounds on the floor", async () => {
 
 test("health carries over between scenes, with a floor", async () => {
   const { page, context } = await startedGame();
-  for (const [hp, expect] of [[72, 72], [20, 50]]) {
+  // (on Regular the floor is 30: the fence's doctor is how you do better than that)
+  for (const [hp, expect] of [[72, 72], [20, 30]]) {
     await goTo(page, "Mulberry Street");
     await clearEnemies(page);
     await game(page, h => { window.__mobber.player.hp = h; }, hp);

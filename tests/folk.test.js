@@ -101,14 +101,14 @@ test("the fence deals through a window down an alley, and what you buy is yours 
   const t0 = await game(page, () => window.__mobber.stats.time);
   // 1 is the box of rounds, 2 the doctor (no tommy gun or sawn-off yet, so those lines aren't offered), 3 the vest
   await page.keyboard.press("1"); await page.keyboard.press("2");
-  assert.deepEqual(await game(page, () => { const M = window.__mobber, P = M.player; return [M.stats.cash, P.mag[0] + P.reserve[0], P.hp]; }), [600, 18, 75]);
+  assert.deepEqual(await game(page, () => { const M = window.__mobber, P = M.player; return [M.stats.cash, P.mag[0] + P.reserve[0], P.hp]; }), [450, 18, 100]);   // $150 for the box, $400 for the doctor, who puts you right
   await page.keyboard.press("3");
-  assert.equal(await game(page, () => window.__mobber.stats.cash), 600, "can't afford the vest");
+  assert.equal(await game(page, () => window.__mobber.stats.cash), 450, "can't afford the vest");
   // Clicking a line buys it too
   await page.waitForFunction(() => window.__mobber.shopRows.length > 0);
   const row = await game(page, () => { const r = window.__mobber.shopRows[0]; return { x: (r.x0 + r.x1) / 2, y: (r.y0 + r.y1) / 2 }; });
   await page.mouse.click(row.x, row.y);
-  assert.deepEqual(await game(page, () => [window.__mobber.stats.cash, window.__mobber.shop]), [450, true]);
+  assert.deepEqual(await game(page, () => [window.__mobber.stats.cash, window.__mobber.shop]), [300, true]);
   assert.equal(await game(page, () => window.__mobber.stats.time), t0, "the clock stops while you deal");
   // E walks away, and you're back in the alley
   await page.keyboard.press("e");

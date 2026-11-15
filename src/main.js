@@ -12,7 +12,7 @@ import { updateEnemy, hurtPlayer } from "./enemies.js";
 import { updateBullets, spawnBullet } from "./bullets.js";
 import { updateFolk } from "./folk.js";
 import { updateFence } from "./fence.js";
-import { shopRows, drawShop } from "./render/shop.js";
+import { shopRows, drawShop, offer, buy, closeShop } from "./render/shop.js";
 import { drawChoice, choiceRows, decide } from "./render/choice.js";
 import { updateDoors, updateSecrets } from "./doors.js";
 import { startLevel, tickFade } from "./flow.js";
@@ -123,6 +123,6 @@ requestAnimationFrame(frame);
 // Hook for the automated tests in tests/
 window.__mobber = {
   get state() { return game.state; }, get player() { return game.player; }, get enemies() { return game.enemies; },
-  get objs() { return game.objs; }, get level() { return game.level; }, get card() { return game.card; }, get map() { return game.map; }, get doors() { return game.doors; }, get fade() { return game.fade; }, get navBlocked() { return game.navBlocked; }, get intertitle() { return game.intertitle; }, get smashed() { return game.smashed; }, get folk() { return game.folk; }, get shop() { return game.shop; }, get choice() { return game.choice; }, choiceRows, decide, get windows() { return game.windows; }, get fenceShut() { return game.fenceShut; }, shopRows, get bullets() { return game.bullets; }, get alarm() { return game.alarm; }, get doorFront() { return game.doorFront; }, get warned() { return game.warned; }, spawnBullet, titleChoices, get lift() { return game.lift; }, get message() { return game.msg.t > 0 ? game.msg.text : ""; }, get frames() { return frames; }, get chase() { return game.chase; }, get cracking() { return game.cracking; }, lightAt, set dialogue(v) { game.dialogue = v; }, stats, LEVELS, AMMO, music, settings, startLevel, wallAt, los, hurtPlayer,
+  get objs() { return game.objs; }, get level() { return game.level; }, get card() { return game.card; }, get map() { return game.map; }, get doors() { return game.doors; }, get fade() { return game.fade; }, get navBlocked() { return game.navBlocked; }, get intertitle() { return game.intertitle; }, get smashed() { return game.smashed; }, get folk() { return game.folk; }, get shop() { return game.shop; }, get choice() { return game.choice; }, choiceRows, decide, get windows() { return game.windows; }, get fenceShut() { return game.fenceShut; }, shopRows, get bullets() { return game.bullets; }, get alarm() { return game.alarm; }, get doorFront() { return game.doorFront; }, get warned() { return game.warned; }, spawnBullet, titleChoices, get lift() { return game.lift; }, get offer() { return offer(); }, buy, closeShop, get message() { return game.msg.t > 0 ? game.msg.text : ""; }, get frames() { return frames; }, get chase() { return game.chase; }, get cracking() { return game.cracking; }, lightAt, set dialogue(v) { game.dialogue = v; }, stats, LEVELS, AMMO, music, settings, startLevel, wallAt, los, hurtPlayer,
   TILES: { walls: WALL_CHARS, sideWalls: SIDE_WALL_CHARS, blockers: Object.keys(SPAWNS).filter(k => SPAWNS[k].block).join("") },
 };

@@ -33,6 +33,24 @@ function installBot(skill) {
     }
     return null;
   }
+  // What a careful player buys, most pressing first
+  function shopNow(P) {
+    const got = [];
+    for (let n = 0; n < 12; n++) {
+      const list = M.offer, cash = M.stats.cash, idx = t => list.findIndex(it => it.name.includes(t) && !it.full && it.price <= cash);
+      const sell = list.findIndex(it => it.sell);
+      const pick = sell >= 0 ? sell
+        : P.hp < 60 && idx("doctor") >= 0 ? idx("doctor")
+        : P.has[1] && P.mag[1] + P.reserve[1] < 40 && idx("drum") >= 0 ? idx("drum")
+        : P.mag[0] + P.reserve[0] < 30 && idx("revolver") >= 0 ? idx("revolver")
+        : !(P.vest > 0) && idx("vest") >= 0 ? idx("vest")
+        : P.hp < 85 && idx("doctor") >= 0 ? idx("doctor")
+        : P.has[2] && P.reserve[2] < 4 && idx("Shells") >= 0 ? idx("Shells") : -1;
+      if (pick < 0 || !M.buy(pick)) break;
+      got.push(list[pick].name.split(" ").slice(-1)[0]);
+    }
+    return got.join(",");
+  }
   function tick() {
     requestAnimationFrame(tick);
     const now = performance.now(), dt = Math.min(0.05, (now - last) / 1000); last = now;
@@ -43,9 +61,9 @@ function installBot(skill) {
     cur.ammoEnd = [P.mag[0] + P.reserve[0], P.mag[1] + P.reserve[1]]; cur.shots = M.stats.shots - cur.shots0; cur.hits = M.stats.hits - cur.hits0; cur.kills = M.stats.kills - cur.kills0; cur.left = M.enemies.filter(e => e.hp > 0).length;
     cur.dryTime = (cur.dryTime || 0) + (cur.ammoEnd[0] + cur.ammoEnd[1] === 0 ? dt : 0);
     const turnTo = (a, rate) => { let da = a - P.a; da = Math.atan2(Math.sin(da), Math.cos(da)); P.a += Math.sign(da) * Math.min(Math.abs(da), rate * dt); return Math.abs(da); };
-    // fight
+    // fight (the Don first, but on the roof only when he's made a stand: a running man is hardly worth a bullet)
     let tgt = null, td = 1e9;
-    for (const e of M.enemies) { if (e.hp <= 0) continue; const d = Math.hypot(e.x - P.x, e.y - P.y); if (d < 15 && los(P.x, P.y, e.x, e.y)) { if (!seen.has(e)) seen.set(e, cur.t); const pr = e.type.name === "boss" ? (M.chase && !e.standing ? d + 100 : d - 100) : d;   // the Don first, but on the roof only when he's made a stand: a running man is hardly worth a bullet if (pr < td) { td = pr; tgt = e; } } }
+    for (const e of M.enemies) { if (e.hp <= 0) continue; const d = Math.hypot(e.x - P.x, e.y - P.y); if (d < 15 && los(P.x, P.y, e.x, e.y)) { if (!seen.has(e)) seen.set(e, cur.t); const pr = e.type.name === "boss" ? (M.chase && !e.standing ? d + 100 : d - 100) : d; if (pr < td) { td = pr; tgt = e; } } }
     const dry = P.mag[0] + P.reserve[0] + P.mag[1] + P.reserve[1] === 0;
     jitT -= dt; if (jitT <= 0) { jitT = 0.3; jit = (Math.random() * 2 - 1) * cfg.jitter; }
     if (tgt) {
@@ -79,6 +97,16 @@ function installBot(skill) {
       const sy = lvl.map.findIndex(r => r.includes("S")), sx = lvl.map[sy].indexOf("S");
       if ((P.x | 0) === sx && (P.y | 0) === sy) { hold("w", false); return; }
       path = bfs(P, (x, y) => x === sx && y === sy);
+    }
+    // The fence: once on each street, when nobody's in sight, it sells what it has lifted and buys what it's short of
+    if (!path && M.windows && M.windows.length && !cur.shopped) {
+      const w = M.windows[0];
+      if (M.shop) { cur.bought = shopNow(P); cur.shopped = true; M.closeShop(); return; }
+      cur.shopT = (cur.shopT || 0) + dt;
+      const wants = P.hp < 60 || (P.loot && P.loot.length) || M.stats.cash >= 350;
+      if (!wants || cur.shopT > 30) cur.shopped = true;
+      else if (Math.hypot(w.x - P.x, w.y - P.y) < 1.1) { hold("w", false); if (!(M.fenceShut > 0)) { key("e", true); key("e", false); } return; }
+      else path = bfs(P, (x, y) => Math.abs(x + 0.5 - w.x) + Math.abs(y + 0.5 - w.y) === 1);
     }
     if (!path) {
       const o = lvl.objective, led = M.objs.find(o => o.pick === "ledger");
@@ -116,7 +144,7 @@ function installBot(skill) {
     }
   }
   const rec = await page.evaluate(() => window.__rec);
-  for (const r of rec) console.log(SKILL, JSON.stringify({ lvl: r.level, res: r.result || "(unfinished)", t: Math.round(r.t), dmg: Math.round(r.dmg), minHp: Math.round(r.minHp), shots: r.shots, hits: r.hits, kills: r.kills, left: r.left, ammo: r.ammoStart.join("/") + " -> " + (r.ammoEnd || []).join("/"), dry: Math.round(r.dryTime || 0), stuck: r.stuck || 0, noPath: Math.round(r.noPath || 0) }));
+  for (const r of rec) console.log(SKILL, JSON.stringify({ lvl: r.level, res: r.result || "(unfinished)", t: Math.round(r.t), dmg: Math.round(r.dmg), minHp: Math.round(r.minHp), shots: r.shots, hits: r.hits, kills: r.kills, left: r.left, ammo: r.ammoStart.join("/") + " -> " + (r.ammoEnd || []).join("/"), bought: r.bought, dry: Math.round(r.dryTime || 0), stuck: r.stuck || 0, noPath: Math.round(r.noPath || 0) }));
   console.log(SKILL, "stats", JSON.stringify(await page.evaluate(() => ({ ...window.__mobber.stats, secretsFound: 0 }))), "errors", errors.length, "wall min", ((Date.now() - t0) / 60000).toFixed(1));
   await browser.close(); srv.server.close();
 })();

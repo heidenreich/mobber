@@ -9,9 +9,10 @@ function write(key, value) { try { value === null ? localStorage.removeItem(key)
 // How hard the Vitale outfit hits, how well they shoot, and how far ahead of a
 // moving target they aim (1 = exactly where you'll be if you keep going)
 export const DIFFICULTY = [
-  { name: "Sunday stroll", damage: 0.6, aim: 0.8, lead: 0.5 },
-  { name: "Regular", damage: 1, aim: 1, lead: 1.1 },
-  { name: "Hard-boiled", damage: 1.4, aim: 1.15, lead: 1.1 },
+  // `floor`: the least health you start a scene with, however badly the last one went. `fresh`: full health for the finale
+  { name: "Sunday stroll", damage: 0.6, aim: 0.8, lead: 0.5, floor: 50, fresh: true },
+  { name: "Regular", damage: 1, aim: 1, lead: 1.1, floor: 30 },
+  { name: "Hard-boiled", damage: 1.4, aim: 1.15, lead: 1.1, floor: 15 },
 ];
 export const LOOK_SPEEDS = [{ name: "Slow", k: 0.6 }, { name: "Normal", k: 1 }, { name: "Fast", k: 1.5 }];
 

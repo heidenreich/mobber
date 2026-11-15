@@ -19,8 +19,8 @@ export const SHOP = [
   { name: "A box of revolver rounds", note: "12 rounds", price: 150, ...rounds(0, 12) },
   { name: "A drum for the tommy gun", note: "30 rounds", price: 350, ...rounds(1, 30) },
   { name: "Shells for the sawn-off", note: "4 shells", price: 200, ...rounds(2, 4) },
-  { name: "A doctor who asks no questions", note: "patches you up", price: 250, have: () => true,
-    full: p => (p.hp >= PLAYER.maxHp ? "you're fit" : ""), take: p => { p.hp = Math.min(PLAYER.maxHp, p.hp + PLAYER.medkitHeal); } },
+  { name: "A doctor who asks no questions", note: "puts you right", price: 400, have: () => true,
+    full: p => (p.hp >= PLAYER.maxHp ? "you're fit" : ""), take: p => { p.hp = PLAYER.maxHp; } },
   { name: "A steel vest", note: "takes half of every hit, 60 points in all", price: 700, have: () => true,
     full: p => (p.vest > 0 ? "you're wearing one" : ""), take: p => { p.vest = 60; } },
 ];
@@ -32,6 +32,9 @@ const SELL = {
   take: p => { stats.cash += SELL.worth(p); p.loot = []; },
 };
 const onOffer = () => [SELL, ...SHOP].filter(it => it.have(game.player));
+
+// His list as plain data (for the playthrough bot and the tests)
+export const offer = () => onOffer().map(it => ({ name: it.name, price: it.price, full: it.full(game.player), sell: !!it.sell }));
 
 export function openShop() {
   if (game.shop || game.state !== "play") return;

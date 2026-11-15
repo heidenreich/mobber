@@ -10,6 +10,7 @@ import { setupDoors, partialSolid } from "./doors.js";
 import { WALL_CHARS as WALLS, DOOR, SECRET } from "./tiles.js";
 import { FOLK_LETTERS, spawnFolk, clearOut } from "./folk.js";
 import { findWindows } from "./fence.js";
+import { difficulty } from "./settings.js";
 
 // Map letter -> what gets placed there. `light` is [intensity, radius] for lamps.
 // `cover` props are taller than a person, so they block sight and bullets; you can
@@ -162,7 +163,7 @@ export function loadLevel(i) {
   // Guns and ammo carry over from the previous scene (flow.js passes the right loadout on a retry)
   const prev = game.player;
   const player = game.player = {
-    x: 2, y: 2, a: 0, hp: !prev || lvl.fullHealth ? PLAYER.maxHp : Math.max(prev.hp, PLAYER.minStartHp), weapon: prev ? prev.weapon : 0, has: three(prev && prev.has, [true, false, false]),
+    x: 2, y: 2, a: 0, hp: !prev || (lvl.fullHealth && difficulty().fresh) ? PLAYER.maxHp : Math.max(prev.hp, difficulty().floor), weapon: prev ? prev.weapon : 0, has: three(prev && prev.has, [true, false, false]),
     mag: three(prev && prev.mag, [6, 0, 0]), reserve: three(prev && prev.reserve, [AMMO.startRevolverReserve, 0, 0]),
     fireCd: 0, reload: 0, recoil: 0, flash: 0, bob: 0, moving: false, hurt: 0, ledger: false,
     lean: 0, vx: 0, vy: 0,

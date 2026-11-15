@@ -21,7 +21,6 @@ export const CREAM = "#ece6da";
 
 export const PLAYER = {
   maxHp: 100,
-  minStartHp: 50,           // health carries over between scenes, but you never start one with less than this
   radius: 0.22,
   walkSpeed: 3.2,
   runSpeed: 4.2,            // while holding Shift
@@ -118,7 +117,7 @@ export const AMMO = {
   revolverBox: 6,           // a box of rounds found lying around (r on the map)
   drum: 30,                 // a tommy gun drum (a on the map); the first one gives you the gun
   goonRounds: 3,            // a downed goon often has a few revolver rounds on him...
-  goonRoundsChance: 0.5,
+  goonRoundsChance: 0.35,
   goonTommyRounds: 12,      // ...sometimes his tommy gun, with what's left in the drum...
   goonTommyChance: 0.15,    // ...and otherwise some cash
   heavyRounds: 6,

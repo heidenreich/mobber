@@ -114,3 +114,22 @@ test("on the Waterfront the door men hear the first shot, and your gun's flash s
   await page.waitForFunction(() => window.__mobber.player.shown === 0, null, { timeout: 3000 });
   assert.deepEqual(errors, []);
 });
+
+test("Regent Square: a fountain and trees for cover, and the Vitale men hold the hotel door", async () => {
+  const { page, errors } = await openGame(browser, srv.url);
+  await rollFilm(page);
+  const sq = await game(page, () => {
+    const M = window.__mobber; M.startLevel(M.LEVELS.findIndex(l => l.title === "Regent Square"));
+    const guns = M.enemies.filter(e => !e.type.melee && !e.type.still && !e.type.runner);
+    const cover = M.objs.filter(o => o.cover), f = cover.find(o => o.size === 0.9);
+    const rifles = M.enemies.filter(e => e.type.still), door = M.doorFront;
+    return { doorMen: guns.filter(e => e.doorMan).length, lookouts: guns.filter(e => !e.doorMan).length, cover: cover.length, fountain: !!f,
+      behind: f && !M.los(f.x - 1.6, f.y, f.x + 1.6, f.y), door: !!door, rifleByDoor: door && rifles.some(e => Math.hypot(e.x - door.x, e.y - door.y) < 6) };
+  });
+  assert.equal(sq.lookouts, 2);
+  assert.ok(sq.doorMen >= 4 && sq.door, "the rest fall back to the hotel door: " + JSON.stringify(sq));
+  assert.ok(sq.fountain && sq.behind, "the fountain is in the middle, and it's cover");
+  assert.ok(sq.cover >= 8, "trees and the newsstand are cover too");
+  assert.ok(sq.rifleByDoor, "a rifleman covers the hotel door");
+  assert.deepEqual(errors, []);
+});

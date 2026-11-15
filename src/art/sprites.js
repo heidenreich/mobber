@@ -462,6 +462,55 @@ OBJ.trash = bitmap(64, 64, g => {
   g.fillStyle = gray(120); g.beginPath(); g.ellipse(32, 39, 12, 3, 0, 0, 6.283); g.fill();
   g.fillStyle = gray(210); g.fillRect(36, 34, 6, 5);  // a newspaper sticking out
 });
+// Regent Square's fountain: a wide stone basin, a pedestal, and a figure on top with water falling round it
+OBJ.fountain = bitmap(256, 192, g => {
+  g.fillStyle = gray(8); g.beginPath(); g.ellipse(128, 186, 122, 6, 0, 0, 6.283); g.fill();
+  // the basin: its wall, its rim, the water inside
+  g.fillStyle = across(g, 10, 246, 132, 40, 52); g.fillRect(10, 146, 236, 38);
+  g.fillStyle = gray(70); for (let x = 22; x < 246; x += 24) g.fillRect(x, 150, 2, 32);
+  g.fillStyle = across(g, 4, 252, 176, 40, 50); g.beginPath(); g.ellipse(128, 146, 124, 9, 0, 0, 6.283); g.fill();
+  g.fillStyle = gray(52); g.beginPath(); g.ellipse(128, 146, 112, 6, 0, 0, 6.283); g.fill();
+  g.fillStyle = gray(120); for (let i = 0; i < 26; i++) g.fillRect(rand(24, 226), rand(142, 149), rand(4, 12), 1);
+  // the pedestal and its upper bowl
+  g.fillStyle = across(g, 106, 150, 150, 40, 54); g.fillRect(108, 96, 40, 50);
+  g.fillStyle = across(g, 98, 158, 170, 40, 50); g.fillRect(100, 136, 56, 8); g.fillRect(102, 92, 52, 6);
+  g.fillStyle = across(g, 74, 182, 160, 40, 54); g.beginPath(); g.ellipse(128, 90, 54, 8, 0, 0, 6.283); g.fill();
+  g.fillStyle = gray(60); g.beginPath(); g.ellipse(128, 89, 46, 4.5, 0, 0, 6.283); g.fill();
+  // the figure: a draped woman holding up a torch
+  g.fillStyle = across(g, 112, 144, 172, 44, 60);
+  poly(g, [[116, 88], [140, 88], [137, 50], [134, 34], [122, 34], [119, 50]], across(g, 112, 144, 172, 44, 60));
+  g.beginPath(); g.arc(128, 27, 7, 0, 6.283); g.fill();
+  g.fillRect(134, 18, 5, 22); g.fillRect(117, 40, 5, 20);                                   // the raised arm, the other at her side
+  g.fillStyle = gray(120); for (const x of [122, 127, 132]) g.fillRect(x, 54, 1, 32);         // folds in the drapery
+  g.fillStyle = gray(236); poly(g, [[133, 18], [140, 18], [138, 6], [136.5, 2], [135, 8]], gray(236));   // the torch
+  // water: spilling from the upper bowl into the basin
+  g.fillStyle = "rgba(235,235,235,0.55)"; for (const x of [80, 92, 104, 152, 164, 176]) g.fillRect(x, 92, 2, 52);
+  g.fillStyle = "rgba(255,255,255,0.8)"; for (const x of [80, 92, 104, 152, 164, 176]) { g.fillRect(x - 3, 142, 8, 2); g.fillRect(x, 100 + (x % 7) * 4, 2, 8); }
+});
+// A plane tree in an iron guard, bare for the winter
+OBJ.tree = bitmap(128, 256, g => {
+  g.fillStyle = gray(8); g.beginPath(); g.ellipse(66, 251, 26, 3.5, 0, 0, 6.283); g.fill();
+  g.fillStyle = across(g, 56, 72, 74, 44, 34); poly(g, [[56, 252], [72, 252], [69, 120], [59, 120]], across(g, 56, 72, 74, 44, 34));
+  g.fillStyle = gray(40); for (const [x, y] of [[60, 230], [66, 200], [61, 170], [65, 140]]) g.fillRect(x, y, 3, 9);   // mottled bark
+  g.strokeStyle = gray(84); g.lineCap = "round";
+  const limb = (x, y, a, len, w) => {
+    const x2 = x + Math.cos(a) * len, y2 = y + Math.sin(a) * len;
+    g.lineWidth = w; g.beginPath(); g.moveTo(x, y); g.lineTo(x2, y2); g.stroke();
+    if (len > 14) { limb(x2, y2, a - rand(0.3, 0.7), len * rand(0.6, 0.75), w * 0.65); limb(x2, y2, a + rand(0.3, 0.7), len * rand(0.6, 0.75), w * 0.65); }
+  };
+  limb(64, 124, -Math.PI / 2 - 0.5, 44, 7); limb(64, 124, -Math.PI / 2 + 0.45, 46, 7); limb(64, 130, -Math.PI / 2, 52, 6);
+  // the guard round its foot
+  g.strokeStyle = gray(30); g.lineWidth = 1.6; for (const x of [50, 57, 64, 71, 78]) { g.beginPath(); g.moveTo(x, 252); g.lineTo(x, 214); g.stroke(); }
+  g.lineWidth = 2; for (const y of [216, 234]) { g.beginPath(); g.moveTo(49, y); g.lineTo(79, y); g.stroke(); }
+});
+// A park bench: iron ends, wooden slats
+OBJ.bench = bitmap(128, 64, g => {
+  g.fillStyle = gray(8); g.beginPath(); g.ellipse(64, 61, 58, 2.5, 0, 0, 6.283); g.fill();
+  for (const y of [10, 19, 28]) { g.fillStyle = across(g, 8, 120, 170, 40, 50); g.fillRect(8, y, 112, 6); }   // the back
+  g.fillStyle = across(g, 6, 122, 190, 40, 50); g.fillRect(6, 38, 116, 7);                                       // the seat
+  g.fillStyle = gray(60); g.fillRect(6, 44, 116, 2);
+  g.fillStyle = gray(34); for (const x of [12, 110]) { g.fillRect(x, 8, 5, 52); g.fillRect(x - 4, 56, 13, 4); g.fillRect(x - 6, 34, 16, 3); }
+});
 OBJ.newsstand = bitmap(64, 64, g => {
   g.fillStyle = gray(60); g.fillRect(8, 24, 48, 40);
   g.fillStyle = gray(30); g.fillRect(4, 20, 56, 6);

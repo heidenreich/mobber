@@ -35,7 +35,8 @@
 // Vitale's lieutenants, one to a chapter: M the Blue Note's manager  O the pier's foreman  Z the Don's bodyguard
 // f the street's runner: he makes for the front door to warn them inside (needs `stand` on the level)
 // j knife man  b bagman (runs for the alarm bell: x)  y rifleman at an upstairs window (streets only, on a square beside a building)
-// S start  g goon  G heavy  v the Don's body double  V the Don  c table  k crate  p piano  l floor lamp  * hanging lamp  ^ a load slung from the warehouse crane (shoot it down)  o barrel
+// S start  g goon  G heavy  v the Don's body double  V the Don  c table  k crate  p piano  l floor lamp  * hanging lamp  ^ a load slung from the warehouse crane (shoot it down)
+// On Regent Square: @ the fountain  % a tree  _ a bench  & the hotel's stone front (a wall)  o barrel
 // $ cash  + first aid  a tommy gun drum (the first gives you the gun)  r box of revolver rounds  L ledger
 // Streets: C parked car  m street lamp  h hydrant  t trash can  n newsstand
 // The harbour (a level with `harbour: true`, along its top edge): = open water past the quay's edge
@@ -156,26 +157,26 @@ export const LEVELS = [
       "I.......I....*.........I",
       "IIIIIIIIIIIIIIIIIIIIIIII",
     ] },
-  { chapter: "EXT. REGENT SQUARE — NIGHT", title: "Regent Square", ambient: 0.32, goal: "Get into the Hotel Regent", entrance: "hotel",
-    card: ["Every page of the shipping book is signed the same way.", "Don Vitale. He keeps the penthouse at the Hotel Regent,", "and his men are watching the square."],
-    floor: "cobbles", sky: true, wallHeight: 2, rain: true, objective: "reach",
+  { chapter: "EXT. REGENT SQUARE — NIGHT", title: "Regent Square", ambient: 0.34, goal: "Get into the Hotel Regent", entrance: "hotel",
+    card: ["Every page of the shipping book is signed the same way.", "Don Vitale. He keeps the penthouse at the Hotel Regent,", "and his men are watching the square.", "There's a rifle in a window by the hotel door."],
+    floor: "cobbles", sky: true, wallHeight: 2, rain: true, objective: "reach", stand: { lookouts: 2 },
     map: [
-      "HHHHHHHHHHFFFFFFHHHHHHHHTTTTTTTTTTTTTFFF",
-      "HHHHHHHHHHFFFFFFHHHHHHHHTTTTTTTTTTTTTFFF",
-      "HHHHHHHHHHFFFFFFHHHHHHHHTTTTTTTTTTTTTFFF",
-      "HHHHHHHHHHFFFFFFHHHHHHHHTTTTTTETTTTTTFFF",
-      "H.$..m..y..n................m..zm......F",
-      "H............................G.G.......F",
-      "H.......C........g..................r..F",
-      "H...........e....................g.....F",
-      "H..............m........m..............F",
-      "H.........g........oo......g...........F",
-      "H..................oo................+.F",
-      "H..............m........m..............F",
-      "H.......r..................e...........F",
-      "H..S.........C........g.C.........C....F",
-      "H......................................F",
-      "H.....t.....a...........y.....h.....m..F",
+      "HHHHHHHHHHFFFFFFHHHHHHHH&&&&&&&&&&&&&FFF",
+      "HHHHHHHHHHFFFFFFHHHHHHHH&&&&&&&&&&&&&FFF",
+      "HHHHHHHHHHFFFFFFHHHHHHHH&&&&&&&&&&&&&FFF",
+      "HHHHHHHHHHFFFFFFHHHHHHHH&&&&TTETT&&&&FFF",
+      "H.$..m.....n........m.....y.m..zm......F",
+      "H.......%.......g............G.........F",
+      "H...........e......_............G...r..F",
+      "H.......C......%......_.%........g.....F",
+      "H.....+..........m................%...mF",
+      "Hm..........m......@......g............F",
+      "H.........g................m.........+.F",
+      "H.....................m...........%....F",
+      "H.......r......%._....g.%..............F",
+      "H..S................_......e...........F",
+      "H........%........................C....F",
+      "H.....t....C.a........m..y....h.....m..F",
       "HHHH.KHHHHHHFFFFFFFFHHHHHHHHFFFFFFFFFFFF",
       "HHHH.HHHHHHHFFFFFFFFHHHHHHHHFFFFFFFFFFFF",
       "HHHHQHHHHHHHFFFFFFFFHHHHHHHHFFFFFFFFFFFF",

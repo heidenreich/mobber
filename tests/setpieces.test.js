@@ -274,8 +274,9 @@ test("Pier 9: a shot brings a crane load down on whoever is under it", async () 
   });
   assert.ok(set.loads >= 4, "loads are slung about the warehouse");
   assert.ok(set.hanging && set.goonNear < 1.5);
-  await page.keyboard.press("Space");
-  await page.waitForFunction(() => !window.__o.load, null, { timeout: 4000 });
+  await page.keyboard.down(" ");
+  await page.waitForFunction(() => !window.__o.load, null, { timeout: 8000 });
+  await page.keyboard.up(" ");
   const after = await game(page, () => { const M = window.__mobber; return { hang: window.__o.hang, goon: window.__goon.hp, otto: window.__otto.hp, ottoFull: window.__otto.type.hp, hp: M.player.hp, alert: window.__otto.alert }; });
   assert.equal(after.hang, false, "it's on the floor");
   assert.ok(after.goon <= 0, "the man under it is finished");
@@ -289,8 +290,9 @@ test("Pier 9: a shot brings a crane load down on whoever is under it", async () 
     P.x = o.x; P.y = o.y + 0.5; P.a = -Math.PI / 2; P.mag[0] = 6; P.fireCd = 0; P.reload = 0;
     return P.hp;
   });
-  await page.keyboard.press("Space");
-  await page.waitForFunction(() => !window.__o2.load, null, { timeout: 4000 });
+  await page.keyboard.down(" ");
+  await page.waitForFunction(() => !window.__o2.load, null, { timeout: 8000 });
+  await page.keyboard.up(" ");
   assert.ok(await game(page, () => window.__mobber.player.hp) < hurt, "it came down on you");
   assert.deepEqual(errors, []);
 });

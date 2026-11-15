@@ -12,6 +12,7 @@ import { OBJ, dimmed } from "./art/sprites.js";
 import { SPAWNS, spawnEnemy, buildLight, buildNav, los } from "./world.js";
 
 const RIDE = 3.2;                                   // seconds between landings
+const WAIT = 3.5;                                  // seconds the men behind the tables wait for a shot before they come for you
 const DARK = 0.16;                                  // how little light a landing has with its lamps out
 // The barricaded landing: where each man crouches (out of sight from the gate) and where he steps out to fire
 const DENS = [
@@ -99,9 +100,15 @@ export function updateLift(dt) {
     setLanding(l.waves[l.stop]);
     return;
   }
-  // Behind the tables: out to shoot when he's ready, back down while he isn't
-  // (and only if there's something to shoot at from there)
-  for (const e of game.enemies) if (e.den && e.hp > 0 && e.hold) e.hold = (e.cd <= 0.7 || e.state === "aim" || e.state === "fire") && los(e.peek.x, e.peek.y, p.x, p.y) ? e.peek : e.den;
+  // Behind the tables: out to shoot when he's ready and there's something to shoot at, back down
+  // while he isn't. If you keep out of sight for long enough, they come and find you.
+  for (const e of game.enemies) {
+    if (!e.den || e.hp <= 0 || !e.hold) continue;
+    const shot = los(e.peek.x, e.peek.y, p.x, p.y);
+    e.blind = shot || los(e.x, e.y, p.x, p.y) ? 0 : (e.blind || 0) + dt;
+    if (e.blind > WAIT) { e.den = null; e.hold = null; continue; }
+    e.hold = (e.cd <= 0.7 || e.state === "aim" || e.state === "fire") && shot ? e.peek : e.den;
+  }
   // At a landing: once it's clear and you're back inside, the gate shuts and up you go
   if (game.enemies.some(e => e.hp > 0)) return;
   // (right inside: clear of the doorway, so the gate can shut behind you)

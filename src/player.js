@@ -93,7 +93,7 @@ export function damage(t, dmg) {
   const p = game.player;
   stats.hits++;
   t.hp -= dmg;
-  t.alert = true; t.lx = p.x; t.ly = p.y;
+  t.alert = true; t.lx = p.x; t.ly = p.y; t.released = true;
   // A man holding his place who is being hit from further off than his gun carries comes after you
   if (t.hold && Math.hypot(t.x - p.x, t.y - p.y) > t.type.range) t.hold = null;
   if (t.hp <= 0) {

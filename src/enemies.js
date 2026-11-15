@@ -18,6 +18,14 @@ export function updateEnemy(e, dt) {
   if (e.state === "dying") { e.t -= dt; if (e.t <= 0) e.state = "dead"; return; }
   if (e.state === "dead") return;
   e.cd -= dt; e.staggerCd = Math.max(0, (e.staggerCd || 0) - dt); e.repath = (e.repath || 0) - dt; e.shove = Math.max(0, (e.shove || 0) - dt);
+  // On the roof, the men posted further along wait where they are until you reach their
+  // stretch of it, or one of your bullets reaches them
+  const marks = game.level.stretches;
+  if (marks && !T.flees && !e.released) {
+    const stretch = x => marks.filter(m => x > m).length;
+    if (stretch(e.x) > stretch(p.x)) { e.alert = false; e.state = "idle"; return; }
+    e.released = true;
+  }
   const dx = p.x - e.x, dy = p.y - e.y, d = Math.hypot(dx, dy);
   // They see less far when you're standing in the dark (shoot out a lamp and find out),
   // but the flash of your own gun shows them where you are for a moment

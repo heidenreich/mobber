@@ -234,6 +234,7 @@ export const LEVELS = [
     // each one, then turns and fights from where a third number says how long he'll stand there.
     // At the last point he holds the pad until the rotor is up to speed (`takeoff` seconds).
     route: [[18.5, 8.5], [26.5, 5.5, 16], [39.5, 12.5], [45.5, 9.5, 16], [53.2, 8.5]],
+    stretches: [18.5, 39.5],   // the chimney rows: the men beyond one wait until you cross it
     takeoff: 80,
     card: ["It was a double. The real Don is running for the roof,", "where an autogiro is warming up to fly him out of town.", "Stop him before its rotor is up to speed."],
     map: [

@@ -184,14 +184,21 @@ export const LEVELS = [
     ] },
   // The lift: no map letters for the gangsters; `lift` lists who is waiting at each landing
   { chapter: "INT. HOTEL REGENT — THE LIFT", title: "Going Up", floor: "carpet", ceil: "plaster", ambient: 0.4, objective: "lift",
-    lift: [["g", "g"], ["g", "g", "g", "j"], ["G", "g", "g"]],
+    // One entry per landing. `who` is waiting there. `dark`: the lights are out. `barricade`: tables tipped over,
+    // and the men hold their places behind them. `atGate`: the first of them is standing right outside the gate. `kit`: a first-aid kit lies there.
+    lift: [
+      { who: ["g", "g"] },
+      { who: ["g", "g", "j"], dark: true, kit: true },
+      { who: ["g", "g", "g"], barricade: true },
+      { who: ["G", "g", "g"], atGate: true, kit: true },
+    ],
     card: ["The desk clerk rang upstairs.", "Every landing between here and the top floor", "has Vitale men waiting on it."],
     map: [
       "TTTTTTTTTTTTTT",
       "TTTTT........T",
-      "T...T..*...c.T",
+      "T...T..*.....T",
       "T.S.D........E",
-      "T...T..*...c.T",
+      "T...T..*.....T",
       "TTTTT........T",
       "TTTTTTTTTTTTTT",
     ] },

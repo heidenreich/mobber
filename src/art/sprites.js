@@ -314,6 +314,16 @@ export const OBJ = {
     g.fillStyle = gray(60); g.fillRect(31, 30, 2, 9); g.fillStyle = gray(250); g.beginPath(); g.moveTo(26, 31); g.lineTo(38, 31); g.lineTo(35, 24); g.lineTo(29, 24); g.fill();
     g.fillStyle = gray(90); g.fillRect(41, 31, 3, 8); g.fillRect(41.8, 28, 1.4, 3);
   }),
+  // A table tipped over to shoot from behind: its top facing you, legs sticking out the back
+  tableSide: bitmap(128, 128, g => {
+    g.fillStyle = gray(8); g.beginPath(); g.ellipse(64, 124, 56, 3.5, 0, 0, 6.283); g.fill();
+    g.fillStyle = gray(60); for (const [x, y] of [[20, 44], [104, 44], [26, 112], [98, 112]]) g.fillRect(x - 3, y - 8, 6, 12);   // legs behind
+    g.fillStyle = across(g, 10, 118, 150, 44, 60); g.beginPath(); g.ellipse(64, 80, 54, 44, 0, 0, 6.283); g.fill();                 // the top
+    g.strokeStyle = gray(96); g.lineWidth = 3; g.beginPath(); g.ellipse(64, 80, 54, 44, 0, 0, 6.283); g.stroke();
+    g.strokeStyle = gray(116); g.lineWidth = 1; for (const x of [34, 54, 74, 94]) { g.beginPath(); g.moveTo(x, 44); g.lineTo(x, 116); g.stroke(); }   // boards
+    g.fillStyle = gray(20); for (const [x, y] of [[44, 66], [82, 90], [70, 58]]) { g.beginPath(); g.arc(x, y, 2.2, 0, 6.283); g.fill(); }        // bullet holes
+    g.fillStyle = gray(225); g.fillRect(8, 118, 30, 5);                                                                                             // the cloth, on the floor
+  }),
   crate: bitmap(128, 128, g => {
     g.scale(2, 2);
     g.fillStyle = gray(8); g.beginPath(); g.ellipse(33, 62.6, 27, 1.6, 0, 0, 6.283); g.fill();

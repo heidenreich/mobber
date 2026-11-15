@@ -46,10 +46,23 @@ test("the lift stops at each landing, and only the top floor lets you through", 
   await game(page, () => { window.__mobber.player.hp = 1e9; });
   assert.equal(await game(page, () => window.__mobber.lift.gate.locked), true, "the gate is shut while it rides");
   const waves = await game(page, () => window.__mobber.level.lift.length);
+  assert.equal(waves, 4);
   for (let stop = 0; stop < waves; stop++) {
     await page.waitForFunction(s => window.__mobber.lift.phase === "stop" && window.__mobber.lift.stop === s, stop, { timeout: 10000 });
-    assert.equal(await game(page, () => window.__mobber.enemies.filter(e => e.hp > 0).length), await game(page, s => window.__mobber.level.lift[s].length, stop), "they're waiting on the landing");
+    assert.equal(await game(page, () => window.__mobber.enemies.filter(e => e.hp > 0).length), await game(page, s => window.__mobber.level.lift[s].who.length, stop), "they're waiting on the landing");
     assert.equal(await game(page, () => window.__mobber.lift.done), false);
+    // No two landings are alike
+    const here = await game(page, s => {
+      const M = window.__mobber, w = M.level.lift[s], g = M.lift.gate;
+      return { w, light: M.lightAt(g.x + 4.5, g.y + 0.5), tipped: M.objs.filter(o => o.cover).length, kits: M.objs.filter(o => o.pick === "med").length,
+        holding: M.enemies.filter(e => e.hold).length, nearest: Math.min(...M.enemies.map(e => Math.hypot(e.x - (g.x + 0.5), e.y - (g.y + 0.5)))), bodies: M.enemies.filter(e => e.hp <= 0).length };
+    }, stop);
+    assert.equal(here.bodies, 0, "the last landing's dead stayed on their own floor");
+    assert.equal(here.light < 0.3, !!here.w.dark, "the lights are out only where they should be");
+    assert.equal(here.tipped, here.w.barricade ? 2 : 0, "tables tipped over only on the barricaded landing");
+    assert.equal(here.holding, here.w.barricade ? here.w.who.length : 0, "and the men behind them stay put");
+    assert.equal(here.kits, here.w.kit ? 1 : 0);
+    assert.equal(here.nearest < 2.5, !!here.w.atGate, "one of them right at the gate, where it says so");
     await clear();   // you're still in the car, so up it goes
     await page.waitForFunction(() => window.__mobber.lift.phase === "ride", null, { timeout: 4000 });
   }

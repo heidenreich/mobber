@@ -229,6 +229,7 @@ export const LEVELS = [
     ] },
   { chapter: "EXT. HOTEL REGENT ROOF — DAWN", title: "The Roof", floor: "tar", sky: "dawn", wallHeight: 0.5, ambient: 0.62, objective: "boss", endOnBoss: true, fullHealth: true,
     goal: "Stop Don Vitale before the autogiro is ready to fly",
+    // (The stretches are marked off by rows of chimney stacks: cover, but you can see and walk between them.)
     // Three stretches of roof: the stairhead, the water towers, the landing pad. The Don runs
     // each one, then turns and fights from where a third number says how long he'll stand there.
     // At the last point he holds the pad until the rotor is up to speed (`takeoff` seconds).
@@ -237,20 +238,20 @@ export const LEVELS = [
     card: ["It was a double. The real Don is running for the roof,", "where an autogiro is warming up to fly him out of town.", "Stop him before its rotor is up to speed."],
     map: [
       "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
-      "R.................R..........N.........R.................R",
-      "R.................R....................R.................R",
-      "R...r.....q...w...R.......w.......q....R.....q...........R",
-      "R.................R...............................g......R",
-      "R..a..............R............q.......R.................R",
-      "R.................R....................R....q............R",
-      "R.................R...g................R.................R",
-      "R.S..........V.........................R...............A.R",
-      "R.................R....................R.................R",
-      "R..+.....g........R...w................R.........q.......R",
-      "R.................R...........g........R.................R",
+      "R.................q..........N.........q.................R",
+      "R........................................................R",
+      "R...r.....q...w...q.......w.......q....q.....q...........R",
+      "R.................................................g......R",
+      "R..a..............q............q.......q.................R",
+      "R...........................................q............R",
+      "R.................q...g................q.................R",
+      "R.S..........V.........................................A.R",
+      "R.................q....................q.................R",
+      "R..+.....g............w..........................q.......R",
+      "R.................q...........g........q.................R",
       "R.....q.................q.................g..............R",
-      "R............r....R....+......r........R.....+....a......R",
-      "R.................R....................R.................R",
+      "R............r....q....+......r........q.....+....a......R",
+      "R........................................................R",
       "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
     ] },
 ];

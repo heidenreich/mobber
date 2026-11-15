@@ -52,12 +52,18 @@ test("aim assist pulls onto a nearby goon and auto-fires", async () => {
   await game(g.page, () => {
     const M = window.__mobber, P = M.player, e = M.enemies[0];
     P.x = 6.5; P.y = 8.5; P.a = 0; P.hp = 100;
-    Object.assign(e, { hp: 40, state: "idle", alert: false, x: 11.5, y: 9.1, cd: 99 });
+    Object.assign(e, { hp: 40, state: "idle", alert: false, x: 11.5, y: 9.1, cd: 99, face: 0, lookBack: false, turnT: 99 });   // his back to you
+    for (const o of M.enemies) if (o !== e) { o.hp = 0; o.state = "dead"; }   // and nobody else to shout a warning
   });
   // Auto-fire waits until you've touched the screen in this scene
   await g.page.waitForTimeout(800);
   assert.equal(await game(g.page, () => window.__mobber.enemies[0].hp), 40, "no shooting before the first touch");
   await g.touch("touchStart", [{ x: 700, y: 120, id: 3 }]); await g.touch("touchEnd", []);
+  // He hasn't seen you, so it leaves him alone: whether and when to shoot is yours to decide
+  await g.page.waitForTimeout(1500);
+  assert.equal(await game(g.page, () => window.__mobber.enemies[0].hp), 40, "no auto-fire at a man who hasn't seen you");
+  // Once he has, it fires for you
+  await game(g.page, () => { window.__mobber.enemies[0].alert = true; });
   await g.page.waitForFunction(() => window.__mobber.enemies[0].hp <= 0, null, { timeout: 5000 });
   await g.context.close();
 });

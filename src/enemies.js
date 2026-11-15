@@ -17,7 +17,7 @@ export function updateEnemy(e, dt) {
   if (e.state === "kneel") return;   // the Don, beaten, waiting to hear what you'll do with him
   if (e.state === "dying") { e.t -= dt; if (e.t <= 0) e.state = "dead"; return; }
   if (e.state === "dead") return;
-  e.cd -= dt; e.staggerCd = Math.max(0, (e.staggerCd || 0) - dt); e.repath = (e.repath || 0) - dt;
+  e.cd -= dt; e.staggerCd = Math.max(0, (e.staggerCd || 0) - dt); e.repath = (e.repath || 0) - dt; e.shove = Math.max(0, (e.shove || 0) - dt);
   const dx = p.x - e.x, dy = p.y - e.y, d = Math.hypot(dx, dy);
   // They see less far when you're standing in the dark (shoot out a lamp and find out),
   // but the flash of your own gun shows them where you are for a moment
@@ -231,8 +231,12 @@ function runForIt(e, dt, d) {
 function walk(e, tx, ty, gd, dt, weave, speed = e.type.speed) {
   e.step += dt;
   const ux = (tx - e.x) / gd, uy = (ty - e.y) / gd, wv = weave ? Math.sin(e.step * 2.2) * 0.45 : 0; // a slight weave when in the open
+  const bx = e.x, by = e.y;
   moveBy(e, (ux - uy * wv) * speed * dt, (uy + ux * wv) * speed * dt, 0.22);
   e.moving = true;
+  // Held up (two men wanting the same doorway)? After a moment he shoulders past his own side
+  e.jamT = Math.hypot(e.x - bx, e.y - by) < 0.2 * speed * dt ? (e.jamT || 0) + dt : 0;
+  if (e.jamT > 0.5) { e.shove = 1; e.jamT = 0; }
 }
 
 // The Don makes for his getaway, waypoint by waypoint, finding a way around anyone
@@ -260,7 +264,9 @@ function flee(e, dt) {
   e.stuck = (e.stuck || 0) + dt;
   // (but a place he means to fight from he doesn't give up just because one of his own men is in the way)
   const blocked = !last && (Math.hypot(p.x - tx, p.y - ty) < 0.9 || e.stuck > (hold ? 3.5 : 1.2));
-  if (Math.hypot(tx - e.x, ty - e.y) < 0.45 || blocked) {
+  // (you standing on his last mark doesn't keep him from the machine: beside you is near enough)
+  const near = last && Math.hypot(p.x - tx, p.y - ty) < 1.2 ? 1.7 : 0.45;
+  if (Math.hypot(tx - e.x, ty - e.y) < near || blocked) {
     if (last && !ready) { e.standing = true; e.cd = Math.min(e.cd, 0.5); return; }   // at the machine, waiting on its rotor
     if (hold && !blocked) { e.standing = true; e.standEnd = game.timer + hold; e.standHp = e.hp; e.cd = Math.min(e.cd, 0.5); return; }
     e.wp++; e.stuck = 0; e.repath = 0;

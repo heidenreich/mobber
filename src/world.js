@@ -37,6 +37,8 @@ export const SPAWNS = {
   x: { art: "alarm", scale: 0.8, block: true, size: 0.2, alarm: true },
   // A load slung from the warehouse crane: shoot it and it drops on whoever is under it (crane.js)
   "^": { art: "load", scale: 0.5, hang: true, load: true },
+  // A table tipped on its side to shoot from behind (the lift's landings: lift.js)
+  "~": { art: "tableSide", scale: 0.8, block: true, size: 0.42, cover: true },
   // Regent Square: the fountain in the middle, the trees and benches round it
   "@": { art: "fountain", scale: 1.8, block: true, size: 0.9, cover: true },
   "%": { art: "tree", scale: 2.3, block: true, size: 0.22, cover: true },
@@ -132,7 +134,7 @@ export function nextStep(fx, fy, tx, ty, avoid) {
   return null;
 }
 // Squares furniture fills, for pathfinding (built once per scene; furniture doesn't move)
-function buildNav() {
+export function buildNav() {
   const W = game.width, H = game.height;
   game.navBlocked = new Uint8Array(W * H);
   for (const o of game.objs) {
@@ -188,7 +190,7 @@ export function loadLevel(i) {
     clearOut();   // and nobody who doesn't have to be here still is
     say("They were warned. They're waiting for you.", 4);
   }
-  game.timer = 0; game.shop = false; game.choice = null; game.cracking = null; game.lift = null; game.alarm = false; game.toldLoads = false;
+  game.timer = 0; game.shop = false; game.choice = null; game.cracking = null; game.lift = null; game.alarm = false; game.ambient = undefined; game.toldLoads = false;
   game.chase = lvl.takeoff ? { t: 0, len: lvl.takeoff, told: 0 } : null;   // the autogiro's rotor, spinning up
 }
 
@@ -240,7 +242,7 @@ function facingOpen(x, y) {
 export const lightMap = { data: null, w: 0, h: 0, sub: 4 };
 // Called again when a lamp is shot out
 export function buildLight() {
-  const sub = lightMap.sub, ambient = game.level.ambient;
+  const sub = lightMap.sub, ambient = game.ambient ?? game.level.ambient;   // (a landing with its lights out sets game.ambient)
   const w = lightMap.w = game.width * sub, h = lightMap.h = game.height * sub;
   const data = lightMap.data = new Float32Array(w * h).fill(ambient);
   const lamps = game.objs.filter(o => o.light);

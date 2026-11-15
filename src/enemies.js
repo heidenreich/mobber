@@ -64,7 +64,7 @@ export function updateEnemy(e, dt) {
           if (gd < 0.1) e.repath = 0; else walk(e, e.wp2.x, e.wp2.y, gd, dt, false);
           // Someone's in his way: after a moment he makes do with where he is
           e.jam = Math.hypot(e.x - bx, e.y - by) < 0.2 * T.speed * dt ? (e.jam || 0) + dt : 0;
-          if (e.jam > 0.8 && Math.hypot(game.doorFront.x - e.x, game.doorFront.y - e.y) < STREET.holdFar + 2) e.hold = { x: e.x, y: e.y };
+          if (e.jam > 0.8 && (!game.doorFront || Math.hypot(game.doorFront.x - e.x, game.doorFront.y - e.y) < STREET.holdFar + 2)) e.hold = { x: e.x, y: e.y };
         }
         break;
       }

@@ -2,22 +2,73 @@
 // waiting for you. Clear the landing, step back in, ride on. After the last one,
 // the door at the far end of the landing leads to the Don's suite.
 //
-// A level turns this on with `lift: [[...], [...]]`, one list of enemy letters per stop.
+// A level turns this on with `lift: [{ who: [...] }, ...]`, one entry per stop. No two
+// landings are the same: one has its lights out, one has tables tipped over for the
+// men to shoot from behind, one has a man standing right outside the gate.
 import { rand } from "./util.js";
 import { game, say } from "./state.js";
 import { SND } from "./audio.js";
-import { spawnEnemy } from "./world.js";
+import { OBJ, dimmed } from "./art/sprites.js";
+import { SPAWNS, spawnEnemy, buildLight, buildNav } from "./world.js";
 
 const RIDE = 3.2;                                   // seconds between landings
+const DARK = 0.16;                                  // how little light a landing has with its lamps out
 export const FLOORS = ["Third floor", "Sixth floor", "Ninth floor", "Eleventh floor"];
 
 export function startLift(waves) {
   const gate = [...game.doors.values()][0];
   gate.locked = true;
-  game.lift = { waves, stop: -1, phase: "ride", t: RIDE, gate, done: false, nag: 0 };
+  // What's in the room on every floor (the lamps): everything else is set out landing by landing
+  game.lift = { waves, stop: -1, phase: "ride", t: RIDE, gate, done: false, nag: 0, fixed: new Set(game.objs) };
   SND.lift(RIDE);
 }
 export const liftFloor = () => { const l = game.lift; return l.done ? "Top floor" : l.stop < 0 ? "Lobby" : FLOORS[l.stop] || `Floor ${l.stop + 3}`; };
+
+// Put a prop on the landing by its map letter
+function place(letter, x, y) {
+  const sp = SPAWNS[letter];
+  game.objs.push({ x, y, ...sp, art: OBJ[sp.art] });
+}
+// The landing's lamps: on, or out
+function lamps(on) {
+  for (const o of game.objs) {
+    if (o.lit === undefined) { if (!o.light) continue; o.lit = { light: o.light, art: o.art, glow: o.glow }; }
+    if (on) { o.light = o.lit.light; o.art = o.lit.art; o.glow = o.lit.glow; }
+    else { o.light = null; o.glow = false; o.art = dimmed(o.lit.art); }
+  }
+  game.ambient = on ? undefined : DARK;
+}
+// Leaving a landing: the bodies and whatever was lying about stay behind on that floor
+function clearLanding() {
+  const l = game.lift;
+  game.enemies = []; game.bullets = [];
+  game.objs = game.objs.filter(o => l.fixed.has(o));
+}
+// Arriving at one: its furniture, its light, and who's waiting
+function setLanding(w) {
+  const l = game.lift, p = game.player, gx = l.gate.x, gy = l.gate.y + 0.5;
+  const far = game.width - 2.5;                     // the far end of the landing, by the door
+  if (w.barricade) { place("~", gx + 5.5, gy - 1); place("~", gx + 5.5, gy + 1); }
+  else { place("c", far, gy - 1); place("c", far, gy + 1); }
+  if (w.kit) place("+", gx + 2.5, gy + 2);
+  lamps(!w.dark);
+  buildLight(); buildNav();
+  const spots = [];
+  for (let y = 0; y < game.height; y++) for (let x = gx + 4; x < game.width; x++) if (game.map[y][x] === "." && !game.navBlocked[y * game.width + x]) spots.push([x + 0.5, y + 0.5]);
+  w.who.forEach((letter, i) => {
+    let at;
+    if (w.atGate && i === 0) at = [gx + 2.5, gy];                                 // right outside the gate
+    else if (w.barricade) at = [gx + 6.5, gy + (i - 1) * 2];                      // behind the tables, and the gap between them
+    else at = spots.splice((rand(0, spots.length)) | 0, 1)[0];
+    const e = spawnEnemy(letter, at[0], at[1]);
+    e.alert = true; e.lx = p.x; e.ly = p.y; e.cd = rand(0.6, 1.4);
+    e.face = Math.atan2(p.y - e.y, p.x - e.x);
+    if (w.barricade) e.hold = { x: at[0], y: at[1] };                             // they stay where they are
+    else e.hold = null;
+  });
+  const floor = `${liftFloor()}.`;
+  say(w.dark ? `${floor} Somebody's put the lights out.` : w.barricade ? `${floor} They've tipped the tables over.` : w.atGate ? `${floor} One of them is right at the gate!` : floor, w.dark || w.barricade || w.atGate ? 3.5 : 2);
+}
 
 export function updateLift(dt) {
   const l = game.lift, p = game.player;
@@ -28,20 +79,19 @@ export function updateLift(dt) {
     // Arrived: the gate opens and whoever is waiting comes for you
     l.stop++; l.phase = "stop"; l.gate.locked = false; SND.bell();
     const last = l.stop === l.waves.length;
-    if (last) { l.done = true; say("Top floor. The Don's suite is through that door.", 4); return; }
-    say(`${liftFloor()}.`, 2);
-    const spots = [];
-    for (let y = 0; y < game.height; y++) for (let x = l.gate.x + 4; x < game.width; x++) if (game.map[y][x] === "." && !game.navBlocked[y * game.width + x]) spots.push([x + 0.5, y + 0.5]);
-    for (const letter of l.waves[l.stop]) {
-      const [x, y] = spots.splice((rand(0, spots.length)) | 0, 1)[0];
-      const e = spawnEnemy(letter, x, y);
-      e.alert = true; e.lx = p.x; e.ly = p.y; e.cd = rand(0.6, 1.4);
+    if (last) {
+      l.done = true;
+      place("c", game.width - 2.5, l.gate.y - 0.5); place("c", game.width - 2.5, l.gate.y + 1.5);
+      lamps(true); buildLight(); buildNav();
+      say("Top floor. The Don's suite is through that door.", 4);
+      return;
     }
+    setLanding(l.waves[l.stop]);
     return;
   }
   // At a landing: once it's clear and you're back inside, the gate shuts and up you go
   if (game.enemies.some(e => e.hp > 0)) return;
   const inside = l.gate.axis === "y" ? p.x < l.gate.x : p.y < l.gate.y;
-  if (inside) { l.gate.locked = true; l.phase = "ride"; l.t = RIDE; SND.lift(RIDE); say("Going up.", 1.5); }
+  if (inside) { l.gate.locked = true; l.phase = "ride"; l.t = RIDE; clearLanding(); SND.lift(RIDE); say("Going up.", 1.5); }
   else if ((l.nag -= dt) <= 0) { l.nag = 4; say("Back in the lift."); }
 }

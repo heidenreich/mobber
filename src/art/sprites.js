@@ -337,6 +337,28 @@ export const OBJ = {
     g.fillStyle = gray(250); g.beginPath(); g.moveTo(24, 20); g.lineTo(40, 20); g.lineTo(36, 6); g.lineTo(28, 6); g.closePath(); g.fill();
     g.fillStyle = gray(200); g.fillRect(24, 19, 16, 2);
   }),
+  // A crate in a rope sling, hanging from the crane's hook
+  load: bitmap(128, 128, g => {
+    g.fillStyle = gray(24); g.fillRect(63, 0, 2, 34);                                              // the cable
+    g.strokeStyle = gray(150); g.lineWidth = 3; g.beginPath(); g.arc(64, 38, 5, -0.6, Math.PI + 0.9); g.stroke();   // the hook
+    g.strokeStyle = gray(96); g.lineWidth = 1.6;                                                    // the sling
+    for (const x of [22, 44, 84, 106]) { g.beginPath(); g.moveTo(64, 42); g.lineTo(x, 66); g.lineTo(x, 126); g.stroke(); }
+    g.fillStyle = across(g, 20, 108, 165, 60, 80); g.fillRect(20, 64, 88, 60);                      // planks
+    g.fillStyle = gray(66); for (let y = 64; y < 124; y += 12) g.fillRect(20, y, 88, 1.5);
+    g.strokeStyle = across(g, 20, 108, 120, 44, 50); g.lineWidth = 6; g.strokeRect(23, 67, 82, 54);
+    g.beginPath(); g.moveTo(25, 69); g.lineTo(103, 119); g.stroke();
+    g.strokeStyle = gray(96); g.lineWidth = 1.6; for (const x of [44, 84]) { g.beginPath(); g.moveTo(x, 66); g.lineTo(x, 126); g.stroke(); }
+    g.fillStyle = gray(10); g.fillRect(20, 124, 88, 3);                                             // its underside, in shadow
+  }),
+  // What's left of it on the floor: split planks, straw, broken bottles
+  wreck: bitmap(128, 128, g => {
+    g.fillStyle = gray(8); g.beginPath(); g.ellipse(64, 122, 58, 5, 0, 0, 6.283); g.fill();
+    const plank = (x, y, w, a, v) => { g.save(); g.translate(x, y); g.rotate(a); g.fillStyle = gray(v); g.fillRect(0, -4, w, 8); g.fillStyle = gray(v * 0.55); g.fillRect(0, 2, w, 2); g.restore(); };
+    plank(14, 116, 60, -0.5, 104); plank(40, 118, 66, -0.12, 86); plank(70, 120, 46, -1.0, 118); plank(28, 104, 52, 0.25, 72); plank(84, 112, 34, 0.5, 96); plank(52, 100, 30, -1.35, 110);
+    g.fillStyle = gray(150); for (let i = 0; i < 40; i++) g.fillRect(rand(10, 118), rand(104, 124), rand(3, 9), 1);   // straw
+    g.fillStyle = gray(225); for (let i = 0; i < 14; i++) g.fillRect(rand(12, 116), rand(112, 124), 2, 2);           // glass
+    g.fillStyle = gray(30); for (const x of [30, 62, 96]) { g.beginPath(); g.ellipse(x, 121, 6, 2.2, 0, 0, 6.283); g.fill(); }   // rye, spreading
+  }),
   hanging: bitmap(64, 64, g => {
     g.fillStyle = gray(30); g.fillRect(31.5, 0, 1, 22);
     g.fillStyle = gray(70); g.beginPath(); g.moveTo(32, 20); g.lineTo(44, 30); g.lineTo(20, 30); g.closePath(); g.fill();

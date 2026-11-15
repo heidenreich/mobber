@@ -139,5 +139,9 @@ export const SND = {
   door: d => { const v = clamp(0.05 - d * 0.004, 0.008, 0.05); tone(95, 0.45, "sawtooth", v, 70); hiss("lowpass", 500, 0.3, v * 3); creak(v * 1.6); },
   whip: hit => { hit ? (hiss("lowpass", 900, 0.12, 0.4), tone(140, 0.12, "sine", 0.3, 60)) : hiss("bandpass", 1600, 0.07, 0.1); },
   grind: () => { hiss("lowpass", 350, 1.6, 0.25); tone(55, 1.6, "sawtooth", 0.05, 45); },
+  // A crane load hitting the floor: a heavy thump, splintering planks, bottles going
+  crash: () => { tone(55, 0.5, "sine", 0.3); hiss("lowpass", 500, 0.5, 0.5); hiss("bandpass", 1800, 0.35, 0.25); for (let i = 0; i < 6; i++) tone(rand(2400, 5000), 0.12, "sine", 0.02, 0, rand(0.1, 0.5)); },
+  // The rope parting
+  snap: () => { tone(900, 0.05, "square", 0.08); hiss("highpass", 3000, 0.08, 0.2); },
   glass: () => { hiss("highpass", 4200, 0.25, 0.25); for (let i = 0; i < 4; i++) tone(rand(2600, 5200), 0.12, "sine", 0.02, 0, rand(0.02, 0.2)); },
 };

@@ -151,7 +151,7 @@ export function renderWorld(t) {
 
   // Sprites, far to near
   const list = [];
-  for (const o of game.objs) list.push({ x: o.x, y: o.y, art: o.frames ? o.frames[((t * 14) | 0) % o.frames.length] : o.art, scale: o.scale, hang: o.hang, glow: o.glow, bob: o.bob ? Math.sin(t * 3) * 0.03 : 0 });
+  for (const o of game.objs) list.push({ x: o.x, y: o.y, art: o.frames ? o.frames[((t * 14) | 0) % o.frames.length] : o.art, scale: o.scale, hang: o.hang, up: o.up, glow: o.glow, bob: o.bob ? Math.sin(t * 3) * 0.03 : 0 });
   for (const e of game.enemies) {
     const A = PEOPLE[e.type.art + (e.hatless ? "Bare" : "")];
     if (e.state === "dead" && e.over) continue;   // he went over the parapet

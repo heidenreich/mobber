@@ -1,5 +1,6 @@
 // You: moving, shooting, reloading, looting and leaving through the exit.
 import { W, K, isTouch, FOLK, PLAYER, TOUCH, AIM_ASSIST, WEAPONS, ROUND_NAMES, ENEMY_AI, AMMO, MELEE, CHASE } from "./config.js";
+import { loadInLine, dropLoad } from "./crane.js";
 import { rand, clamp } from "./util.js";
 import { game, stats, input, say, intertitle, eye } from "./state.js";
 import { LEVELS } from "./levels.js";
@@ -88,7 +89,7 @@ function dropLoot(e) {
   else at("cash", "cash");
 }
 
-function damage(t, dmg) {
+export function damage(t, dmg) {
   const p = game.player;
   stats.hits++;
   t.hp -= dmg;
@@ -161,11 +162,14 @@ function fire() {
   for (const e of game.enemies) if (e.hp > 0 && !e.type.lieutenant && (e.doorMan || Math.hypot(e.x - p.x, e.y - p.y) < ENEMY_AI.hearingRange)) { e.alert = true; e.lx = p.x; e.ly = p.y; }
   const spread = w.spread * (p.moving ? 1.6 : 1);
   let hitAnyone = false;
+  const slung = loadInLine();   // a crane load in the line of fire
   for (let n = 0; n < (w.pellets || 1); n++) {
     const col = clamp((W / 2 + rand(-spread, spread)) | 0, 0, W - 1);
     const t = hitscan(col), f = bystander(col);
     // Someone who isn't a gangster is nearer along that line: the bullet finds them instead
     if (f && (!t || Math.hypot(f.x - p.x, f.y - p.y) < Math.hypot(t.x - p.x, t.y - p.y))) { shootFolk(f); hitAnyone = true; continue; }
+    // A slung load nearer than anyone the shot would have found: the rope parts
+    if (slung && !slung.o.falling && (!t || t.hp <= 0 || Math.hypot(t.x - p.x, t.y - p.y) > slung.d)) { dropLoad(slung.o); hitAnyone = true; break; }
     if (!t || t.hp <= 0) continue;
     hitAnyone = true;
     // Buckshot loses its punch with distance; the Don's vest shrugs off some of a tommy gun

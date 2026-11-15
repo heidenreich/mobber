@@ -69,6 +69,18 @@ export const CHASE = {
   darkSky: 0.5, lightSky: 1.15,
 };
 
+// Loads slung from the warehouse crane (^ on the map): shoot one and it comes down (crane.js)
+export const CRANE = {
+  width: 0.3,               // how wide a slung load is to your shot
+  fall: 0.45,               // seconds it takes to reach the floor
+  radius: 1.5,              // anyone this close to where it lands is under it
+  dmg: 150,                 // what it does to a gangster (Big Otto can take one)
+  you: 35,                  // what it does to you, if you're standing under it
+  yourRadius: 1.0,
+  heard: 16,                // everyone this close hears it land
+  notice: 8,                // how close you are when you're first told about them
+};
+
 // Gangsters' bullets fly, and you can step out of their way.
 export const BULLETS = {
   speed: 11,                // squares per second (you walk at 3.2)

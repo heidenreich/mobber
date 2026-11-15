@@ -45,7 +45,7 @@ function installBot(skill) {
     const turnTo = (a, rate) => { let da = a - P.a; da = Math.atan2(Math.sin(da), Math.cos(da)); P.a += Math.sign(da) * Math.min(Math.abs(da), rate * dt); return Math.abs(da); };
     // fight
     let tgt = null, td = 1e9;
-    for (const e of M.enemies) { if (e.hp <= 0) continue; const d = Math.hypot(e.x - P.x, e.y - P.y); if (d < 15 && los(P.x, P.y, e.x, e.y)) { if (!seen.has(e)) seen.set(e, cur.t); const pr = e.type.name === "boss" ? d - 100 : d; if (pr < td) { td = pr; tgt = e; } } }
+    for (const e of M.enemies) { if (e.hp <= 0) continue; const d = Math.hypot(e.x - P.x, e.y - P.y); if (d < 15 && los(P.x, P.y, e.x, e.y)) { if (!seen.has(e)) seen.set(e, cur.t); const pr = e.type.name === "boss" ? (M.chase && !e.standing ? d + 100 : d - 100) : d;   // the Don first, but on the roof only when he's made a stand: a running man is hardly worth a bullet if (pr < td) { td = pr; tgt = e; } } }
     const dry = P.mag[0] + P.reserve[0] + P.mag[1] + P.reserve[1] === 0;
     jitT -= dt; if (jitT <= 0) { jitT = 0.3; jit = (Math.random() * 2 - 1) * cfg.jitter; }
     if (tgt) {

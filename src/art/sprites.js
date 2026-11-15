@@ -652,6 +652,9 @@ OBJ.autogiroSpin = [1, 0.55, 0.15].map(k => bitmap(128, 96, g => {
   for (const x of [41, 83]) { g.fillStyle = gray(15); g.beginPath(); g.arc(x, 84, 7, 0, 6.283); g.fill(); g.fillStyle = gray(150); g.beginPath(); g.arc(x, 84, 2.5, 0, 6.283); g.fill(); }
 }));
 
+// Pale against the dawn, under its own landing lamps: it's where the Don is going, so it has to be seen
+for (const bm of [OBJ.autogiro, ...OBJ.autogiroSpin]) bm.L = bm.L.map(v => Math.min(250, 36 + v * 1.5));
+
 // Something a gangster had on him: a pocket watch on its chain, catching the light
 OBJ.valuable = bitmap(64, 64, g => {
   g.fillStyle = gray(8); g.beginPath(); g.ellipse(32, 62.5, 9, 1.3, 0, 0, 6.283); g.fill();

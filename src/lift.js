@@ -9,10 +9,17 @@ import { rand } from "./util.js";
 import { game, say } from "./state.js";
 import { SND } from "./audio.js";
 import { OBJ, dimmed } from "./art/sprites.js";
-import { SPAWNS, spawnEnemy, buildLight, buildNav } from "./world.js";
+import { SPAWNS, spawnEnemy, buildLight, buildNav, los } from "./world.js";
 
 const RIDE = 3.2;                                   // seconds between landings
+const WAIT = 3.5;                                  // seconds the men behind the tables wait for a shot before they come for you
 const DARK = 0.16;                                  // how little light a landing has with its lamps out
+// The barricaded landing: where each man crouches (out of sight from the gate) and where he steps out to fire
+const DENS = [
+  { den: (gx, gy) => [gx + 6.5, gy - 1], peek: (gx, gy) => [gx + 6.5, gy - 2.3] },   // (a little past where he'll stop: he pulls up short of his mark)
+  { den: (gx, gy) => [gx + 6.5, gy + 1], peek: (gx, gy) => [gx + 6.5, gy + 2.3] },
+  { den: (gx, gy) => [gx + 7.5, gy - 1], peek: (gx, gy) => [gx + 6.5, gy] },
+];
 export const FLOORS = ["Third floor", "Sixth floor", "Ninth floor", "Eleventh floor"];
 
 export function startLift(waves) {
@@ -57,13 +64,17 @@ function setLanding(w) {
   for (let y = 0; y < game.height; y++) for (let x = gx + 4; x < game.width; x++) if (game.map[y][x] === "." && !game.navBlocked[y * game.width + x]) spots.push([x + 0.5, y + 0.5]);
   w.who.forEach((letter, i) => {
     let at;
-    if (w.atGate && i === 0) at = [gx + 2.5, gy];                                 // right outside the gate
-    else if (w.barricade) at = [gx + 6.5, gy + (i - 1) * 2];                      // behind the tables, and the gap between them
-    else at = spots.splice((rand(0, spots.length)) | 0, 1)[0];
+    if (w.atGate && i === 0 && Math.hypot(p.x - (gx + 2.5), p.y - gy) > 1.5) at = [gx + 2.5, gy];   // right outside the gate (unless that's where you are)
+    else if (w.barricade) at = DENS[i % DENS.length].den(gx, gy);                    // down behind a tipped table
+    else { const free = spots.filter(s => Math.hypot(p.x - s[0], p.y - s[1]) > 1.5); at = free[(rand(0, free.length)) | 0] || spots[0]; spots.splice(spots.indexOf(at), 1); }
     const e = spawnEnemy(letter, at[0], at[1]);
     e.alert = true; e.lx = p.x; e.ly = p.y; e.cd = rand(0.6, 1.4);
     e.face = Math.atan2(p.y - e.y, p.x - e.x);
-    if (w.barricade) e.hold = { x: at[0], y: at[1] };                             // they stay where they are
+    if (w.barricade) {
+      // He keeps down behind his table, and steps out to its side when he's ready to shoot
+      const d = DENS[i % DENS.length], [px, py] = d.peek(gx, gy);
+      e.den = { x: at[0], y: at[1] }; e.peek = { x: px, y: py }; e.hold = e.den;
+    }
     else e.hold = null;
   });
   const floor = `${liftFloor()}.`;
@@ -89,9 +100,19 @@ export function updateLift(dt) {
     setLanding(l.waves[l.stop]);
     return;
   }
+  // Behind the tables: out to shoot when he's ready and there's something to shoot at, back down
+  // while he isn't. If you keep out of sight for long enough, they come and find you.
+  for (const e of game.enemies) {
+    if (!e.den || e.hp <= 0 || !e.hold) continue;
+    const shot = los(e.peek.x, e.peek.y, p.x, p.y);
+    e.blind = shot || los(e.x, e.y, p.x, p.y) ? 0 : (e.blind || 0) + dt;
+    if (e.blind > WAIT) { e.den = null; e.hold = null; continue; }
+    e.hold = (e.cd <= 0.7 || e.state === "aim" || e.state === "fire") && shot ? e.peek : e.den;
+  }
   // At a landing: once it's clear and you're back inside, the gate shuts and up you go
   if (game.enemies.some(e => e.hp > 0)) return;
-  const inside = l.gate.axis === "y" ? p.x < l.gate.x : p.y < l.gate.y;
+  // (right inside: clear of the doorway, so the gate can shut behind you)
+  const inside = l.gate.axis === "y" ? p.x < l.gate.x - 0.3 : p.y < l.gate.y - 0.3;
   if (inside) { l.gate.locked = true; l.phase = "ride"; l.t = RIDE; clearLanding(); SND.lift(RIDE); say("Going up.", 1.5); }
   else if ((l.nag -= dt) <= 0) { l.nag = 4; say("Back in the lift."); }
 }

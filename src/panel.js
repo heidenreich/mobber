@@ -1,6 +1,7 @@
 // The settings panel: a small gear in the corner opens it, on a phone or a desktop.
 // The picture stops while it's open.
 import { game, input, resetStats } from "./state.js";
+import { toTitle } from "./flow.js";
 import { settings, saveSettings, DIFFICULTY, LOOK_SPEEDS, clearGame } from "./settings.js";
 import { setSoundOn, initAudio } from "./audio.js";
 
@@ -31,7 +32,7 @@ function draw() {
   const over = add("button", sure ? "Sure? Tap again to start over" : "Start the picture over", "row plain");
   over.onclick = () => {
     if (!sure) { sure = true; draw(); return; }
-    clearGame(); resetStats(); game.player = null; close(); game.state = "title"; game.card = null; game.fade = 1; game.fadeDir = 0;
+    clearGame(); resetStats(); close(); toTitle();
   };
   add("button", "Back to the picture", "row plain").onclick = close;
 }

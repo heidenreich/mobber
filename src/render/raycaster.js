@@ -168,7 +168,7 @@ export function renderWorld(t) {
     else if (e.state === "dead") art = A.dead;
     // Gangsters stay readable in the dark: they're never lit below a floor brightness
     const up = !e.type.up || e.state === "dead" ? 0 : e.state === "dying" ? e.type.up * Math.min(1, e.t / 0.5) : e.type.up;
-    list.push({ x: e.x, y: e.y, up, art, scale: e.type.scale, bob: e.moving ? Math.abs(Math.sin(e.step * 9)) * 0.02 : 0, muzzle: e.state === "fire" && e.t > 0.07, minLit: e.hp > 0 ? 0.6 : 0 });
+    list.push({ x: e.x, y: e.y, up, art, scale: e.type.scale, bob: e.moving ? Math.abs(Math.sin(e.step * 9)) * 0.02 : 0, muzzle: e.state === "fire" && e.t > 0.07, minLit: e.hp > 0 ? (game.ambient !== undefined ? 0.3 : 0.6) : 0 });   // (less on a landing with its lights out: shapes in the dark)
   }
   // Bystanders: standing about, running, crouched with their heads down, or hit
   for (const f of game.folk) {

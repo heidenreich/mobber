@@ -47,7 +47,7 @@ export const SPAWNS = {
   w: { art: "watertower", scale: 2.6, block: true, size: 0.7, cover: true },   // (0.7: a man can get along the square next to it)
   q: { art: "chimney", scale: 1.1, block: true, size: 0.3, cover: true },
   N: { art: "regentSign", scale: 1.5, block: true, size: 0.6, glow: true, cover: true },
-  A: { art: "autogiro", scale: 1.3, block: true, size: 1.0, cover: true, frames: "autogiroSpin" },
+  A: { art: "autogiro", scale: 1.9, block: true, size: 1.0, cover: true, frames: "autogiroSpin", glow: true },   // (lit by its own landing lamps, so you can see where he's going)
 };
 
 // Blocks movement and sight: walls, closed doors and moving secret walls
@@ -179,6 +179,7 @@ export function loadLevel(i) {
     else if (ch === "L" && lvl.safe) game.objs.push({ x: cx, y: cy, art: OBJ.safe, scale: 0.8, block: true, size: 0.3, safe: true, progress: 0 });
     else if (SPAWNS[ch]) { const sp = SPAWNS[ch]; game.objs.push({ x: cx, y: cy, ...sp, art: OBJ[sp.art], frames: sp.frames && OBJ[sp.frames] }); }
   }
+  game.ambient = undefined; game.msg.t = 0;   // nothing of the last scene's light or messages carries over
   buildLight();
   buildNav();
   setStreetRoles(lvl);
@@ -268,7 +269,7 @@ export function blocked(x, y, r, self) {
   if (wallAt(x - r, y - r) || wallAt(x + r, y - r) || wallAt(x - r, y + r) || wallAt(x + r, y + r)) return true;
   for (const o of game.objs) if (o.block && Math.abs(o.x - x) < r + (o.size || 0.28) && Math.abs(o.y - y) < r + (o.size || 0.28)) return true;
   // (the Don on the run shoves past his own men: they don't hold him up)
-  const shoves = self && self.type && self.type.flees;
+  const shoves = self && self.type && (self.type.flees || self.shove > 0);   // (and so does anyone who's been held up in a doorway)
   if (!shoves) for (const e of game.enemies) if (e !== self && e.hp > 0 && !e.type.up && Math.hypot(e.x - x, e.y - y) < r + 0.25) return true;
   if (self !== game.player && Math.hypot(game.player.x - x, game.player.y - y) < r + 0.25) return true;
   return false;

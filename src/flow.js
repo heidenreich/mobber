@@ -23,6 +23,17 @@ export function showCard(kind, idx) {
   if (kind === "end") clearGame();   // the picture is over: next time starts from the top
 }
 
+// Back to the title card from anywhere (the settings panel's "Start the picture over"): nothing
+// of the scene you were in is left showing or sounding
+export function toTitle() {
+  game.player = null; game.shop = false; game.choice = null; game.intertitle = null; game.cracking = null;
+  game.lift = null; game.chase = null; game.ambient = undefined; game.msg.t = 0; game.afterFade = null;
+  input.firing = false; input.wasLocked = false;
+  fireBtn.style.display = swapBtn.style.display = "none";
+  music.play("street", 0.6); SND.rain(false); SND.rotor(false);
+  game.state = "title"; game.card = null; game.fade = 1; game.fadeDir = 0;
+}
+
 // A click, tap or Enter on a card
 export function advance() {
   if (game.state === "title") {

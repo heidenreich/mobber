@@ -21,7 +21,7 @@ export const SHOP = [
   { name: "Shells for the sawn-off", note: "4 shells", price: 200, ...rounds(2, 4) },
   { name: "A doctor who asks no questions", note: "patches you up", price: 250, have: () => true,
     full: p => (p.hp >= PLAYER.maxHp ? "you're fit" : ""), take: p => { p.hp = Math.min(PLAYER.maxHp, p.hp + PLAYER.medkitHeal); } },
-  { name: "A steel vest", note: "takes half of the next 60 points of harm", price: 700, have: () => true,
+  { name: "A steel vest", note: "takes half of every hit, 60 points in all", price: 700, have: () => true,
     full: p => (p.vest > 0 ? "you're wearing one" : ""), take: p => { p.vest = 60; } },
 ];
 // He buys, too: whatever you've lifted off the Vitale outfit, in one lot

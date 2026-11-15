@@ -62,7 +62,7 @@ export const STREET = {
 export const CHASE = {
   runSpeed: 3.0,            // how fast the Don runs between stands (you walk at 3.2)
   tooClose: 4.5,            // get this near the Don where he's made a stand and he runs again
-  graze: 0.3,               // a hit on the Don while he's running does only this share of its harm
+  graze: 0.15,              // a hit on the Don while he's running does only this share of its harm
   giveUp: 0.2,             // ...or cost him this share of his health there
   warn: [0.5, 0.85],        // how far along the rotor is when you're told about it
   dark: 0.78, light: 1.1,   // how bright the picture is when the chase starts, and when the rotor is ready
@@ -170,7 +170,7 @@ export const ENEMY_TYPES = {
   v: { name: "double", art: "boss", hp: 120, speed: 1.05, dmg: [6, 10], cd: [1.1, 1.8], range: 13, aim: 0.45, burst: 3, scale: 1.05 },
   // The real Don runs for his getaway along the level's `route`, turning to fight where it tells him to (CHASE)
   // He wears a vest under the pinstripes: tommy gun rounds do only `tommyResist` of their damage
-  V: { name: "boss", art: "boss", hp: 520, speed: 1.7, dmg: [5, 9], cd: [2.2, 3.0], range: 14, aim: 0.45, burst: 3, scale: 1.05, flees: true, noStagger: true, tommyResist: 0.6 },
+  V: { name: "boss", art: "boss", hp: 580, speed: 1.7, dmg: [4, 7], cd: [2.2, 3.0], range: 14, aim: 0.45, burst: 3, scale: 1.05, flees: true, noStagger: true, tommyResist: 0.6 },
 };
 
 export const DOORS = {

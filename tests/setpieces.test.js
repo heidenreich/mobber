@@ -258,3 +258,41 @@ test("the roof chase: the Don runs, turns to fight from his stands, and runs aga
   await page.waitForFunction(() => window.__mobber.card && window.__mobber.card.kind === "escaped", null, { timeout: 15000 });
   assert.deepEqual(errors, []);
 });
+
+test("Pier 9: a shot brings a crane load down on whoever is under it", async () => {
+  const { page, errors } = await start("Pier 9");
+  const set = await game(page, () => {
+    const M = window.__mobber, P = M.player; P.hp = 100;
+    for (const e of M.enemies) { e.cd = 1e9; e.type = { ...e.type, speed: 0 }; }
+    const loads = M.objs.filter(o => o.load);
+    const o = window.__o = loads.find(o => Math.abs(o.x - 9.5) < 0.1 && Math.abs(o.y - 11.5) < 0.1);
+    // Big Otto has wandered under it, next to one of his men
+    const otto = window.__otto = M.enemies.find(e => e.type.name === "foreman"); otto.x = o.x + 0.6; otto.y = o.y - 0.5;
+    window.__goon = M.enemies.filter(e => e.type.name === "goon").sort((a, b) => Math.hypot(a.x - o.x, a.y - o.y) - Math.hypot(b.x - o.x, b.y - o.y))[0];
+    P.x = o.x; P.y = o.y + 3.2; P.a = -Math.PI / 2;
+    return { loads: loads.length, hanging: o.hang, goonNear: Math.hypot(window.__goon.x - o.x, window.__goon.y - o.y), shots: M.stats.shots, hits: M.stats.hits };
+  });
+  assert.ok(set.loads >= 4, "loads are slung about the warehouse");
+  assert.ok(set.hanging && set.goonNear < 1.5);
+  await page.keyboard.down(" ");
+  await page.waitForFunction(() => !window.__o.load, null, { timeout: 8000 });
+  await page.keyboard.up(" ");
+  const after = await game(page, () => { const M = window.__mobber; return { hang: window.__o.hang, goon: window.__goon.hp, otto: window.__otto.hp, ottoFull: window.__otto.type.hp, hp: M.player.hp, alert: window.__otto.alert }; });
+  assert.equal(after.hang, false, "it's on the floor");
+  assert.ok(after.goon <= 0, "the man under it is finished");
+  assert.ok(after.otto > 0 && after.otto < after.ottoFull, "Big Otto takes it and is still standing");
+  assert.equal(after.hp, 100, "you were clear of it");
+  // Stand under one yourself and it's you it lands on
+  const hurt = await game(page, () => {
+    const M = window.__mobber, P = M.player, o = window.__o2 = M.objs.find(o => o.load);
+    for (const e of M.enemies) { e.hp = 0; e.state = "dead"; }
+    M.folk.length = 0;
+    P.x = o.x; P.y = o.y + 0.5; P.a = -Math.PI / 2; P.mag[0] = 6; P.fireCd = 0; P.reload = 0;
+    return P.hp;
+  });
+  await page.keyboard.down(" ");
+  await page.waitForFunction(() => !window.__o2.load, null, { timeout: 8000 });
+  await page.keyboard.up(" ");
+  assert.ok(await game(page, () => window.__mobber.player.hp) < hurt, "it came down on you");
+  assert.deepEqual(errors, []);
+});

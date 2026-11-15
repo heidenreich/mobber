@@ -25,6 +25,7 @@ import { drawCard, titleChoices } from "./render/cards.js";
 import { music } from "./music.js";
 import { installPanel } from "./panel.js";
 import { updateLift } from "./lift.js";
+import { updateLoads } from "./crane.js";
 import { settings } from "./settings.js";
 
 watchScreen();
@@ -43,6 +44,7 @@ function update(dt) {
   updateDoors(dt);
   updateSecrets(dt);
   if (alive) updateLift(dt);
+  updateLoads(dt);
   for (const e of game.enemies) updateEnemy(e, dt);
   updateBullets(dt);
   if (alive) { updateFolk(dt); updateFence(dt); }

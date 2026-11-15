@@ -46,7 +46,7 @@ Cash is worth picking up. On each street a fence deals through a walk-up window 
 
 He buys as well. Gangsters sometimes have a pocket watch, cufflinks, a ring or a cigarette case on them, and each of the Don's doubles wears a gold watch. Pick them up (the status bar shows how many you're carrying next to your cash) and the first line of his list sells the lot.
 
-Each chapter has something besides shooting. The ledger at the Blue Note is in the office safe, and partway through working the dial the whole club hears you. The lookouts on the Waterfront can be slipped past. Fire a shot there and the men at the pier door hear it, and get into their places to hold it. At the Hotel Regent you ride the lift, and Vitale men are waiting at every landing on the way up.
+Each chapter has something besides shooting. The ledger at the Blue Note is in the office safe, and partway through working the dial the whole club hears you. The lookouts on the Waterfront can be slipped past. In the Pier 9 warehouse, crates hang in slings from the crane: a shot that reaches one before it reaches anybody parts the rope, and the load comes down on whoever is under it. That can be several gangsters at once, a working man who had nothing to do with it, or you. Fire a shot there and the men at the pier door hear it, and get into their places to hold it. At the Hotel Regent you ride the lift, and Vitale men are waiting at every landing on the way up.
 
 The roof is a chase in three stretches: the stairhead, the water towers, the landing pad. The Don runs each one and doesn't shoot while he runs, and a hit on a running man only grazes him. At the end of the first two he turns and fights; get close, or hurt him enough, and he runs again. At the pad he has to wait for the autogiro's rotor to come up to speed, and the gauge at the top of the screen shows how long you have. The sky lightens as the chase goes on. There's a first-aid kit and a tommy gun drum by the stairhead.
 
@@ -93,6 +93,7 @@ src/
   world.js            loading a map, walls, line of sight and cover, the light map, collision, enemy pathfinding
   doors.js            sliding doors and secret walls
   lift.js             the hotel lift: ride, stop at a landing, clear it, ride on
+  crane.js            the loads slung from the warehouse crane, and what happens when one is shot down
   folk.js             bystanders: patrons, the bartender, the pianist
   fence.js            the fence's walk-up window: where it is, when it's open, when the shutter is down
   player.js           moving, leaning, shooting, reloading, pickups, cracking the safe, the exit

@@ -35,6 +35,8 @@ export const SPAWNS = {
   s: { art: "bollard", scale: 0.6, block: true, size: 0.22 },
   n: { art: "newsstand", scale: 0.9, block: true, size: 0.45 },
   x: { art: "alarm", scale: 0.8, block: true, size: 0.2, alarm: true },
+  // A load slung from the warehouse crane: shoot it and it drops on whoever is under it (crane.js)
+  "^": { art: "load", scale: 0.5, hang: true, load: true },
   // The hotel roof
   w: { art: "watertower", scale: 2.6, block: true, size: 0.7, cover: true },   // (0.7: a man can get along the square next to it)
   q: { art: "chimney", scale: 1.1, block: true, size: 0.3, cover: true },
@@ -182,7 +184,7 @@ export function loadLevel(i) {
     clearOut();   // and nobody who doesn't have to be here still is
     say("They were warned. They're waiting for you.", 4);
   }
-  game.timer = 0; game.shop = false; game.choice = null; game.cracking = null; game.lift = null; game.alarm = false;
+  game.timer = 0; game.shop = false; game.choice = null; game.cracking = null; game.lift = null; game.alarm = false; game.toldLoads = false;
   game.chase = lvl.takeoff ? { t: 0, len: lvl.takeoff, told: 0 } : null;   // the autogiro's rotor, spinning up
 }
 

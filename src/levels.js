@@ -35,7 +35,7 @@
 // Vitale's lieutenants, one to a chapter: M the Blue Note's manager  O the pier's foreman  Z the Don's bodyguard
 // f the street's runner: he makes for the front door to warn them inside (needs `stand` on the level)
 // j knife man  b bagman (runs for the alarm bell: x)  y rifleman at an upstairs window (streets only, on a square beside a building)
-// S start  g goon  G heavy  v the Don's body double  V the Don  c table  k crate  p piano  l floor lamp  * hanging lamp  o barrel
+// S start  g goon  G heavy  v the Don's body double  V the Don  c table  k crate  p piano  l floor lamp  * hanging lamp  ^ a load slung from the warehouse crane (shoot it down)  o barrel
 // $ cash  + first aid  a tommy gun drum (the first gives you the gun)  r box of revolver rounds  L ledger
 // Streets: C parked car  m street lamp  h hydrant  t trash can  n newsstand
 // The harbour (a level with `harbour: true`, along its top edge): = open water past the quay's edge
@@ -133,24 +133,24 @@ export const LEVELS = [
       "##########HHHHHH############################",
     ] },
   { chapter: "CHAPTER TWO", title: "Pier 9", floor: "concrete", ceil: "beams", ambient: 0.42, objective: "ledger",
-    card: ["A warehouse full of Canadian rye and Vitale muscle.", "The foreman's shipping book will show", "who signed off on Eddie."],
+    card: ["A warehouse full of Canadian rye and Vitale muscle.", "The foreman's shipping book will show", "who signed off on Eddie.", "Mind the loads slung from the crane. Or don't let them."],
     map: [
       "IIIIIIIIIIIIIIIIIIIIIIII",
       "IS...r.I....*k.k.......I",
-      "I..d...I..g..........G.I",
+      "I..d...I..g^........^G.I",
       "I..k...I.....k.k...*...I",
       "I...*..III.IIIIII..o...I",
       "I..a.........x....o....I",
       "IIII.III..k..k..k......I",
-      "I......I..b..*........gI",
+      "I......I..b..*.......^gI",
       "I..g.j.I..k..k..k.d....I",
       "I..*...I..r............I",
       "I.o....IIII.IIIIIPPPP.PP",
-      "I.......g...I...Pl...O.P",
+      "I.......g^..I...Pl...O.P",
       "I..$........I.G.P..L...P",
       "IIII.IIII.*.I...P......P",
       "I.......I...I...PPP.PPPP",
-      "I..+.*..I..g.j......r..I",
+      "I..+.*..I..g^j......r..I",
       "I.......I....k.k...$*..I",
       "I..g....I.............aE",
       "I.......I....*.........I",

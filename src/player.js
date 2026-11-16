@@ -102,7 +102,7 @@ export function damage(t, dmg) {
     dropLoot(t);
     // The last man standing, if he's only a hired gun, loses his nerve
     const alive = game.enemies.filter(e => e.hp > 0);
-    if (alive.length === 1 && game.enemies.length >= 3 && alive[0].type.name === "goon" && !alive[0].cornered) {
+    if (alive.length === 1 && game.enemies.length >= 3 && alive[0].type.name === "goon" && !alive[0].cornered && !game.lift) {   // (not on a lift landing: there's nowhere to run)
       alive[0].panic = true; say("The last of them is running for it.", 3);
     }
     if (t.type.name === "double") {
@@ -293,7 +293,8 @@ export function updatePlayer(dt) {
   crackSafe(dt);
   tickPlayerEffects(dt);
   if (p.reload > 0) { p.reload -= dt; if (p.reload <= 0) { p.reload = 0; finishReload(); } }
-  if ((input.firing || autoFire()) && game.state === "play") fire();
+  if ((input.firing || input.shot || autoFire()) && game.state === "play") fire();
+  input.shot = false;
 }
 
 // Z and C lean your head and gun out to one side while your feet stay put: enough

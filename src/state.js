@@ -45,6 +45,7 @@ export function resetStats() { Object.assign(stats, { kills: 0, cash: 0, shots: 
 export const input = {
   keys: new Set(),
   firing: false,
+  shot: false,          // the trigger was pressed since the last frame (a press shorter than a frame still fires)
   locked: false,        // pointer lock is active
   wasLocked: false,     // pointer lock was active this chapter (so losing it means "paused")
   dragLook: false,

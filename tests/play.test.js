@@ -242,7 +242,8 @@ test("dying shows CUT! and the retry really rewinds the scene", async () => {
   assert.equal(await game(page, () => window.__mobber.card.kind), "dead");
   await clickCard(page);
   const retry = await snapshot();
-  assert.deepEqual(retry, start, "everything from the failed attempt should be undone");
+  // (a retake hands you revolver rounds up to 24 on Regular: you walked in with 18)
+  assert.deepEqual(retry, { ...start, reserve: [18, 0, 0] }, "everything from the failed attempt should be undone");
   assert.equal(await game(page, () => window.__mobber.stats.deaths), 1);
   await context.close();
 });

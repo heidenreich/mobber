@@ -3,7 +3,7 @@ import { isTouch } from "./config.js";
 import { rand } from "./util.js";
 import { game, input, stats } from "./state.js";
 import { LEVELS } from "./levels.js";
-import { ctx, view, watchScreen, resizeIfChanged } from "./screen.js";
+import { ctx, view, watchScreen, resizeIfChanged, fireBtn, swapBtn } from "./screen.js";
 import { wallAt, los, lightAt, SPAWNS } from "./world.js";
 import { WALL_CHARS, SIDE_WALL_CHARS } from "./tiles.js";
 import { AMMO, PLAYER, CHASE } from "./config.js";
@@ -59,6 +59,8 @@ function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
   resizeIfChanged();
   const paused = input.menu || game.shop || !!game.choice || (game.state === "play" && input.wasLocked && !input.locked && !isTouch);
+  // On a phone, FIRE and SWAP get out of the way while the fence's list or the Don's choice holds the screen
+  if (isTouch) fireBtn.style.visibility = swapBtn.style.visibility = game.shop || game.choice ? "hidden" : "";
   // A dialogue card stops the action (and any fade) while it holds the screen
   const it = game.intertitle;
   if (it) { if (!paused || game.choice) it.t -= dt; if (it.t <= 0) game.intertitle = null; }

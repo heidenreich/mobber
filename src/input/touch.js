@@ -61,6 +61,7 @@ export function installTouchInput() {
   let fireTouch = null;
   fireBtn.addEventListener("touchstart", e => {
     e.preventDefault(); initAudio(); input.firing = true; input.touched = true;
+    if (game.state === "play" && !input.menu && !game.shop && !game.choice) input.shot = true;
     const t = e.changedTouches[0]; fireTouch = { id: t.identifier, x: t.clientX };
   }, { passive: false });
   fireBtn.addEventListener("touchmove", e => {

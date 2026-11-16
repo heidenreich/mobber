@@ -2,7 +2,8 @@
 // with fades in between.
 import { isTouch } from "./config.js";
 import { clamp } from "./util.js";
-import { game, stats, input, resetStats } from "./state.js";
+import { game, stats, input, resetStats, say } from "./state.js";
+import { difficulty } from "./settings.js";
 import { cv, fireBtn, swapBtn } from "./screen.js";
 import { loadLevel } from "./world.js";
 import { startLift } from "./lift.js";
@@ -62,16 +63,22 @@ export function requestLock() {
 // A snapshot of your loadout and stats as each scene begins, so a retry after
 // "CUT!" really does rewind the reel: what you picked up or spent on the failed
 // attempt is undone (only the retake count goes up).
-let checkpoint = null;
+let checkpoint = null, retaken = false;
 const copyStats = () => ({ ...stats, secretsFound: new Set(stats.secretsFound) });
 
 export function startLevel(i, retry) {
   if (retry && checkpoint) {
     game.player = structuredClone(checkpoint.player);
+    // Another take: at least enough health and revolver rounds to have a chance at it
+    const p = game.player, [hp, rounds] = difficulty().retake, short = rounds - p.mag[0] - p.reserve[0];
+    retaken = p.hp < hp || short > 0;
+    p.hp = Math.max(p.hp, hp); if (short > 0) p.reserve[0] += short;
     Object.assign(stats, { ...checkpoint.stats, secretsFound: new Set(checkpoint.stats.secretsFound), deaths: stats.deaths });
   } else if (i === 0) { game.player = null; resetIntertitles(); } // a fresh run starts with just the revolver
+  else retaken = false;
   const prevLoadout = game.player && structuredClone(game.player);   // what you walked in with
   loadLevel(i);
+  if (retry && retaken) say("Another take. You've been patched up and handed a few rounds.", 4);
   if (!retry || !checkpoint) {
     checkpoint = { player: structuredClone(game.player), stats: copyStats() };
     // Remember how far you've got (there's nothing to remember about the first scene)

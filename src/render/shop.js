@@ -38,13 +38,13 @@ export const offer = () => onOffer().map(it => ({ name: it.name, price: it.price
 
 export function openShop() {
   if (game.shop || game.state !== "play") return;
-  game.shop = true; input.firing = false; input.keys.clear();
+  game.shop = true; input.firing = input.shot = false; input.keys.clear();
   if (document.pointerLockElement) document.exitPointerLock();   // free the mouse to click his list
   SND.click();
 }
 export function closeShop() {
   if (!game.shop) return;
-  game.shop = false; input.firing = false;
+  game.shop = false; input.firing = input.shot = false;
   requestLock();
 }
 export function buy(n) {

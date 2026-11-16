@@ -37,7 +37,7 @@ function draw() {
   add("button", "Back to the picture", "row plain").onclick = close;
 }
 function open() { initAudio(); sure = false; input.menu = true; if (document.pointerLockElement) document.exitPointerLock(); draw(); panel.style.display = "block"; }
-function close() { input.menu = false; input.firing = false; panel.style.display = "none"; }
+function close() { input.menu = false; input.firing = input.shot = false; panel.style.display = "none"; }
 
 export function installPanel() {
   gear.addEventListener("click", e => { e.stopPropagation(); input.menu ? close() : open(); });

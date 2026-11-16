@@ -19,7 +19,7 @@ const OPTIONS = [
 export function offerChoice(boss, goal) {
   boss.state = "kneel";
   game.choice = { boss, goal };
-  input.firing = false; input.keys.clear();
+  input.firing = input.shot = false; input.keys.clear();
   if (document.pointerLockElement) document.exitPointerLock();   // free the mouse to click an answer
   input.wasLocked = false;   // the shooting is over: a free mouse from here on isn't a pause
   intertitle("plea", "DON VITALE", ["“Don't. I can pay.", "Name your price.”"]);

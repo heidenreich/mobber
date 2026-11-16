@@ -14,7 +14,7 @@ import { choiceClickAt, decide } from "../render/choice.js";
 export function installDesktopInput() {
   window.addEventListener("keydown", e => {
     const k = e.key.toLowerCase(), p = game.player; input.keys.add(k);
-    if (k === " ") { e.preventDefault(); input.firing = true; }
+    if (k === " ") { e.preventDefault(); input.firing = true; if (!e.repeat && game.state === "play" && !input.menu && !game.shop && !game.choice) input.shot = true; }
     if (input.menu) return;
     // Dealing with the fence: a number buys that line; E, Esc or Enter walks away
     // Deciding about the Don: 1 or 2
@@ -46,7 +46,7 @@ export function installDesktopInput() {
     if (game.state !== "play" || input.menu || game.shop) return;
     if (!input.locked) requestLock();
     if (input.wasLocked && !input.locked) return; // first click after a pause just resumes
-    if (e.button === 0) input.firing = true;
+    if (e.button === 0) input.firing = input.shot = true;
     input.dragLook = true;
   });
   window.addEventListener("mouseup", () => { input.firing = false; input.dragLook = false; });

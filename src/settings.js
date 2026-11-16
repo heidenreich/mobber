@@ -10,7 +10,7 @@ function write(key, value) { try { value === null ? localStorage.removeItem(key)
 // moving target they aim (1 = exactly where you'll be if you keep going)
 export const DIFFICULTY = [
   // `retake`: after "CUT!" you go again with at least this much health and this many revolver rounds, so a scene
-  // you reached nearly empty-handed can still be got through.
+  // you reached nearly empty-handed can still be got through (it grows with each further death there: RETAKE in config.js).
   // `floor`: the least health you start a scene with, however badly the last one went. `fresh`: full health for the finale
   { name: "Sunday stroll", damage: 0.6, aim: 0.8, lead: 0.5, floor: 50, fresh: true, retake: [75, 30] },
   { name: "Regular", damage: 1, aim: 1, lead: 1.1, floor: 30, retake: [60, 24] },

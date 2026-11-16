@@ -57,6 +57,9 @@ export const STREET = {
   runnerWait: 0.9,          // seconds the runner takes to make up his mind before he bolts
 };
 
+// Each further time the same scene beats you, the retake starts with this much more (on top of `retake` in settings.js)
+export const RETAKE = { hp: 10, rounds: 6 };
+
 // The chase across the roof (levels with `route` and `takeoff`)
 export const CHASE = {
   runSpeed: 3.0,            // how fast the Don runs between stands (you walk at 3.2)

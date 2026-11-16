@@ -69,6 +69,11 @@ test("a retake starts with enough health and rounds to have a chance; a first tr
   await game(page, () => window.__mobber.startLevel(window.__mobber.LEVELS.findIndex(l => l.title === "Hotel Regent, Top Floor"), true));
   assert.deepEqual(await loadout(), [60, 24], "the retake is not");
   assert.match(await game(page, () => window.__mobber.message), /Another take/);
+  // Each further death in the same scene adds 10 health and 6 rounds, up to full health and full pockets
+  const again = () => game(page, () => window.__mobber.startLevel(window.__mobber.LEVELS.findIndex(l => l.title === "Hotel Regent, Top Floor"), true));
+  await again(); assert.deepEqual(await loadout(), [70, 30]);
+  await again(); await again(); await again();
+  assert.deepEqual(await loadout(), [100, 42], "and no further than that");
   // Someone who walked in well supplied gets nothing extra
   await game(page, () => {
     const M = window.__mobber, P = M.player; P.hp = 90; P.mag = [6, 0, 0]; P.reserve = [30, 0, 0];

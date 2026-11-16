@@ -1,6 +1,6 @@
 // Moving between the title card, chapter cards, play, death and the end,
 // with fades in between.
-import { isTouch } from "./config.js";
+import { isTouch, PLAYER, AMMO, RETAKE } from "./config.js";
 import { clamp } from "./util.js";
 import { game, stats, input, resetStats, say } from "./state.js";
 import { difficulty } from "./settings.js";
@@ -63,19 +63,24 @@ export function requestLock() {
 // A snapshot of your loadout and stats as each scene begins, so a retry after
 // "CUT!" really does rewind the reel: what you picked up or spent on the failed
 // attempt is undone (only the retake count goes up).
-let checkpoint = null, retaken = false;
+let checkpoint = null, retaken = false, takes = 0;   // (takes: how many times this scene has been retried)
 const copyStats = () => ({ ...stats, secretsFound: new Set(stats.secretsFound) });
 
 export function startLevel(i, retry) {
   if (retry && checkpoint) {
     game.player = structuredClone(checkpoint.player);
     // Another take: at least enough health and revolver rounds to have a chance at it
-    const p = game.player, [hp, rounds] = difficulty().retake, short = rounds - p.mag[0] - p.reserve[0];
+    // (and a little more each time the same scene beats you, up to full health and full pockets)
+    takes++;
+    const p = game.player, [hp0, rounds0] = difficulty().retake;
+    const hp = Math.min(PLAYER.maxHp, hp0 + RETAKE.hp * (takes - 1)), rounds = Math.min(6 + AMMO.maxReserve[0], rounds0 + RETAKE.rounds * (takes - 1));
+    const short = rounds - p.mag[0] - p.reserve[0];
     retaken = p.hp < hp || short > 0;
     p.hp = Math.max(p.hp, hp); if (short > 0) p.reserve[0] += short;
     Object.assign(stats, { ...checkpoint.stats, secretsFound: new Set(checkpoint.stats.secretsFound), deaths: stats.deaths });
   } else if (i === 0) { game.player = null; resetIntertitles(); } // a fresh run starts with just the revolver
   else retaken = false;
+  if (!retry) takes = 0;
   const prevLoadout = game.player && structuredClone(game.player);   // what you walked in with
   loadLevel(i);
   if (retry && retaken) say("Another take. You've been patched up and handed a few rounds.", 4);

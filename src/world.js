@@ -1,6 +1,6 @@
 // The current chapter's space: loading a map, walls, line of sight, the light map
 // and collision.
-import { ENEMY_TYPES, PLAYER, AMMO } from "./config.js";
+import { ENEMY_TYPES, PLAYER, AMMO, ENEMY_AI } from "./config.js";
 import { rand, clamp } from "./util.js";
 import { game, say } from "./state.js";
 import { LEVELS } from "./levels.js";
@@ -180,6 +180,7 @@ export function loadLevel(i) {
     else if (ch === "L" && lvl.safe) game.objs.push({ x: cx, y: cy, art: OBJ.safe, scale: 0.8, block: true, size: 0.3, safe: true, progress: 0 });
     else if (SPAWNS[ch]) { const sp = SPAWNS[ch]; game.objs.push({ x: cx, y: cy, ...sp, art: OBJ[sp.art], frames: sp.frames && OBJ[sp.frames] }); }
   }
+  lookAway(player);
   game.ambient = undefined; game.msg.t = 0;   // nothing of the last scene's light or messages carries over
   buildLight();
   buildNav();
@@ -238,6 +239,28 @@ function facingOpen(x, y) {
     if (n > bestN) { bestN = n; best = a; }
   }
   return best;
+}
+
+// No one starts a scene already looking at where you come in: a man who would see you there
+// turns to the longest view that doesn't, and waits a while before he next looks round
+function lookAway(p) {
+  const watching = (e, a) => {
+    const off = Math.atan2(p.y - e.y, p.x - e.x) - a;
+    return Math.abs(Math.atan2(Math.sin(off), Math.cos(off))) <= ENEMY_AI.viewCone + 0.2;
+  };
+  for (const e of game.enemies) {
+    if (e.type.up || e.type.flees || Math.hypot(p.x - e.x, p.y - e.y) > ENEMY_AI.sightRange || !los(e.x, e.y, p.x, p.y)) continue;
+    if (!watching(e, e.face)) { if (watching(e, e.face + Math.PI)) e.turnT = Math.max(e.turnT, rand(6, 9)); continue; }
+    let best = e.face, bestN = -1;
+    for (let k = 0; k < 8; k++) {
+      const a = k * Math.PI / 4;
+      if (watching(e, a) || watching(e, a + Math.PI)) continue;   // (nor when he looks behind him)
+      let n = 0; while (n < 20 && !wallAt(e.x + Math.cos(a) * (n + 1), e.y + Math.sin(a) * (n + 1))) n++;
+      if (n > bestN) { bestN = n; best = a; }
+    }
+    if (bestN < 0) for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4; if (!watching(e, a)) { best = a; break; } }
+    e.face = best; e.turnT = Math.max(e.turnT, rand(6, 9));
+  }
 }
 
 // Light map: lamps throw pools of light, blocked by walls. Sampled at 4x4 per square.

@@ -192,6 +192,7 @@ export const ENEMY_AI = {
   hearingRange: 12,         // gunshots alert enemies this close
   viewCone: 1.2,            // until he's alerted, a gangster only sees this far (radians) either side of where he's looking...
   senseRange: 2.2,          // ...or anyone who gets this close
+  openingGrace: 2.5,        // seconds from a scene's start (the iris opening, then a beat) before anyone can spot you
   ambush: 3,                // damage multiplier for a shot at a man who hasn't noticed you
   shoutRange: 6.5,          // the first to see you shouts, and anyone this close to him comes too
   flashShows: 1.5,          // after you fire, the dark doesn't hide you for this many seconds

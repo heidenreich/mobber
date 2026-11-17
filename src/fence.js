@@ -34,7 +34,7 @@ export function updateFence(dt) {
   for (const w of game.windows) {
     const near = reach(w);
     // Once each time you walk up: on a phone his list comes up by itself, on a desktop you're told the key
-    if (near && !w.met && game.fenceShut <= 0) { w.met = true; if (isTouch) openShop(); else say("E: see what the fence is selling", 3); }
+    if (near && !w.met && game.fenceShut <= 0) { w.met = true; if (isTouch) openShop(); else say(`E: see what ${game.level.dealer || "the fence"} is selling`, 3); }
     if (!near) w.met = false;
   }
 }

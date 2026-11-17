@@ -133,6 +133,32 @@ export const CEILS = {
 };
 
 // Map letter -> wall texture (see levels.js for the legend)
+// The night porter's service hatch in the hotel's panelling (an indoor fence's window, map letter Q),
+// open with him behind it, or with its shutter down
+function hatch(open) {
+  return bitmap(64, 64, g => {
+    g.fillStyle = gray(86); g.fillRect(0, 0, 64, 64);
+    for (let x = 0; x < 64; x += 16) { g.fillStyle = gray(52); g.fillRect(x, 0, 1, 64); }
+    g.fillStyle = gray(124); g.fillRect(0, 50, 64, 3);
+    g.fillStyle = gray(18); g.fillRect(14, 4, 36, 8);
+    g.fillStyle = gray(250); g.font = "bold 6px monospace"; g.textAlign = "center"; g.textBaseline = "middle";
+    g.fillText(open ? "PORTER" : "CLOSED", 32, 8.5);
+    g.fillStyle = gray(36); g.fillRect(10, 15, 44, 33);                                           // the frame
+    if (open) {
+      g.fillStyle = gray(250); g.fillRect(13, 18, 38, 27);                                        // lamplight inside
+      g.fillStyle = gray(40);                                                                     // the porter: cap, head, shoulders
+      g.fillRect(26, 22, 12, 4); g.beginPath(); g.ellipse(32, 30, 5, 5.5, 0, 0, 6.283); g.fill();
+      g.beginPath(); g.moveTo(19, 45); g.quadraticCurveTo(21, 35, 32, 35); g.quadraticCurveTo(43, 35, 45, 45); g.fill();
+      g.fillStyle = gray(200); for (const y of [38, 41]) g.fillRect(31, y, 2, 1.5);                // his buttons
+    } else {
+      for (let y = 18; y < 45; y += 4) { g.fillStyle = gray(70); g.fillRect(13, y, 38, 3); g.fillStyle = gray(110); g.fillRect(13, y, 38, 0.8); }
+    }
+    g.fillStyle = gray(150); g.fillRect(8, 45, 48, 3); g.fillStyle = gray(70); g.fillRect(10, 48, 44, 2);   // the counter
+    speckle(g, 64, 64, 200, 0.2);
+  });
+}
+export const HATCH = hatch(true), HATCH_SHUT = hatch(false);
+
 export const WALL_TEXTURES = { "#": TEX.brick, W: TEX.paper, P: TEX.panel, B: TEX.bar, T: TEX.deco, I: TEX.iron, E: TEX.door, ...FACADES, "=": HARBOUR["="], J: HARBOUR.J, Y: HARBOUR.Y, X: HARBOUR.X };
 
 // Sliding door: wood with a frosted glass panel and a brass pull

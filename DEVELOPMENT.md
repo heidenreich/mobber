@@ -35,7 +35,7 @@ src/
   lift.js             the hotel lift: ride, stop at a landing, clear it, ride on
   crane.js            the loads slung from the warehouse crane, and what happens when one is shot down
   folk.js             bystanders: patrons, the bartender, the pianist
-  fence.js            the fence's walk-up window: where it is, when it's open, when the shutter is down
+  fence.js            the fence's walk-up window (or, indoors, the night porter's hatch): where it is, when it's open, when the shutter is down
   player.js           moving, leaning, shooting, reloading, pickups, cracking the safe, the exit
   enemies.js          gangster behavior: watching, idle -> chase -> aim -> fire, taking cover, running, the knife, the alarm, the Don's last steps
   bullets.js          gangsters' bullets in flight: what stops them, and when they hit you

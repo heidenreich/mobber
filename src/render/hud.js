@@ -64,9 +64,9 @@ export function drawHUD() {
   const room = f.w - 250 * s;
   for (let size = fs(10); size > 6 && ctx.measureText(obj).width > room; size -= 0.5) ctx.font = `${size}px ${TYPE}`;
   ctx.fillText(obj, f.x + f.w / 2, base - 12 * s);
-  // Under it: how many are left, or just where you are when the job is only to get through
+  // Under it: where you are (no head count: the job is never to kill them all)
   ctx.font = `italic 700 ${fs(10)}px ${SERIF}`;
-  ctx.fillText(o === "lift" ? liftFloor() : o === "reach" ? game.level.title : left === 0 ? "The Vitale outfit is finished here" : `${left} of the Vitale outfit ${left === 1 ? "remains" : "remain"}`, f.x + f.w / 2, base);
+  ctx.fillText(o === "lift" ? liftFloor() : game.level.title, f.x + f.w / 2, base);
   ctx.textAlign = "right"; ctx.font = `${fs(9)}px ${TYPE}`;
   ctx.fillText(WEAPONS[p.weapon].name + (p.has.filter(Boolean).length > 1 ? "   [Q]" : ""), f.x + f.w - 18 * s, base - 13 * s);
   ctx.font = `${fs(17)}px ${DECO}`;

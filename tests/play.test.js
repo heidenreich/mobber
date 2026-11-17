@@ -296,7 +296,8 @@ test("the Don can't be pinned down with a tommy gun", async () => {
     for (const e of M.enemies) if (e !== d) { e.hp = 0; e.state = "dead"; }
     P.hp = 1e9; P.has[1] = true; P.weapon = 1; P.mag[1] = 50; P.reserve[1] = 100; P.x = d.x - 2; P.y = d.y; P.a = 0;
     window.__flinched = false; window.__hits = 0; let hp = d.hp;
-    (function watch() { if (d.state === "hurt") window.__flinched = true; if (d.hp < hp) window.__hits++; hp = d.hp; if (d.hp > 0) requestAnimationFrame(watch); })();
+    // (and keep the gun on him as he runs: this is about him not flinching, not about your aim)
+    (function watch() { if (d.state === "hurt") window.__flinched = true; if (d.hp < hp) window.__hits++; hp = d.hp; P.a = Math.atan2(d.y - P.y, d.x - P.x); if (d.hp > 0) requestAnimationFrame(watch); })();
   });
   // A good burst: enough rounds into him that a goon would have staggered several times over
   await holdUntil(page, " ", () => window.__hits >= 8);

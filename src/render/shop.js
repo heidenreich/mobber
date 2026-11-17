@@ -70,7 +70,7 @@ export function drawShop(t) {
   ctx.strokeStyle = CREAM; ctx.lineWidth = 2.5; ctx.strokeRect(f.x + m, f.y + m, f.w - m * 2, f.h - m * 2);
   ctx.lineWidth = 0.8; ctx.strokeRect(f.x + m + 6 * s, f.y + m + 6 * s, f.w - m * 2 - 12 * s, f.h - m * 2 - 12 * s);
   ctx.fillStyle = CREAM; ctx.textAlign = "center";
-  ctx.globalAlpha = 0.85; ctx.font = `${14 * s}px ${DECO}`; ctx.fillText("THE FENCE", cx, Y(70)); ctx.globalAlpha = 1;
+  ctx.globalAlpha = 0.85; ctx.font = `${14 * s}px ${DECO}`; ctx.fillText((game.level.dealer || "the fence").toUpperCase(), cx, Y(70)); ctx.globalAlpha = 1;
   ctx.font = `italic 700 ${20 * s}px ${SERIF}`; ctx.fillText(`“What'll it be? You've got $${stats.cash.toLocaleString()}.”`, cx, Y(104));
   ctx.globalAlpha = 0.6; ctx.fillRect(cx - 110 * s, Y(118), 220 * s, 1); ctx.globalAlpha = 1;
   // the list: number, what it is, what it does, what it costs

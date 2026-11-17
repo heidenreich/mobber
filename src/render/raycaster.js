@@ -3,7 +3,7 @@
 import { W, H, HALF, K, PLANE, FOG, GLOW, WEAPONS, ENEMY_AI, PLAYER, CHASE } from "../config.js";
 import { clamp } from "../util.js";
 import { game } from "../state.js";
-import { FLOORS, CEILS, TEX, WALL_TEXTURES, DOOR_TEX, SECRET_TEXTURES, SMASHED_TEXTURES } from "../art/textures.js";
+import { FLOORS, CEILS, TEX, WALL_TEXTURES, DOOR_TEX, SECRET_TEXTURES, SMASHED_TEXTURES, HATCH, HATCH_SHUT } from "../art/textures.js";
 import { PEOPLE } from "../art/sprites.js";
 import { ENTRANCES, makeSky, FENCE_SHUT, HARBOUR, KERB } from "../art/streets.js";
 import { GUN_ART } from "../art/guns.js";
@@ -116,7 +116,8 @@ export function renderWorld(t) {
       wallX -= Math.floor(wallX);
       tex = c === "!" ? SECRET_TEXTURES[secretTex(mx, my)] : c === "E" ? exitTex : WALL_TEXTURES[c] || TEX.brick;
       if (SMASHED_TEXTURES[c] && game.smashed.has(my * MW + mx)) tex = SMASHED_TEXTURES[c];
-      if (c === "Q" && game.fenceShut > 0) tex = FENCE_SHUT;   // the fence has pulled his shutter down   // shot-out bottles or shop window
+      if (c === "Q" && !lvl.sky) tex = game.fenceShut > 0 ? HATCH_SHUT : HATCH;   // indoors it's the night porter's hatch
+      else if (c === "Q" && game.fenceShut > 0) tex = FENCE_SHUT;   // the fence has pulled his shutter down   // shot-out bottles or shop window
     }
     perp = Math.max(0.01, perp);
     zbuf[x] = perp;
@@ -168,7 +169,8 @@ export function renderWorld(t) {
     else if (e.state === "dead") art = A.dead;
     // Gangsters stay readable in the dark: they're never lit below a floor brightness
     const up = !e.type.up || e.state === "dead" ? 0 : e.state === "dying" ? e.type.up * Math.min(1, e.t / 0.5) : e.type.up;
-    list.push({ x: e.x, y: e.y, up, art, scale: e.type.scale, bob: e.moving ? Math.abs(Math.sin(e.step * 9)) * 0.02 : 0, muzzle: e.state === "fire" && e.t > 0.07, minLit: e.hp > 0 ? (game.ambient !== undefined ? 0.3 : 0.6) : 0 });   // (less on a landing with its lights out: shapes in the dark)
+    list.push({ x: e.x, y: e.y, up, art, scale: e.type.scale, bob: e.moving ? Math.abs(Math.sin(e.step * 9)) * 0.02 : 0, muzzle: e.state === "fire" && e.t > 0.07, minLit: e.hp > 0 ? (game.ambient !== undefined ? 0.3 : 0.6) : 0,
+      rim: e.hp > 0 ? (game.ambient !== undefined ? 0.5 : 1) : 0 });   // a backlit edge marks a gangster out from the dark, and from a bystander   // (less on a landing with its lights out: shapes in the dark)
   }
   // Bystanders: standing about, running, crouched with their heads down, or hit
   for (const f of game.folk) {
@@ -233,6 +235,7 @@ function drawSprite(s, wet) {
   if (s.glow) lit = Math.max(lit, 1.05);
   if (s.minLit) lit = Math.max(lit, s.minLit);
   if (s.muzzle) lit = Math.max(lit, 0.9);
+  const rim = s.rim ? RIM * s.rim * Math.exp(-tY * FOG) : 0;
   const y0 = Math.max(0, top | 0), y1 = Math.min(H, (top + size) | 0), stepY = bm.h / size;
   for (let x = x0; x < x1; x++) {
     if (tY >= zbuf[x]) continue;
@@ -240,7 +243,12 @@ function drawSprite(s, wet) {
     let ty = (y0 - top) * stepY;
     for (let y = y0; y < y1; y++) {
       const i = (ty | 0) * bm.w + tx;
-      if (bm.A[i] > 110) luma[y * W + x] = bm.L[i] * (bm.L[i] > 245 ? 1.1 : lit);
+      if (bm.A[i] > 110) {
+        let v = bm.L[i] * (bm.L[i] > 245 ? 1.1 : lit);
+        // The rim: his outline catches the light on top and at the sides, as if lit from behind
+        if (rim && (tx === 0 || tx === bm.w - 1 || i < bm.w || bm.A[i - 1] <= 110 || bm.A[i + 1] <= 110 || bm.A[i - bm.w] <= 110)) v = Math.max(v, rim);
+        luma[y * W + x] = v;
+      }
       ty += stepY;
     }
     // On wet pavement, a dim upside-down copy under the feet
@@ -277,6 +285,11 @@ function drawBullet(b) {
   }
 }
 
+// The gun sits this much further right and lower than its model puts it, to keep the middle of the picture clear
+const GUN_AWAY = [20, 22];
+// How bright a gangster's backlit outline is at its strongest
+const RIM = 165;
+
 function drawGun(t) {
   const p = game.player, set = GUN_ART[p.weapon];
   const reloading = p.reload > 0 ? Math.sin(Math.min(1, p.reload / WEAPONS[p.weapon].reload) * Math.PI) : 0;
@@ -285,7 +298,7 @@ function drawGun(t) {
     : p.flash > 0 ? set.flash
     : set.kick[Math.min(set.kick.length - 1, Math.round(p.recoil * (set.kick.length - 1)))];
   const bobX = p.moving ? Math.cos(p.bob) * 5 : 0, bobY = p.moving ? Math.abs(Math.sin(p.bob)) * 5 : Math.sin(t * 1.5) * 1.5;
-  const ox = Math.round(set.x + bobX + (p.lean || 0) / PLAYER.leanReach * 16), oy = Math.round(set.y + bobY + reloading * 26);
+  const ox = Math.round(set.x + GUN_AWAY[0] + bobX + (p.lean || 0) / PLAYER.leanReach * 16), oy = Math.round(set.y + GUN_AWAY[1] + bobY + reloading * 26);
   const lit = clamp(lightAt(p.x, p.y) * 0.9 + 0.12, 0.36, 1.05);   // the gun takes the light of where you stand
   // The flash adds a fixed amount of light, so dark steel catches it and skin doesn't burn out
   const flashAdd = p.flash > 0 ? 20 : 0;

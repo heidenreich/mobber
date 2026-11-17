@@ -84,8 +84,11 @@ async function scene(title, { clear, hp, device } = {}) {
   await tap(g.page, g.touch);
   await g.page.waitForFunction(() => window.__mobber.state === "card");
   await game(g.page, ({ title, clear, hp }) => {
-    const M = window.__mobber;
-    M.startLevel(title ? M.LEVELS.findIndex(l => l.title === title) : 0);
+    const M = window.__mobber, cv = HTMLCanvasElement.prototype, lock = cv.requestPointerLock;
+    // Skip capturing the mouse: the click on the title still counts as a gesture, so the scene would
+    // take it, and a captured mouse in a headless browser can now and then turn the view by itself
+    cv.requestPointerLock = () => {};
+    try { M.startLevel(title ? M.LEVELS.findIndex(l => l.title === title) : 0); } finally { cv.requestPointerLock = lock; }
     if (clear) for (const e of M.enemies) if (clear === true || !clear.includes(e.type.name)) { e.hp = 0; e.state = "dead"; }
     if (hp !== undefined) M.player.hp = hp;
   }, { title, clear, hp });

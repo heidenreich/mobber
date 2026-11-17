@@ -34,7 +34,9 @@ test("starting over with the Don's choice showing takes the choice away too", as
   await game(page, () => {
     const M = window.__mobber, d = M.enemies.find(e => e.type.name === "boss"), P = M.player;
     for (const e of M.enemies) if (e !== d) { e.hp = 0; e.state = "dead"; }
-    P.x = d.x - 1.5; P.y = d.y; P.a = 0; d.hp = 1; d.cd = 99; d.standing = true;
+    P.x = d.x - 1.5; P.y = d.y; P.a = 0; d.hp = 1; d.cd = 99;
+    // Keep the gun on him wherever he runs: this is about what starting over clears, not about your aim
+    (function aim() { if (d.hp > 0) { P.a = Math.atan2(d.y - P.y, d.x - P.x); requestAnimationFrame(aim); } })();
   });
   await page.keyboard.down(" ");
   await page.waitForFunction(() => window.__mobber.choice, null, { timeout: 6000 });

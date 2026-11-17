@@ -1,28 +1,24 @@
 // Phone controls, in an emulated iPhone: the floating stick, drag-to-aim,
 // aim assist with auto-fire, and switching between portrait and landscape.
-const { test, before, after } = require("node:test");
+const { test } = require("node:test");
 const assert = require("node:assert/strict");
-const { serve, openGame, rollFilm, game, chromium, devices } = require("./helpers");
+const { useBrowser, scene, game } = require("./helpers");
 
-let srv, browser;
-before(async () => { srv = await serve(); browser = await chromium.launch(); });
-after(async () => { await browser.close(); srv.server.close(); });
+useBrowser();
 
-async function phone(device) {
-  const g = await openGame(browser, srv.url, { ...devices[device] });
+async function phone(device, title) {
+  const g = await scene(title, { device, clear: true });
   g.cdp = await g.context.newCDPSession(g.page);
-  g.touch = (type, points) => g.cdp.send("Input.dispatchTouchEvent", { type, touchPoints: points });
-  await rollFilm(g.page, true);
-  await game(g.page, () => { for (const e of window.__mobber.enemies) { e.hp = 0; e.state = "dead"; } });
+  g.send = (type, points) => g.cdp.send("Input.dispatchTouchEvent", { type, touchPoints: points });
   return g;
 }
 const pose = page => game(page, () => { const P = window.__mobber.player; return { x: P.x, y: P.y, a: P.a }; });
 
 async function drag(g, id, x, y, dx, dy, holdMs = 600) {
-  await g.touch("touchStart", [{ x, y, id }]);
-  for (let i = 1; i <= 6; i++) { await g.touch("touchMove", [{ x: x + dx * i / 6, y: y + dy * i / 6, id }]); await g.page.waitForTimeout(16); }
+  await g.send("touchStart", [{ x, y, id }]);
+  for (let i = 1; i <= 6; i++) { await g.send("touchMove", [{ x: x + dx * i / 6, y: y + dy * i / 6, id }]); await g.page.waitForTimeout(16); }
   await g.page.waitForTimeout(holdMs);
-  await g.touch("touchEnd", []);
+  await g.send("touchEnd", []);
 }
 
 test("left thumb walks forward and turns", async () => {
@@ -34,7 +30,6 @@ test("left thumb walks forward and turns", async () => {
   await drag(g, 1, 150, 250, 60, 0);
   const c = await pose(g.page);
   assert.ok(c.a - b.a > 0.5, "pushing the stick right should turn right");
-  await g.context.close();
 });
 
 test("right thumb drag fine-tunes aim", async () => {
@@ -43,12 +38,10 @@ test("right thumb drag fine-tunes aim", async () => {
   await drag(g, 2, 600, 200, -50, 0, 50);
   const b = await pose(g.page);
   assert.ok(b.a < a.a - 0.1, "dragging left should turn left");
-  await g.context.close();
 });
 
 test("aim assist pulls onto a nearby goon and auto-fires", async () => {
-  const g = await phone("iPhone 13 landscape");
-  await game(g.page, () => window.__mobber.startLevel(window.__mobber.LEVELS.findIndex(l => l.title === "The Blue Note Club")));
+  const g = await phone("iPhone 13 landscape", "The Blue Note Club");
   await game(g.page, () => {
     const M = window.__mobber, P = M.player, e = M.enemies[0];
     P.x = 6.5; P.y = 8.5; P.a = 0; P.hp = 100;
@@ -58,14 +51,13 @@ test("aim assist pulls onto a nearby goon and auto-fires", async () => {
   // Auto-fire waits until you've touched the screen in this scene
   await g.page.waitForTimeout(800);
   assert.equal(await game(g.page, () => window.__mobber.enemies[0].hp), 40, "no shooting before the first touch");
-  await g.touch("touchStart", [{ x: 700, y: 120, id: 3 }]); await g.touch("touchEnd", []);
+  await g.send("touchStart", [{ x: 700, y: 120, id: 3 }]); await g.send("touchEnd", []);
   // He hasn't seen you, so it leaves him alone: whether and when to shoot is yours to decide
   await g.page.waitForTimeout(1500);
   assert.equal(await game(g.page, () => window.__mobber.enemies[0].hp), 40, "no auto-fire at a man who hasn't seen you");
   // Once he has, it fires for you
   await game(g.page, () => { window.__mobber.enemies[0].alert = true; });
   await g.page.waitForFunction(() => window.__mobber.enemies[0].hp <= 0, null, { timeout: 5000 });
-  await g.context.close();
 });
 
 test("plays upright and keeps playing after rotating", async () => {
@@ -78,6 +70,4 @@ test("plays upright and keeps playing after rotating", async () => {
   await g.page.setViewportSize({ width: 844, height: 390 });
   await g.page.waitForTimeout(300);
   assert.equal(await game(g.page, () => window.__mobber.state), "play");
-  assert.deepEqual(g.errors, []);
-  await g.context.close();
 });

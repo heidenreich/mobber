@@ -1,21 +1,13 @@
 // The set pieces: slipping behind a lookout, riding the hotel lift, and the Don's last steps.
-const { test, before, after } = require("node:test");
+const { test } = require("node:test");
 const assert = require("node:assert");
-const { serve, openGame, rollFilm, game, chromium } = require("./helpers");
+const { useBrowser, open, scene, game, shoot, clearEnemies, landing, clickCard } = require("./helpers");
 
-let srv, browser;
-before(async () => { srv = await serve(); browser = await chromium.launch(); });
-after(async () => { await browser.close(); srv.server.close(); });
-
-const start = async title => {
-  const g = await openGame(browser, srv.url);
-  await rollFilm(g.page);
-  await game(g.page, t => { const M = window.__mobber; M.startLevel(M.LEVELS.findIndex(l => l.title === t)); }, title);
-  return g;
-};
+useBrowser();
+const start = title => scene(title);
 
 test("a lookout with his back turned doesn't see you, and goes down to one shot", async () => {
-  const { page, errors } = await start("The Waterfront");
+  const { page } = await start("The Waterfront");
   await game(page, () => {
     const M = window.__mobber, P = M.player, e = M.enemies[0];
     for (const o of M.enemies) if (o !== e) { o.hp = 0; o.state = "dead"; }
@@ -34,21 +26,19 @@ test("a lookout with his back turned doesn't see you, and goes down to one shot"
   await near.page.waitForFunction(() => window.__mobber.enemies[0].alert, null, { timeout: 4000 });
   // Back in the first game: one revolver round in the back is enough for a goon
   await game(page, () => { const P = window.__mobber.player; P.mag[0] = 6; P.fireCd = 0; });
-  await page.keyboard.down(" "); await page.waitForTimeout(120); await page.keyboard.up(" ");
+  await shoot(page);
   await page.waitForFunction(() => window.__mobber.enemies[0].hp <= 0, null, { timeout: 4000 });
   assert.equal(await game(page, () => window.__mobber.stats.shots), 1);
-  assert.deepEqual(errors, []);
 });
 
 test("the lift stops at each landing, and only the top floor lets you through", async () => {
-  const { page, errors } = await start("Going Up");
-  const clear = () => game(page, () => { for (const e of window.__mobber.enemies) { e.hp = 0; e.state = "dead"; } });
+  const { page } = await start("Going Up");
   await game(page, () => { window.__mobber.player.hp = 1e9; });
   assert.equal(await game(page, () => window.__mobber.lift.gate.locked), true, "the gate is shut while it rides");
   const waves = await game(page, () => window.__mobber.level.lift.length);
   assert.equal(waves, 4);
   for (let stop = 0; stop < waves; stop++) {
-    await page.waitForFunction(s => window.__mobber.lift.phase === "stop" && window.__mobber.lift.stop === s, stop, { timeout: 10000 });
+    await landing(page, stop);
     assert.equal(await game(page, () => window.__mobber.enemies.filter(e => e.hp > 0).length), await game(page, s => window.__mobber.level.lift[s].who.length, stop), "they're waiting on the landing");
     assert.equal(await game(page, () => window.__mobber.lift.done), false);
     // No two landings are alike
@@ -63,10 +53,11 @@ test("the lift stops at each landing, and only the top floor lets you through", 
     assert.equal(here.holding, here.w.barricade ? here.w.who.length : 0, "and the men behind them stay put");
     assert.equal(here.kits, here.w.kit ? 1 : 0);
     assert.equal(here.nearest < 2.5, !!here.w.atGate, "one of them right at the gate, where it says so");
-    await clear();   // you're still in the car, so up it goes
+    await clearEnemies(page);   // you're still in the car, so up it goes
     await page.waitForFunction(() => window.__mobber.lift.phase === "ride", null, { timeout: 4000 });
   }
-  await page.waitForFunction(() => window.__mobber.lift.done, null, { timeout: 10000 });
+  await landing(page, waves);
+  assert.equal(await game(page, () => window.__mobber.lift.done), true);
   // Out through the door at the end of the landing, into the Don's suite
   await game(page, () => {
     const M = window.__mobber, P = M.player, map = M.level.map;
@@ -77,11 +68,10 @@ test("the lift stops at each landing, and only the top floor lets you through", 
   await page.waitForFunction(() => window.__mobber.state === "card", null, { timeout: 8000 });
   await page.keyboard.up("w");
   assert.equal(await game(page, () => window.__mobber.LEVELS[window.__mobber.card.idx].title), "Hotel Regent, Top Floor");
-  assert.deepEqual(errors, []);
 });
 
 test("the Don staggers for the parapet before the picture ends, and the paper comes out", async () => {
-  const { page, errors } = await start("The Roof");
+  const { page } = await start("The Roof");
   await game(page, () => {
     const M = window.__mobber, d = M.enemies.find(e => e.type.name === "boss"), P = M.player;
     for (const e of M.enemies) if (e !== d) { e.hp = 0; e.state = "dead"; }
@@ -104,12 +94,11 @@ test("the Don staggers for the parapet before the picture ends, and the paper co
   await page.mouse.click(200, 200);
   await page.waitForFunction(() => window.__mobber.card.kind === "end");
   await page.waitForTimeout(1200);   // the paper spins in and is drawn without errors
-  assert.deepEqual(errors, []);
 });
 
 test("the title card lets you pick how hard a night it will be", async () => {
-  const { page, errors } = await openGame(browser, srv.url);
-  await page.waitForTimeout(300);
+  const { page } = await open();
+  await page.waitForFunction(() => window.__mobber.titleChoices.length === 3);   // drawn
   assert.equal(await game(page, () => window.__mobber.settings.difficulty), 1, "Regular to begin with");
   // The names sit in a row under the subtitle: click the last one
   const at = await game(page, () => {
@@ -123,11 +112,10 @@ test("the title card lets you pick how hard a night it will be", async () => {
   // A click anywhere else still rolls the film
   await page.mouse.click(200, 200);
   await page.waitForFunction(() => window.__mobber.state === "card");
-  assert.deepEqual(errors, []);
 });
 
 test("a hit can spin a man right round before he recovers", async () => {
-  const { page, errors } = await start("The Blue Note Club");
+  const { page } = await start("The Blue Note Club");
   await game(page, () => {
     const M = window.__mobber, P = M.player, e = M.enemies[0];
     for (const o of M.enemies) if (o !== e) { o.hp = 0; o.state = "dead"; }
@@ -138,11 +126,10 @@ test("a hit can spin a man right round before he recovers", async () => {
   await page.keyboard.down(" "); await page.waitForFunction(() => window.__mobber.enemies[0].state === "hurt", null, { timeout: 4000 }); await page.keyboard.up(" ");
   assert.equal(await game(page, () => window.__mobber.enemies[0].spin), true);
   await page.waitForFunction(() => window.__mobber.enemies[0].state !== "hurt", null, { timeout: 4000 });   // and he comes out of it
-  assert.deepEqual(errors, []);
 });
 
 test("hand the Don to the law instead, and the picture ends with him in handcuffs", async () => {
-  const { page, errors } = await start("The Roof");
+  const { page } = await start("The Roof");
   await game(page, () => {
     const M = window.__mobber, d = M.enemies.find(e => e.type.name === "boss"), P = M.player;
     for (const e of M.enemies) if (e !== d) { e.hp = 0; e.state = "dead"; }
@@ -161,12 +148,10 @@ test("hand the Don to the law instead, and the picture ends with him in handcuff
   await page.mouse.click(200, 200);
   await page.waitForFunction(() => window.__mobber.card.kind === "end");
   await page.waitForTimeout(1200);
-  assert.deepEqual(errors, []);
 });
 
 test("each chapter has one of Vitale's lieutenants: he speaks when he sees you, and pays well when he falls", async () => {
-  const { page, errors } = await openGame(browser, srv.url);
-  await rollFilm(page);
+  const { page } = await scene();
   const where = await game(page, () => {
     const M = window.__mobber, out = {};
     M.LEVELS.forEach((l, i) => { M.startLevel(i); const lt = M.enemies.filter(e => e.type.lieutenant); if (lt.length) out[l.title] = lt.map(e => e.type.title).join(); });
@@ -203,12 +188,10 @@ test("each chapter has one of Vitale's lieutenants: he speaks when he sees you, 
   await page.keyboard.up(" ");
   const left = await game(page, () => ({ n: window.__mobber.stats.lieutenants, drops: window.__mobber.objs.filter(o => o.pick === "cash" && o.amount === 500 || o.pick === "loot").map(o => o.pick).sort() }));
   assert.deepEqual(left, { n: 1, drops: ["cash", "loot"] });
-  assert.deepEqual(errors, []);
 });
 
 test("the Waterfront's top edge is the harbour: a freighter at the quay, open water you can see over but not walk into", async () => {
-  const { page, errors } = await openGame(browser, srv.url);
-  await rollFilm(page);
+  const { page } = await scene();
   const s = await game(page, () => {
     const M = window.__mobber, i = M.LEVELS.findIndex(l => l.title === "The Waterfront"), top = M.LEVELS[i].map[0];
     M.startLevel(i);
@@ -225,11 +208,10 @@ test("the Waterfront's top edge is the harbour: a freighter at the quay, open wa
   assert.ok(await game(page, () => window.__mobber.player.y) > 1, "walked into the harbour");
   // Looking out over the water and along the ship both draw without trouble
   for (const a of [-Math.PI / 2, -0.3, Math.PI - 0.3]) { await game(page, a => { window.__mobber.player.a = a; }, a); await page.waitForTimeout(150); }
-  assert.deepEqual(errors, []);
 });
 
 test("the roof chase: the Don runs, turns to fight from his stands, and runs again when you close in", async () => {
-  const { page, errors } = await start("The Roof");
+  const { page } = await start("The Roof");
   const don = () => game(page, () => { const M = window.__mobber, d = M.enemies.find(e => e.type.flees); return { x: d.x, y: d.y, wp: d.wp, standing: !!d.standing, state: d.state, hp: d.hp, t: M.chase.t, len: M.chase.len, bullets: M.bullets.length }; });
   await game(page, () => {
     const M = window.__mobber;
@@ -269,11 +251,10 @@ test("the roof chase: the Don runs, turns to fight from his stands, and runs aga
   // The moment it is, he's gone
   await game(page, () => { const c = window.__mobber.chase; c.t = c.len - 0.5; });
   await page.waitForFunction(() => window.__mobber.card && window.__mobber.card.kind === "escaped", null, { timeout: 15000 });
-  assert.deepEqual(errors, []);
 });
 
 test("Pier 9: a shot brings a crane load down on whoever is under it", async () => {
-  const { page, errors } = await start("Pier 9");
+  const { page } = await start("Pier 9");
   const set = await game(page, () => {
     const M = window.__mobber, P = M.player; P.hp = 100;
     for (const e of M.enemies) { e.cd = 1e9; e.type = { ...e.type, speed: 0 }; }
@@ -307,5 +288,4 @@ test("Pier 9: a shot brings a crane load down on whoever is under it", async () 
   await page.waitForFunction(() => !window.__o2.load, null, { timeout: 8000 });
   await page.keyboard.up(" ");
   assert.ok(await game(page, () => window.__mobber.player.hp) < hurt, "it came down on you");
-  assert.deepEqual(errors, []);
 });

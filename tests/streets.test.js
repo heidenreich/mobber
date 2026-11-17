@@ -1,22 +1,14 @@
 // Street scenes where the Vitale men make a stand: lookouts, the runner, the men at the door,
 // and what the runner's warning does to the scene inside.
-const { test, before, after } = require("node:test");
+const { test } = require("node:test");
 const assert = require("node:assert");
-const { serve, openGame, rollFilm, game, chromium } = require("./helpers");
+const { useBrowser, scene, game } = require("./helpers");
 
-let srv, browser;
-before(async () => { srv = await serve(); browser = await chromium.launch(); });
-after(async () => { await browser.close(); srv.server.close(); });
-
-const street = async () => {
-  const g = await openGame(browser, srv.url);
-  await rollFilm(g.page);   // Mulberry Street
-  await game(g.page, () => { window.__mobber.player.hp = 1e9; });
-  return g;
-};
+useBrowser();
+const street = () => scene("Mulberry Street", { hp: 1e9 });
 
 test("Mulberry Street has two lookouts, a runner, and men who fall back to the door and hold it", async () => {
-  const { page, errors } = await street();
+  const { page } = await street();
   const roles = await game(page, () => { const M = window.__mobber; return { stand: M.level.stand, door: M.doorFront, runner: M.enemies.filter(e => e.type.toDoor).length, doorMen: M.enemies.filter(e => e.doorMan).length, lookouts: M.enemies.filter(e => e.type.name === "goon" && !e.doorMan).length }; });
   assert.deepEqual([roles.stand.lookouts, roles.runner, roles.lookouts], [2, 1, 2]);
   assert.ok(roles.door && roles.doorMen >= 2, JSON.stringify(roles));
@@ -27,11 +19,10 @@ test("Mulberry Street has two lookouts, a runner, and men who fall back to the d
   assert.ok(s.far.every(d => d < 5.2), "door men by the door: " + s.far.join());
   assert.equal(new Set(s.spots).size, s.spots.length, "each has his own place");
   assert.deepEqual(s.lookoutHold, [null, null], "lookouts don't fall back");
-  assert.deepEqual(errors, []);
 });
 
 test("the runner who reaches the door warns the Blue Note; stop him and they know nothing", async () => {
-  const { page, errors } = await street();
+  const { page } = await street();
   // Let him see you from across the forecourt, with everyone else out of the picture
   await game(page, () => {
     const M = window.__mobber, r = M.enemies.find(e => e.type.toDoor), P = M.player, D = M.doorFront;
@@ -53,12 +44,10 @@ test("the runner who reaches the door warns the Blue Note; stop him and they kno
     M.startLevel(1);
   });
   assert.deepEqual(await game(page, () => { const M = window.__mobber; return [M.warned, M.enemies.some(e => e.alert)]; }), [false, false]);
-  assert.deepEqual(errors, []);
 });
 
 test("a club that was warned has been cleared: no customers, no piano, the staff with their heads down", async () => {
-  const { page, errors } = await openGame(browser, srv.url);
-  await rollFilm(page);
+  const { page } = await scene();
   // The lookout got in ahead of you
   await game(page, () => { const M = window.__mobber; M.player.warnedAt = 1; M.startLevel(1); });
   const club = await game(page, () => ({ title: window.__mobber.level.title, folk: window.__mobber.folk.map(f => f.kind + ":" + f.state).sort() }));
@@ -71,12 +60,10 @@ test("a club that was warned has been cleared: no customers, no piano, the staff
   await game(page, () => { const M = window.__mobber; M.player.warnedAt = undefined; M.startLevel(1); });
   await page.waitForFunction(() => window.__mobber.music.playing === "joint", null, { timeout: 5000 });
   assert.ok(await game(page, () => window.__mobber.folk.some(f => (f.kind === "gent" || f.kind === "lady") && f.state === "idle")));
-  assert.deepEqual(errors, []);
 });
 
 test("the Waterfront's men make a stand at the pier door too", async () => {
-  const { page, errors } = await openGame(browser, srv.url);
-  await rollFilm(page);
+  const { page } = await scene();
   const roles = await game(page, () => {
     const M = window.__mobber; M.startLevel(M.LEVELS.findIndex(l => l.title === "The Waterfront"));
     const guns = M.enemies.filter(e => !e.type.melee && !e.type.still && !e.type.runner);
@@ -85,12 +72,10 @@ test("the Waterfront's men make a stand at the pier door too", async () => {
   assert.equal(roles.lookouts, 2);
   assert.ok(roles.doorMen >= 4, "the rest hold the door: " + JSON.stringify(roles));
   assert.ok(roles.knives >= 1 && roles.door);
-  assert.deepEqual(errors, []);
 });
 
 test("on the Waterfront the door men hear the first shot, and your gun's flash shows you in the dark", async () => {
-  const { page, errors } = await openGame(browser, srv.url);
-  await rollFilm(page);
+  const { page } = await scene();
   // One gunman, wide awake, a long way down a dark quay: further than he can see into the dark
   const set = await game(page, () => {
     const M = window.__mobber; M.startLevel(M.LEVELS.findIndex(l => l.title === "The Waterfront")); const P = M.player; P.hp = 1e9;
@@ -112,12 +97,10 @@ test("on the Waterfront the door men hear the first shot, and your gun's flash s
   const after = await game(page, () => ({ shown: window.__mobber.player.shown, awake: window.__mobber.enemies.filter(e => e.doorMan && e.alert).length }));
   assert.equal(after.awake, set.doorMen, "every door man heard it");
   await page.waitForFunction(() => window.__mobber.player.shown === 0, null, { timeout: 3000 });
-  assert.deepEqual(errors, []);
 });
 
 test("Regent Square: a fountain and trees for cover, and the Vitale men hold the hotel door", async () => {
-  const { page, errors } = await openGame(browser, srv.url);
-  await rollFilm(page);
+  const { page } = await scene();
   const sq = await game(page, () => {
     const M = window.__mobber; M.startLevel(M.LEVELS.findIndex(l => l.title === "Regent Square"));
     const guns = M.enemies.filter(e => !e.type.melee && !e.type.still && !e.type.runner);
@@ -131,5 +114,4 @@ test("Regent Square: a fountain and trees for cover, and the Vitale men hold the
   assert.ok(sq.fountain && sq.behind, "the fountain is in the middle, and it's cover");
   assert.ok(sq.cover >= 8, "trees and the newsstand are cover too");
   assert.ok(sq.rifleByDoor, "a rifleman covers the hotel door");
-  assert.deepEqual(errors, []);
 });

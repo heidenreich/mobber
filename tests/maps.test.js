@@ -2,20 +2,18 @@
 // enemy, pickup and objective, and the exit door is reachable. Doors count as
 // open floor; secret walls only count as open when checking optional stashes,
 // because the objective and the exit must never depend on finding a secret.
-const { test, before, after } = require("node:test");
+const { test, before } = require("node:test");
 const assert = require("node:assert/strict");
-const { serve, openGame, chromium } = require("./helpers");
+const { useBrowser, open } = require("./helpers");
 
-let srv, browser, levels, WALLS, BLOCKERS, SIDE_WALLS;
+useBrowser();
+let levels, WALLS, BLOCKERS, SIDE_WALLS;
 before(async () => {
-  srv = await serve();
-  browser = await chromium.launch();
-  const { page, context } = await openGame(browser, srv.url);
+  const { page, context } = await open();
   ({ walls: WALLS, blockers: BLOCKERS, sideWalls: SIDE_WALLS } = await page.evaluate(() => window.__mobber.TILES)); // the game's own lists
   levels = await page.evaluate(() => window.__mobber.LEVELS.map(l => ({ title: l.title, objective: l.objective, map: l.map, endOnBoss: !!l.endOnBoss, route: l.route })));
   await context.close();
 });
-after(async () => { await browser.close(); srv.server.close(); });
 
 const STEPS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 

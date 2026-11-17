@@ -1,28 +1,16 @@
 // The knife man, the rifleman at his window, and the bagman who runs for the alarm.
-const { test, before, after } = require("node:test");
+const { test } = require("node:test");
 const assert = require("node:assert/strict");
-const { serve, openGame, rollFilm, game, chromium } = require("./helpers");
+const { useBrowser, scene, game, shoot } = require("./helpers");
 
-let srv, browser;
-before(async () => { srv = await serve(); browser = await chromium.launch(); });
-after(async () => { await browser.close(); srv.server.close(); });
+useBrowser();
 
-// Start a level with only one kind of gangster left standing
-async function sceneWith(title, keep) {
-  const g = await openGame(browser, srv.url);
-  await rollFilm(g.page);
-  await game(g.page, ([title, keep]) => {
-    const M = window.__mobber;
-    M.startLevel(M.LEVELS.findIndex(l => l.title === title));
-    for (const e of M.enemies) if (!keep.includes(e.type.name)) { e.hp = 0; e.state = "dead"; }
-    M.player.hp = 100;
-  }, [title, keep]);
-  return g;
-}
+// Start a level with only some kinds of gangster left standing
+const sceneWith = (title, keep) => scene(title, { clear: keep, hp: 100 });
 const CLUB = "The Blue Note Club";
 
 test("a knife man runs at you and cuts, without firing a shot", async () => {
-  const { page, context, errors } = await sceneWith(CLUB, ["knife"]);
+  const { page } = await sceneWith(CLUB, ["knife"]);
   await game(page, () => {
     const M = window.__mobber, k = M.enemies.find(e => e.type.name === "knife");
     Object.assign(M.player, { x: k.x - 4, y: k.y }); M.player.a = 0;
@@ -31,12 +19,10 @@ test("a knife man runs at you and cuts, without firing a shot", async () => {
   const s = await game(page, () => { const M = window.__mobber, k = M.enemies.find(e => e.type.name === "knife"); return { bullets: M.bullets.length, d: Math.hypot(k.x - M.player.x, k.y - M.player.y) }; });
   assert.equal(s.bullets, 0);
   assert.ok(s.d < 1.5, `he cut from ${s.d} away`);
-  assert.deepEqual(errors, []);
-  await context.close();
 });
 
 test("the knife misses a man who has stepped out of reach", async () => {
-  const { page, context, errors } = await sceneWith(CLUB, ["knife"]);
+  const { page } = await sceneWith(CLUB, ["knife"]);
   // Catch him with the blade raised, then put the player across the room before it falls
   await game(page, () => {
     const M = window.__mobber, k = M.enemies.find(e => e.type.name === "knife");
@@ -47,12 +33,10 @@ test("the knife misses a man who has stepped out of reach", async () => {
   await game(page, () => { window.__mobber.player.x -= 3; });
   await page.waitForFunction(() => window.__mobber.enemies.some(e => e.type.name === "knife" && e.state !== "aim"), null, { polling: "raf" });
   assert.equal(await game(page, () => window.__mobber.player.hp), 100);
-  assert.deepEqual(errors, []);
-  await context.close();
 });
 
 test("a rifleman keeps to his window, fires a fast shot down at you, and can be shot out of it", async () => {
-  const { page, context, errors } = await sceneWith("Mulberry Street", ["rifleman"]);
+  const { page } = await sceneWith("Mulberry Street", ["rifleman"]);
   const at = await game(page, () => {
     const M = window.__mobber, r = M.enemies.find(e => e.type.name === "rifleman");
     Object.assign(M.player, { x: r.x, y: r.y + 4, hp: 1e6 }); M.player.a = -Math.PI / 2;
@@ -68,12 +52,10 @@ test("a rifleman keeps to his window, fires a fast shot down at you, and can be 
     await page.keyboard.down(" "); await page.waitForTimeout(150); await page.keyboard.up(" "); await page.waitForTimeout(250);
   }
   assert.ok(await game(page, () => window.__mobber.enemies.find(e => e.type.name === "rifleman").hp <= 0), "he survived twelve shots");
-  assert.deepEqual(errors, []);
-  await context.close();
 });
 
 test("the bagman runs for the bell, and ringing it brings everyone", async () => {
-  const { page, context, errors } = await sceneWith(CLUB, ["bagman", "heavy", "goon", "manager"]);
+  const { page } = await sceneWith(CLUB, ["bagman", "heavy", "goon", "manager"]);
   // Leave one far-off goon who knows nothing, and let the bagman see you
   const far = await game(page, () => {
     const M = window.__mobber, b = M.enemies.find(e => e.type.name === "bagman");
@@ -89,12 +71,10 @@ test("the bagman runs for the bell, and ringing it brings everyone", async () =>
   assert.ok(s.d < 1.6, "the bagman wasn't at the bell");
   // ...everyone but the manager, who holds his post until he sees you
   assert.deepEqual(await game(page, () => window.__mobber.enemies.filter(e => e.type.lieutenant && e.hp > 0).map(e => e.alert)), [false]);
-  assert.deepEqual(errors, []);
-  await context.close();
 });
 
 test("stop the bagman first and the bell stays quiet; he drops the takings", async () => {
-  const { page, context, errors } = await sceneWith(CLUB, ["bagman"]);
+  const { page } = await sceneWith(CLUB, ["bagman"]);
   await game(page, () => {
     const M = window.__mobber, b = M.enemies.find(e => e.type.name === "bagman");
     Object.assign(M.player, { x: b.x - 3, y: b.y + 0.01 }); M.player.a = 0;
@@ -102,12 +82,10 @@ test("stop the bagman first and the bell stays quiet; he drops the takings", asy
   for (let i = 0; i < 20; i++) {
     const down = await game(page, () => { const M = window.__mobber, b = M.enemies.find(e => e.type.name === "bagman"); M.player.a = Math.atan2(b.y - M.player.y, b.x - M.player.x); return b.hp <= 0; });
     if (down) break;
-    await page.keyboard.down(" "); await page.waitForTimeout(120); await page.keyboard.up(" ");
+    await shoot(page);
   }
   const s = await game(page, () => { const M = window.__mobber; return { down: M.enemies.find(e => e.type.name === "bagman").hp <= 0, alarm: M.alarm, cash: M.objs.some(o => o.pick === "cash" && o.amount === M.AMMO.bagCash) }; });
   assert.ok(s.down, "the bagman got away");
   assert.equal(s.alarm, false);
   assert.ok(s.cash, "no bag of cash where he fell");
-  assert.deepEqual(errors, []);
-  await context.close();
 });

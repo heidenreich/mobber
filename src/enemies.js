@@ -34,6 +34,8 @@ export function updateEnemy(e, dt) {
   if (!e.alert && (e.turnT -= dt) <= 0) { e.face += Math.PI; e.lookBack = !e.lookBack; e.turnT = e.lookBack ? rand(2, 3.5) : rand(4, 8); }
   // He sees you if he can see where you stand, or your head leaning out of cover
   let sees = d < range && (los(e.x, e.y, p.x, p.y) || (!!p.lean && los(e.x, e.y, eye().x, eye().y)));
+  // Nobody spots you while the iris is still opening on a scene
+  if (!e.alert && game.timer < ENEMY_AI.openingGrace) sees = false;
   if (sees && !e.alert && d > ENEMY_AI.senseRange) {
     const off = Math.atan2(dy, dx) - e.face;
     if (Math.abs(Math.atan2(Math.sin(off), Math.cos(off))) > ENEMY_AI.viewCone) sees = false;

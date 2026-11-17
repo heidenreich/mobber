@@ -76,6 +76,8 @@ npm test
 
 GitHub Actions runs them on every push and pull request (`.github/workflows/test.yml`).
 
+A test file starts with `useBrowser()` from `tests/helpers.js`, which gives it one server and one browser, closes every game a test opened, and fails the test if the page logged an error. `scene(title, { clear, hp })` drops a test straight into a scene without clicking through the cards (one test covers those), and `landing(page, n)` skips the lift's ride to its next landing.
+
 To check balance, `npm run playthrough` has a bot play the whole game in real time (several minutes) and report time, damage taken, shots, kills and ammo for each scene. `npm run playthrough -- poor` plays it as a weaker player.
 
 ## How the code is organized

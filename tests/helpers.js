@@ -44,7 +44,9 @@ const game = (page, fn, arg) => page.evaluate(fn, arg);
 
 // Each test file runs in its own process, so these are per file
 const env = { srv: null, browser: null, open: [] };
-let hooked = false;
+let hooked = false, started = null;
+// Started by whichever comes first: the before hook, or a file's own before hook opening a game
+const start = () => started || (started = (async () => { env.srv = await serve(); env.browser = await chromium.launch(); })());
 
 // Call once at the top of a test file. Every game a test opens is closed after it, and a test
 // fails if the page logged an error (a test that expects one can empty g.errors itself).
@@ -53,17 +55,18 @@ function useBrowser() {
   hooked = true;
   const { before, after, afterEach } = require("node:test");
   const assert = require("node:assert/strict");
-  before(async () => { env.srv = await serve(); env.browser = await chromium.launch(); });
+  before(start);
   afterEach(async () => {
     const open = env.open.splice(0);
     for (const g of open) await g.context.close();
     for (const g of open) assert.deepEqual(g.errors, [], "errors in the page");
   });
-  after(async () => { await env.browser.close(); env.srv.server.close(); });
+  after(async () => { if (!started) return; await started; await env.browser.close(); env.srv.server.close(); });
 }
 
 // The game at its title card. `device` is a Playwright device name, for a phone.
 async function open(device) {
+  await start();
   const g = await openGame(env.browser, env.srv.url, device ? { ...devices[device] } : undefined);
   g.touch = !!device;
   env.open.push(g);
